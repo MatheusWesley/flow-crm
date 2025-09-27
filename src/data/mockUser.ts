@@ -1,11 +1,12 @@
+import avatarPNG from '../assets/avatar.jpg';
 import type { User } from '../types';
 
 // Mock user data - this will be replaced with real authentication later
 export const mockUser: User = {
 	id: '1',
-	name: 'Matheus Wesley',
-	email: 'matheus.wesley@empresa.com',
-	avatar: 'https://github.com/MatheusWesley.png',
+	name: 'John Doe',
+	email: 'john.doe@empresa.com',
+	avatar: avatarPNG,
 	role: 'admin',
 };
 
