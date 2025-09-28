@@ -43,8 +43,25 @@ export interface Customer extends BaseEntity {
 }
 
 export interface PreSale extends BaseEntity {
+	customer: Customer;
+	items: PreSaleItem[];
 	total: number;
-	status: string;
+	status: 'draft' | 'pending' | 'approved' | 'cancelled' | 'converted';
+	notes?: string;
+	validUntil?: Date;
+	discount?: number;
+	discountType?: 'percentage' | 'fixed';
+	salesperson?: string;
+}
+
+export interface PreSaleItem {
+	id: string;
+	product: Product;
+	quantity: number;
+	unitPrice: number;
+	totalPrice: number;
+	discount?: number;
+	notes?: string;
 }
 
 export interface StockAdjustment extends BaseEntity {

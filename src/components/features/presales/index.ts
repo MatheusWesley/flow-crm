@@ -1,1 +1,1 @@
-export { default as Presales } from './SimplifiedPresales';
+export { default as Presales } from './PresalesPage';
