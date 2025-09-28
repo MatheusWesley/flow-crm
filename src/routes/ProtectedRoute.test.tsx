@@ -1,8 +1,6 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { AuthProvider } from '../context/AuthContext';
-import ProtectedRoute from './ProtectedRoute';
 
 // Mock the auth service
 const mockAuthService = {
@@ -15,37 +13,6 @@ const mockAuthService = {
 vi.mock('../data/mockAuthService', () => ({
 	mockAuthService,
 }));
-
-// Test wrapper component
-const TestWrapper = ({
-	children,
-	initialEntries = ['/dashboard'],
-	mockUser = null,
-	mockIsLoading = false,
-}: {
-	children: React.ReactNode;
-	initialEntries?: string[];
-	mockUser?: any;
-	mockIsLoading?: boolean;
-}) => {
-	// Mock the useAuth hook return value
-	vi.doMock('../context/AuthContext', () => ({
-		AuthProvider: ({ children }: { children: React.ReactNode }) => children,
-		useAuth: () => ({
-			user: mockUser,
-			isAuthenticated: !!mockUser,
-			isLoading: mockIsLoading,
-			error: null,
-			login: vi.fn(),
-			logout: vi.fn(),
-			clearError: vi.fn(),
-		}),
-	}));
-
-	return (
-		<MemoryRouter initialEntries={initialEntries}>{children}</MemoryRouter>
-	);
-};
 
 describe('ProtectedRoute', () => {
 	beforeEach(() => {
@@ -67,7 +34,6 @@ describe('ProtectedRoute', () => {
 			}),
 		}));
 
-		const { useAuth } = await import('../context/AuthContext');
 		const ProtectedRoute = (await import('./ProtectedRoute')).default;
 
 		render(

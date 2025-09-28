@@ -1,4 +1,4 @@
-import { AlertCircle, Lock, Mail, ShoppingCart } from 'lucide-react';
+import { AlertCircle, ShoppingCart } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
