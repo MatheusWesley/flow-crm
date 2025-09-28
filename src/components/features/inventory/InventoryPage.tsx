@@ -1,6 +1,6 @@
+import { Search } from 'lucide-react';
 import type React from 'react';
 import { useState } from 'react';
-import { Search } from 'lucide-react';
 import type { Product, StockAdjustment } from '../../../types';
 import Button from '../../common/Button';
 import Input from '../../common/Input';
@@ -19,8 +19,8 @@ const InventoryPage: React.FC = () => {
 			stock: 100,
 			unit: 'pc',
 			saleType: 'unit' as const,
-			purchasePrice: 15.00,
-			salePrice: 25.00,
+			purchasePrice: 15.0,
+			salePrice: 25.0,
 			createdAt: new Date(),
 			updatedAt: new Date(),
 		},
@@ -32,8 +32,8 @@ const InventoryPage: React.FC = () => {
 			stock: 50,
 			unit: 'kg',
 			saleType: 'fractional' as const,
-			purchasePrice: 20.00,
-			salePrice: 35.00,
+			purchasePrice: 20.0,
+			salePrice: 35.0,
 			createdAt: new Date(),
 			updatedAt: new Date(),
 		},
@@ -65,25 +65,28 @@ const InventoryPage: React.FC = () => {
 	const [searchTerm, setSearchTerm] = useState('');
 
 	const handleInputChange = (field: string) => (value: string) => {
-		setFormData(prev => ({ ...prev, [field]: value }));
+		setFormData((prev) => ({ ...prev, [field]: value }));
 
 		// When product code changes, search for the product
 		if (field === 'productCode') {
-			const product = products.find(p => p.code.toLowerCase() === value.toLowerCase());
+			const product = products.find(
+				(p) => p.code.toLowerCase() === value.toLowerCase(),
+			);
 			setSelectedProduct(product || null);
 		}
 	};
 
 	const handleProductSelect = (product: Product) => {
-		setFormData(prev => ({ ...prev, productCode: product.code }));
+		setFormData((prev) => ({ ...prev, productCode: product.code }));
 		setSelectedProduct(product);
 		setShowProductSearch(false);
 		setSearchTerm('');
 	};
 
-	const filteredProducts = products.filter(product =>
-		product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-		product.code.toLowerCase().includes(searchTerm.toLowerCase())
+	const filteredProducts = products.filter(
+		(product) =>
+			product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+			product.code.toLowerCase().includes(searchTerm.toLowerCase()),
 	);
 
 	const handleSubmit = (e: React.FormEvent) => {
@@ -111,7 +114,7 @@ const InventoryPage: React.FC = () => {
 			updatedAt: new Date(),
 		};
 
-		setAdjustments(prev => [newAdjustment, ...prev]);
+		setAdjustments((prev) => [newAdjustment, ...prev]);
 
 		// Reset form
 		setFormData({
@@ -130,7 +133,9 @@ const InventoryPage: React.FC = () => {
 					<form onSubmit={handleSubmit} className="space-y-8">
 						{/* Buscar Produto */}
 						<div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-							<h3 className="text-lg font-semibold text-gray-800 mb-6">Buscar Produto</h3>
+							<h3 className="text-lg font-semibold text-gray-800 mb-6">
+								Buscar Produto
+							</h3>
 
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 								{/* Código do Produto */}
@@ -165,9 +170,12 @@ const InventoryPage: React.FC = () => {
 									{selectedProduct ? (
 										<div>
 											<p className="font-medium">{selectedProduct.name}</p>
-											<p className="text-sm text-gray-600 mt-1">{selectedProduct.description}</p>
+											<p className="text-sm text-gray-600 mt-1">
+												{selectedProduct.description}
+											</p>
 											<p className="text-sm text-blue-600 mt-2">
-												Estoque atual: {selectedProduct.stock} {selectedProduct.unit}
+												Estoque atual: {selectedProduct.stock}{' '}
+												{selectedProduct.unit}
 											</p>
 										</div>
 									) : (
@@ -181,10 +189,11 @@ const InventoryPage: React.FC = () => {
 
 						{/* Detalhes do Ajuste */}
 						<div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-							<h3 className="text-lg font-semibold text-gray-800 mb-6">Detalhes do Ajuste</h3>
+							<h3 className="text-lg font-semibold text-gray-800 mb-6">
+								Detalhes do Ajuste
+							</h3>
 
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
 								<Input
 									label="Quantidade*"
 									type="number"
@@ -204,20 +213,24 @@ const InventoryPage: React.FC = () => {
 										<button
 											type="button"
 											onClick={() => handleInputChange('adjustmentType')('add')}
-											className={`px-6 py-3 rounded-lg font-medium transition-colors ${formData.adjustmentType === 'add'
-												? 'bg-green-600 text-white'
-												: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-												}`}
+											className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+												formData.adjustmentType === 'add'
+													? 'bg-green-600 text-white'
+													: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+											}`}
 										>
 											Adicionar ao Estoque
 										</button>
 										<button
 											type="button"
-											onClick={() => handleInputChange('adjustmentType')('remove')}
-											className={`px-6 py-3 rounded-lg font-medium transition-colors ${formData.adjustmentType === 'remove'
-												? 'bg-red-600 text-white'
-												: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-												}`}
+											onClick={() =>
+												handleInputChange('adjustmentType')('remove')
+											}
+											className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+												formData.adjustmentType === 'remove'
+													? 'bg-red-600 text-white'
+													: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+											}`}
 										>
 											Remover do Estoque
 										</button>
@@ -259,7 +272,9 @@ const InventoryPage: React.FC = () => {
 								Limpar
 							</Button>
 							<Button type="submit" variant="primary">
-								{formData.adjustmentType === 'add' ? 'Adicionar ao Estoque' : 'Remover do Estoque'}
+								{formData.adjustmentType === 'add'
+									? 'Adicionar ao Estoque'
+									: 'Remover do Estoque'}
 							</Button>
 						</div>
 					</form>
@@ -268,7 +283,9 @@ const InventoryPage: React.FC = () => {
 					{showProductSearch && (
 						<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
 							<div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-								<h3 className="text-lg font-semibold text-gray-900 mb-4">Buscar Produto</h3>
+								<h3 className="text-lg font-semibold text-gray-900 mb-4">
+									Buscar Produto
+								</h3>
 
 								<Input
 									value={searchTerm}
@@ -286,9 +303,15 @@ const InventoryPage: React.FC = () => {
 										>
 											<div className="flex justify-between items-start">
 												<div>
-													<p className="font-medium text-gray-900">{product.name}</p>
-													<p className="text-sm text-gray-600">Código: {product.code}</p>
-													<p className="text-sm text-gray-500">{product.description}</p>
+													<p className="font-medium text-gray-900">
+														{product.name}
+													</p>
+													<p className="text-sm text-gray-600">
+														Código: {product.code}
+													</p>
+													<p className="text-sm text-gray-500">
+														{product.description}
+													</p>
 												</div>
 												<div className="text-right">
 													<p className="text-sm font-medium text-blue-600">
@@ -327,8 +350,12 @@ const InventoryPage: React.FC = () => {
 		return (
 			<div className="space-y-4">
 				<div className="flex items-center justify-between">
-					<h2 className="text-xl font-semibold text-gray-800">Histórico de Ajustes</h2>
-					<span className="text-sm text-gray-500">{adjustments.length} ajustes</span>
+					<h2 className="text-xl font-semibold text-gray-800">
+						Histórico de Ajustes
+					</h2>
+					<span className="text-sm text-gray-500">
+						{adjustments.length} ajustes
+					</span>
 				</div>
 
 				<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -339,15 +366,23 @@ const InventoryPage: React.FC = () => {
 						>
 							<div className="flex justify-between items-start mb-2">
 								<div>
-									<h3 className="font-semibold text-gray-900">{adjustment.productName}</h3>
-									<p className="text-sm text-gray-600">Código: {adjustment.productCode}</p>
+									<h3 className="font-semibold text-gray-900">
+										{adjustment.productName}
+									</h3>
+									<p className="text-sm text-gray-600">
+										Código: {adjustment.productCode}
+									</p>
 								</div>
 								<div className="text-right">
-									<span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${adjustment.adjustmentType === 'add'
-										? 'bg-green-100 text-green-800'
-										: 'bg-red-100 text-red-800'
-										}`}>
-										{adjustment.adjustmentType === 'add' ? '+' : '-'}{adjustment.quantity}
+									<span
+										className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+											adjustment.adjustmentType === 'add'
+												? 'bg-green-100 text-green-800'
+												: 'bg-red-100 text-red-800'
+										}`}
+									>
+										{adjustment.adjustmentType === 'add' ? '+' : '-'}
+										{adjustment.quantity}
 									</span>
 								</div>
 							</div>
@@ -358,9 +393,16 @@ const InventoryPage: React.FC = () => {
 								<span className="text-xs text-gray-500">
 									{new Date(adjustment.date).toLocaleDateString('pt-BR')}
 								</span>
-								<span className={`text-sm font-medium ${adjustment.adjustmentType === 'add' ? 'text-green-600' : 'text-red-600'
-									}`}>
-									{adjustment.adjustmentType === 'add' ? 'Adicionado' : 'Removido'}
+								<span
+									className={`text-sm font-medium ${
+										adjustment.adjustmentType === 'add'
+											? 'text-green-600'
+											: 'text-red-600'
+									}`}
+								>
+									{adjustment.adjustmentType === 'add'
+										? 'Adicionado'
+										: 'Removido'}
 								</span>
 							</div>
 						</div>
@@ -372,7 +414,9 @@ const InventoryPage: React.FC = () => {
 
 	return (
 		<div className="p-6">
-			<h1 className="text-2xl font-bold text-gray-900 mb-6">Controle de Estoque</h1>
+			<h1 className="text-2xl font-bold text-gray-900 mb-6">
+				Controle de Estoque
+			</h1>
 
 			{/* Tabs */}
 			<div className="mb-6">
@@ -380,19 +424,21 @@ const InventoryPage: React.FC = () => {
 					<nav className="-mb-px flex space-x-8" aria-label="Tabs">
 						<button
 							onClick={() => setActiveTab('adjustment')}
-							className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'adjustment'
-								? 'border-blue-500 text-blue-600'
-								: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-								}`}
+							className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
+								activeTab === 'adjustment'
+									? 'border-blue-500 text-blue-600'
+									: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+							}`}
 						>
 							Ajuste
 						</button>
 						<button
 							onClick={() => setActiveTab('history')}
-							className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'history'
-								? 'border-blue-500 text-blue-600'
-								: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-								}`}
+							className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
+								activeTab === 'history'
+									? 'border-blue-500 text-blue-600'
+									: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+							}`}
 						>
 							Histórico
 						</button>
@@ -401,9 +447,7 @@ const InventoryPage: React.FC = () => {
 			</div>
 
 			{/* Tab Content */}
-			<div className="mt-6">
-				{renderTabContent()}
-			</div>
+			<div className="mt-6">{renderTabContent()}</div>
 		</div>
 	);
 };

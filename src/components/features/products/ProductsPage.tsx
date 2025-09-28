@@ -20,7 +20,7 @@ const ProductsPage: React.FC = () => {
 			stock: 100,
 			category: 'Categoria A',
 			saleType: 'unit' as const,
-			purchasePrice: 20.00,
+			purchasePrice: 20.0,
 			salePrice: 29.99,
 			createdAt: new Date(),
 			updatedAt: new Date(),
@@ -34,8 +34,8 @@ const ProductsPage: React.FC = () => {
 			stock: 50,
 			category: 'Categoria B',
 			saleType: 'fractional' as const,
-			purchasePrice: 30.00,
-			salePrice: 45.50,
+			purchasePrice: 30.0,
+			salePrice: 45.5,
 			createdAt: new Date(),
 			updatedAt: new Date(),
 		},
@@ -53,7 +53,7 @@ const ProductsPage: React.FC = () => {
 	});
 
 	const handleInputChange = (field: string) => (value: string) => {
-		setFormData(prev => ({ ...prev, [field]: value }));
+		setFormData((prev) => ({ ...prev, [field]: value }));
 	};
 
 	const handleSubmit = (e: React.FormEvent) => {
@@ -78,8 +78,12 @@ const ProductsPage: React.FC = () => {
 			return (
 				<div className="space-y-4">
 					<div className="flex items-center justify-between">
-						<h2 className="text-xl font-semibold text-gray-800">Produtos Cadastrados</h2>
-						<span className="text-sm text-gray-500">{products.length} produtos</span>
+						<h2 className="text-xl font-semibold text-gray-800">
+							Produtos Cadastrados
+						</h2>
+						<span className="text-sm text-gray-500">
+							{products.length} produtos
+						</span>
 					</div>
 
 					<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -90,8 +94,12 @@ const ProductsPage: React.FC = () => {
 							>
 								<div className="flex justify-between items-start mb-2">
 									<div>
-										<h3 className="font-semibold text-gray-900">{product.name}</h3>
-										<p className="text-sm text-gray-600">Código: {product.code}</p>
+										<h3 className="font-semibold text-gray-900">
+											{product.name}
+										</h3>
+										<p className="text-sm text-gray-600">
+											Código: {product.code}
+										</p>
 									</div>
 									<div className="text-right">
 										<p className="text-lg font-bold text-green-600">
@@ -101,7 +109,9 @@ const ProductsPage: React.FC = () => {
 									</div>
 								</div>
 
-								<p className="text-gray-700 text-sm mb-3">{product.description}</p>
+								<p className="text-gray-700 text-sm mb-3">
+									{product.description}
+								</p>
 
 								<div className="flex justify-between items-center">
 									<span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
@@ -109,13 +119,20 @@ const ProductsPage: React.FC = () => {
 									</span>
 									<div className="flex items-center space-x-4">
 										<span className="text-sm text-gray-600">
-											Estoque: <span className="font-semibold">{product.stock}</span>
+											Estoque:{' '}
+											<span className="font-semibold">{product.stock}</span>
 										</span>
 										<div className="flex space-x-2">
-											<button type='button' className="text-blue-600 hover:text-blue-800 text-sm">
+											<button
+												type="button"
+												className="text-blue-600 hover:text-blue-800 text-sm"
+											>
 												Editar
 											</button>
-											<button type='button' className="text-red-600 hover:text-red-800 text-sm">
+											<button
+												type="button"
+												className="text-red-600 hover:text-red-800 text-sm"
+											>
 												Excluir
 											</button>
 										</div>
@@ -183,7 +200,9 @@ const ProductsPage: React.FC = () => {
 							</label>
 							<textarea
 								value={formData.description}
-								onChange={(e) => handleInputChange('description')(e.target.value)}
+								onChange={(e) =>
+									handleInputChange('description')(e.target.value)
+								}
 								placeholder="Descrição detalhada do produto"
 								className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
 								rows={4}
@@ -215,20 +234,22 @@ const ProductsPage: React.FC = () => {
 									<button
 										type="button"
 										onClick={() => handleInputChange('saleType')('unit')}
-										className={`px-6 py-3 rounded-lg font-medium transition-colors ${formData.saleType === 'unit'
-											? 'bg-blue-600 text-white'
-											: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-											}`}
+										className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+											formData.saleType === 'unit'
+												? 'bg-blue-600 text-white'
+												: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+										}`}
 									>
 										Venda por Unidade
 									</button>
 									<button
 										type="button"
 										onClick={() => handleInputChange('saleType')('fractional')}
-										className={`px-6 py-3 rounded-lg font-medium transition-colors ${formData.saleType === 'fractional'
-											? 'bg-blue-600 text-white'
-											: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-											}`}
+										className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+											formData.saleType === 'fractional'
+												? 'bg-blue-600 text-white'
+												: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+										}`}
 									>
 										Venda Fracionada
 									</button>
@@ -279,32 +300,35 @@ const ProductsPage: React.FC = () => {
 					<div className="border-b border-gray-200">
 						<nav className="-mb-px flex space-x-8" aria-label="Sub Tabs">
 							<button
-								type='button'
+								type="button"
 								onClick={() => setActiveSubTab('basic')}
-								className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${activeSubTab === 'basic'
-									? 'border-blue-500 text-blue-600'
-									: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-									}`}
+								className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
+									activeSubTab === 'basic'
+										? 'border-blue-500 text-blue-600'
+										: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+								}`}
 							>
 								Informações Básicas
 							</button>
 							<button
-								type='button'
+								type="button"
 								onClick={() => setActiveSubTab('control')}
-								className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${activeSubTab === 'control'
-									? 'border-blue-500 text-blue-600'
-									: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-									}`}
+								className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
+									activeSubTab === 'control'
+										? 'border-blue-500 text-blue-600'
+										: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+								}`}
 							>
 								Controle e Tipo de Venda
 							</button>
 							<button
-								type='button'
+								type="button"
 								onClick={() => setActiveSubTab('prices')}
-								className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${activeSubTab === 'prices'
-									? 'border-blue-500 text-blue-600'
-									: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-									}`}
+								className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
+									activeSubTab === 'prices'
+										? 'border-blue-500 text-blue-600'
+										: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+								}`}
 							>
 								Preços
 							</button>
@@ -357,22 +381,24 @@ const ProductsPage: React.FC = () => {
 				<div className="border-b border-gray-200">
 					<nav className="-mb-px flex space-x-8" aria-label="Tabs">
 						<button
-							type='button'
+							type="button"
 							onClick={() => setActiveTab('list')}
-							className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'list'
-								? 'border-blue-500 text-blue-600'
-								: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-								}`}
+							className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
+								activeTab === 'list'
+									? 'border-blue-500 text-blue-600'
+									: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+							}`}
 						>
 							Listagem
 						</button>
 						<button
-							type='button'
+							type="button"
 							onClick={() => setActiveTab('register')}
-							className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'register'
-								? 'border-blue-500 text-blue-600'
-								: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-								}`}
+							className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
+								activeTab === 'register'
+									? 'border-blue-500 text-blue-600'
+									: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+							}`}
 						>
 							Cadastro
 						</button>
@@ -381,9 +407,7 @@ const ProductsPage: React.FC = () => {
 			</div>
 
 			{/* Tab Content */}
-			<div className="mt-6">
-				{renderTabContent()}
-			</div>
+			<div className="mt-6">{renderTabContent()}</div>
 		</div>
 	);
 };

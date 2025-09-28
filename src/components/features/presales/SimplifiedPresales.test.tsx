@@ -6,6 +6,8 @@ describe('SimplifiedPresales', () => {
 	it('renders presales development message', () => {
 		render(<SimplifiedPresales />);
 		expect(screen.getByText('Pré-vendas')).toBeInTheDocument();
-		expect(screen.getByText('Página de pré-vendas em desenvolvimento...')).toBeInTheDocument();
+		expect(
+			screen.getByText('Página de pré-vendas em desenvolvimento...'),
+		).toBeInTheDocument();
 	});
 });

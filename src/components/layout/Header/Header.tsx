@@ -1,5 +1,7 @@
 import { Bell, ChevronDown, LogOut, Search, X } from 'lucide-react';
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../context/AuthContext';
 import { useSearchShortcut } from '../../../hooks/useKeyboardShortcut';
 import type { User as UserType } from '../../../types';
 import SearchModal from '../../common/SearchModal';
@@ -17,6 +19,8 @@ const Header: React.FC<HeaderProps> = ({
 	onSearch,
 	className = '',
 }) => {
+	const navigate = useNavigate();
+	const { logout } = useAuth();
 	const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 	const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
@@ -50,6 +54,13 @@ const Header: React.FC<HeaderProps> = ({
 
 	const handleSearchModalClose = () => {
 		setIsSearchModalOpen(false);
+	};
+
+	// Handle logout
+	const handleLogout = () => {
+		setIsUserMenuOpen(false);
+		logout();
+		navigate('/login');
 	};
 
 	// Função para gerar iniciais do usuário
@@ -207,7 +218,8 @@ const Header: React.FC<HeaderProps> = ({
 											<div className="border-t border-slate-200 dark:border-slate-700">
 												<button
 													className="flex items-center w-full text-left px-4 py-2.5 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm"
-													onClick={() => setIsUserMenuOpen(false)}
+													onClick={handleLogout}
+													title="Sair do sistema"
 												>
 													<LogOut className="h-4 w-4 mr-3" />
 													Sair

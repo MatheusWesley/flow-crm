@@ -136,6 +136,34 @@ export interface User {
 	avatar?: string;
 }
 
+// Authentication credentials for login
+export interface UserCredentials {
+	email: string;
+	password: string;
+}
+
+// Extended user type for authentication context
+export interface AuthUser extends User {
+	lastLoginAt?: Date;
+}
+
+// Authentication error type
+export interface AuthError {
+	message: string;
+	code?: 'INVALID_CREDENTIALS' | 'NETWORK_ERROR' | 'UNKNOWN_ERROR';
+}
+
+// Authentication context type
+export interface AuthContextType {
+	user: AuthUser | null;
+	isAuthenticated: boolean;
+	isLoading: boolean;
+	error: AuthError | null;
+	login: (credentials: UserCredentials) => Promise<void>;
+	logout: () => void;
+	clearError: () => void;
+}
+
 export interface AuthState {
 	user?: User;
 	isAuthenticated: boolean;

@@ -1,8 +1,8 @@
 import type React from 'react';
 import { useState } from 'react';
+import { formatCPF, validateCPF } from '../../../utils';
 import Button from '../../common/Button';
 import Input from '../../common/Input';
-import { formatCPF, validateCPF } from '../../../utils';
 
 type TabType = 'list' | 'register';
 type SubTabType = 'personal' | 'contact' | 'address';
@@ -55,58 +55,59 @@ const SimplifiedCustomers: React.FC = () => {
 
 	const handleInputChange = (field: string) => (value: string) => {
 		let processedValue = value;
-		
+
 		// Format CPF as user types
 		if (field === 'cpf') {
 			processedValue = formatCPF(value);
 		}
-		
+
 		// Format phone as user types
 		if (field === 'phone') {
-			processedValue = value.replace(/\D/g, '')
+			processedValue = value
+				.replace(/\D/g, '')
 				.replace(/(\d{2})(\d)/, '($1) $2')
 				.replace(/(\d{5})(\d)/, '$1-$2')
 				.replace(/(-\d{4})\d+?$/, '$1');
 		}
-		
-		setFormData(prev => ({ ...prev, [field]: processedValue }));
-		
+
+		setFormData((prev) => ({ ...prev, [field]: processedValue }));
+
 		// Clear error when user starts typing
 		if (errors[field]) {
-			setErrors(prev => ({ ...prev, [field]: '' }));
+			setErrors((prev) => ({ ...prev, [field]: '' }));
 		}
 	};
 
 	const validateForm = () => {
 		const newErrors: Record<string, string> = {};
-		
+
 		if (!formData.name.trim()) {
 			newErrors.name = 'Nome é obrigatório';
 		}
-		
+
 		if (!formData.email.trim()) {
 			newErrors.email = 'Email é obrigatório';
 		} else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
 			newErrors.email = 'Email inválido';
 		}
-		
+
 		if (!formData.cpf.trim()) {
 			newErrors.cpf = 'CPF é obrigatório';
 		} else if (!validateCPF(formData.cpf)) {
 			newErrors.cpf = 'CPF inválido';
 		}
-		
+
 		if (!formData.phone.trim()) {
 			newErrors.phone = 'Telefone é obrigatório';
 		}
-		
+
 		setErrors(newErrors);
 		return Object.keys(newErrors).length === 0;
 	};
 
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
-		
+
 		if (validateForm()) {
 			console.log('Dados do cliente:', formData);
 			// Reset form after submit
@@ -127,10 +128,14 @@ const SimplifiedCustomers: React.FC = () => {
 			return (
 				<div className="space-y-4">
 					<div className="flex items-center justify-between">
-						<h2 className="text-xl font-semibold text-gray-800">Clientes Cadastrados</h2>
-						<span className="text-sm text-gray-500">{customers.length} clientes</span>
+						<h2 className="text-xl font-semibold text-gray-800">
+							Clientes Cadastrados
+						</h2>
+						<span className="text-sm text-gray-500">
+							{customers.length} clientes
+						</span>
 					</div>
-					
+
 					<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
 						{customers.map((customer) => (
 							<div
@@ -139,15 +144,19 @@ const SimplifiedCustomers: React.FC = () => {
 							>
 								<div className="flex justify-between items-start mb-2">
 									<div>
-										<h3 className="font-semibold text-gray-900">{customer.name}</h3>
+										<h3 className="font-semibold text-gray-900">
+											{customer.name}
+										</h3>
 										<p className="text-sm text-gray-600">{customer.email}</p>
 									</div>
 									<div className="text-right">
-										<p className="text-sm font-medium text-gray-700">{customer.phone}</p>
+										<p className="text-sm font-medium text-gray-700">
+											{customer.phone}
+										</p>
 										<p className="text-sm text-gray-500">{customer.cpf}</p>
 									</div>
 								</div>
-								
+
 								<div className="flex justify-between items-center">
 									<div className="flex items-center space-x-2">
 										<span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
@@ -166,7 +175,7 @@ const SimplifiedCustomers: React.FC = () => {
 							</div>
 						))}
 					</div>
-					
+
 					{customers.length === 0 && (
 						<div className="text-center py-8">
 							<p className="text-gray-500">Nenhum cliente cadastrado ainda.</p>
@@ -176,89 +185,89 @@ const SimplifiedCustomers: React.FC = () => {
 			);
 		}
 
-	const renderSubTabContent = () => {
-		if (activeSubTab === 'personal') {
-			return (
-				<div className="space-y-6">
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-						<Input
-							label="Nome Completo*"
-							value={formData.name}
-							onChange={handleInputChange('name')}
-							placeholder="Digite o nome completo"
-							error={errors.name}
-							required
-						/>
-						
-						<Input
-							label="CPF*"
-							value={formData.cpf}
-							onChange={handleInputChange('cpf')}
-							placeholder="000.000.000-00"
-							error={errors.cpf}
-							maxLength={14}
-							required
-						/>
+		const renderSubTabContent = () => {
+			if (activeSubTab === 'personal') {
+				return (
+					<div className="space-y-6">
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+							<Input
+								label="Nome Completo*"
+								value={formData.name}
+								onChange={handleInputChange('name')}
+								placeholder="Digite o nome completo"
+								error={errors.name}
+								required
+							/>
+
+							<Input
+								label="CPF*"
+								value={formData.cpf}
+								onChange={handleInputChange('cpf')}
+								placeholder="000.000.000-00"
+								error={errors.cpf}
+								maxLength={14}
+								required
+							/>
+						</div>
 					</div>
-				</div>
-			);
-		}
+				);
+			}
 
-		if (activeSubTab === 'contact') {
-			return (
-				<div className="space-y-6">
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-						<Input
-							label="Email*"
-							type="email"
-							value={formData.email}
-							onChange={handleInputChange('email')}
-							placeholder="exemplo@email.com"
-							error={errors.email}
-							required
-						/>
-						
-						<Input
-							label="Telefone*"
-							value={formData.phone}
-							onChange={handleInputChange('phone')}
-							placeholder="(11) 99999-9999"
-							error={errors.phone}
-							maxLength={15}
-							required
-						/>
+			if (activeSubTab === 'contact') {
+				return (
+					<div className="space-y-6">
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+							<Input
+								label="Email*"
+								type="email"
+								value={formData.email}
+								onChange={handleInputChange('email')}
+								placeholder="exemplo@email.com"
+								error={errors.email}
+								required
+							/>
+
+							<Input
+								label="Telefone*"
+								value={formData.phone}
+								onChange={handleInputChange('phone')}
+								placeholder="(11) 99999-9999"
+								error={errors.phone}
+								maxLength={15}
+								required
+							/>
+						</div>
 					</div>
-				</div>
-			);
-		}
+				);
+			}
 
-		if (activeSubTab === 'address') {
-			return (
-				<div className="space-y-6">
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-						<Input
-							label="Cidade"
-							value={formData.city}
-							onChange={handleInputChange('city')}
-							placeholder="Ex: São Paulo"
-						/>
-						
-						<Input
-							label="Estado"
-							value={formData.state}
-							onChange={handleInputChange('state')}
-							placeholder="Ex: SP"
-							maxLength={2}
-						/>
+			if (activeSubTab === 'address') {
+				return (
+					<div className="space-y-6">
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+							<Input
+								label="Cidade"
+								value={formData.city}
+								onChange={handleInputChange('city')}
+								placeholder="Ex: São Paulo"
+							/>
+
+							<Input
+								label="Estado"
+								value={formData.state}
+								onChange={handleInputChange('state')}
+								placeholder="Ex: SP"
+								maxLength={2}
+							/>
+						</div>
 					</div>
-				</div>
-			);
-		}
+				);
+			}
 
-		return null;
-	};
+			return null;
+		};
 
-	return (
+		return (
 			<div className="w-full">
 				{/* Sub Tabs */}
 				<div className="mb-6">
@@ -336,7 +345,7 @@ const SimplifiedCustomers: React.FC = () => {
 	return (
 		<div className="p-6">
 			<h1 className="text-2xl font-bold text-gray-900 mb-6">Clientes</h1>
-			
+
 			{/* Tabs */}
 			<div className="mb-6">
 				<div className="border-b border-gray-200">
@@ -366,9 +375,7 @@ const SimplifiedCustomers: React.FC = () => {
 			</div>
 
 			{/* Tab Content */}
-			<div className="mt-6">
-				{renderTabContent()}
-			</div>
+			<div className="mt-6">{renderTabContent()}</div>
 		</div>
 	);
 };

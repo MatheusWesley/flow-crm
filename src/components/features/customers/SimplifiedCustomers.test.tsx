@@ -6,6 +6,8 @@ describe('SimplifiedCustomers', () => {
 	it('renders customers development message', () => {
 		render(<SimplifiedCustomers />);
 		expect(screen.getByText('Clientes')).toBeInTheDocument();
-		expect(screen.getByText('Página de clientes em desenvolvimento...')).toBeInTheDocument();
+		expect(
+			screen.getByText('Página de clientes em desenvolvimento...'),
+		).toBeInTheDocument();
 	});
 });

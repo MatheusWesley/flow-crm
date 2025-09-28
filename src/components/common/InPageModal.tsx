@@ -2,7 +2,12 @@ import type React from 'react';
 import { useEffect, useState } from 'react';
 import type { ModalProps } from '../../types';
 
-const InPageModal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
+const InPageModal: React.FC<ModalProps> = ({
+	isOpen,
+	onClose,
+	title,
+	children,
+}) => {
 	const [isVisible, setIsVisible] = useState(false);
 
 	useEffect(() => {
@@ -20,7 +25,7 @@ const InPageModal: React.FC<ModalProps> = ({ isOpen, onClose, title, children })
 	}
 
 	return (
-		<div 
+		<div
 			className={`
 				fixed z-50 transition-all duration-200 ease-in-out
 				${isOpen ? 'opacity-100' : 'opacity-0'}
@@ -49,9 +54,10 @@ const InPageModal: React.FC<ModalProps> = ({ isOpen, onClose, title, children })
 						/* Mobile: ocupa quase toda a tela */
 						max-w-[95vw] max-h-[95vh] lg:max-w-4xl lg:max-h-[calc(100vh-8rem)]
 						transition-all duration-200 ease-in-out transform
-						${isOpen 
-							? 'opacity-100 scale-100 translate-y-0' 
-							: 'opacity-0 scale-95 translate-y-4'
+						${
+							isOpen
+								? 'opacity-100 scale-100 translate-y-0'
+								: 'opacity-0 scale-95 translate-y-4'
 						}
 					`}
 					onClick={(e) => e.stopPropagation()}
@@ -59,16 +65,24 @@ const InPageModal: React.FC<ModalProps> = ({ isOpen, onClose, title, children })
 					{/* Header */}
 					<div className="px-6 py-4 border-b border-gray-200/50 bg-gray-50/50 rounded-t-lg">
 						<div className="flex items-center justify-between">
-							<h3 className="text-lg font-semibold text-gray-900">
-								{title}
-							</h3>
+							<h3 className="text-lg font-semibold text-gray-900">{title}</h3>
 							<button
 								type="button"
 								className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors duration-150"
 								onClick={onClose}
 							>
-								<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+								<svg
+									className="w-5 h-5"
+									fill="none"
+									stroke="currentColor"
+									viewBox="0 0 24 24"
+								>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										strokeWidth={2}
+										d="M6 18L18 6M6 6l12 12"
+									/>
 								</svg>
 							</button>
 						</div>

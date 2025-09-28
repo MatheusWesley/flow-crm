@@ -1,9 +1,9 @@
+import { Eye, Plus, Search } from 'lucide-react';
 import type React from 'react';
 import { useState } from 'react';
-import type { PreSale, Customer, Product } from '../../../types';
+import type { Customer, PreSale, Product } from '../../../types';
 import Button from '../../common/Button';
 import SimpleModal from '../../common/SimpleModal';
-import { Search, Plus, Eye } from 'lucide-react';
 
 const PresalesPageDebug: React.FC = () => {
 	const [searchTerm, setSearchTerm] = useState('');
@@ -33,7 +33,7 @@ const PresalesPageDebug: React.FC = () => {
 			stock: 100,
 			category: 'Categoria A',
 			saleType: 'unit',
-			purchasePrice: 20.00,
+			purchasePrice: 20.0,
 			salePrice: 29.99,
 			createdAt: new Date(),
 			updatedAt: new Date(),
@@ -67,7 +67,7 @@ const PresalesPageDebug: React.FC = () => {
 	return (
 		<div className="p-6">
 			<h1 className="text-2xl font-bold text-gray-900 mb-6">Pré-vendas</h1>
-			
+
 			{/* Teste básico de estado */}
 			<div className="mb-4">
 				<input
@@ -92,9 +92,7 @@ const PresalesPageDebug: React.FC = () => {
 			<div className="bg-white rounded-lg shadow p-6 mb-4">
 				<div className="flex items-center space-x-2 mb-3">
 					<Search className="h-5 w-5 text-blue-500" />
-					<p className="text-gray-600">
-						Mock data carregado com sucesso!
-					</p>
+					<p className="text-gray-600">Mock data carregado com sucesso!</p>
 				</div>
 				<div className="text-sm text-gray-500">
 					<p>Clientes: {customers.length}</p>
@@ -107,15 +105,22 @@ const PresalesPageDebug: React.FC = () => {
 			<div className="bg-white rounded-lg shadow p-6">
 				<h2 className="text-lg font-semibold mb-4">Pré-vendas</h2>
 				{preSales.map((preSale) => (
-					<div key={preSale.id} className="border-b border-gray-200 py-3 last:border-b-0">
+					<div
+						key={preSale.id}
+						className="border-b border-gray-200 py-3 last:border-b-0"
+					>
 						<div className="flex justify-between items-start">
 							<div>
 								<h3 className="font-medium">#{preSale.id}</h3>
 								<p className="text-sm text-gray-600">{preSale.customer.name}</p>
-								<p className="text-xs text-gray-500">{preSale.customer.email}</p>
+								<p className="text-xs text-gray-500">
+									{preSale.customer.email}
+								</p>
 							</div>
 							<div className="text-right">
-								<p className="font-bold text-green-600">R$ {preSale.total.toFixed(2)}</p>
+								<p className="font-bold text-green-600">
+									R$ {preSale.total.toFixed(2)}
+								</p>
 								<p className="text-sm text-gray-500">{preSale.status}</p>
 								<button
 									onClick={() => setShowModal(true)}
@@ -141,10 +146,7 @@ const PresalesPageDebug: React.FC = () => {
 							Se você está vendo isso, o Modal está funcionando!
 						</p>
 						<div className="mt-4 flex justify-end">
-							<Button 
-								variant="secondary" 
-								onClick={() => setShowModal(false)}
-							>
+							<Button variant="secondary" onClick={() => setShowModal(false)}>
 								Fechar
 							</Button>
 						</div>

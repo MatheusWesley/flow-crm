@@ -5,9 +5,13 @@ import PresalesPage from './PresalesPage';
 describe('PresalesPage', () => {
 	it('renders presales page with main elements', () => {
 		render(<PresalesPage />);
-		expect(screen.getByRole('heading', { name: 'Pré-vendas', level: 1 })).toBeInTheDocument();
+		expect(
+			screen.getByRole('heading', { name: 'Pré-vendas', level: 1 }),
+		).toBeInTheDocument();
 		expect(screen.getByText('Nova Pré-venda')).toBeInTheDocument();
-		expect(screen.getByPlaceholderText('Buscar por cliente ou ID...')).toBeInTheDocument();
+		expect(
+			screen.getByPlaceholderText('Buscar por cliente ou ID...'),
+		).toBeInTheDocument();
 		expect(screen.getByText('Todos os Status')).toBeInTheDocument();
 	});
 
