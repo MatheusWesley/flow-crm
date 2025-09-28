@@ -1,3 +1,1 @@
-export { CustomerForm } from './CustomerForm';
-export { CustomerList } from './CustomerList';
-export { Customers } from './Customers';
+export { default as Customers } from './SimplifiedCustomers';

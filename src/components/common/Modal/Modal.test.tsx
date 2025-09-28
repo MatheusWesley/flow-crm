@@ -180,8 +180,8 @@ describe('Modal Component', () => {
 
 		render(
 			<Modal isOpen={true} onClose={mockOnClose} title="Test Modal">
-				<button>First Button</button>
-				<button>Second Button</button>
+				<button type="button">First Button</button>
+				<button type="button">Second Button</button>
 				<input placeholder="Input field" />
 			</Modal>,
 		);
@@ -213,8 +213,8 @@ describe('Modal Component', () => {
 
 		render(
 			<Modal isOpen={true} onClose={mockOnClose} title="Test Modal">
-				<button>First Button</button>
-				<button>Second Button</button>
+				<button type="button">First Button</button>
+				<button type="button">Second Button</button>
 			</Modal>,
 		);
 
@@ -236,7 +236,7 @@ describe('Modal Component', () => {
 				<div>
 					<h4>Custom Header</h4>
 					<p>Custom paragraph</p>
-					<button>Custom Button</button>
+					<button type="button">Custom Button</button>
 				</div>
 			</Modal>,
 		);

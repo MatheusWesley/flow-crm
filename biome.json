@@ -27,7 +27,8 @@
 				"noSvgWithoutTitle": "warn",
 				"useButtonType": "warn",
 				"noStaticElementInteractions": "warn",
-				"useKeyWithClickEvents": "warn"
+				"useKeyWithClickEvents": "warn",
+				"noLabelWithoutControl": "off"
 			}
 		}
 	},

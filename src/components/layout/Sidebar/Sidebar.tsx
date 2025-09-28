@@ -11,7 +11,7 @@ import {
 	Users,
 } from 'lucide-react';
 import type React from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { MenuItem } from '../../../types';
 
@@ -32,6 +32,15 @@ const Sidebar: React.FC<SidebarProps> = ({
 	const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 	const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
 
+	// Cleanup timeout on unmount
+	useEffect(() => {
+		return () => {
+			if (hoverTimeout) {
+				clearTimeout(hoverTimeout);
+			}
+		};
+	}, [hoverTimeout]);
+
 	const handleMouseEnter = (itemId: string) => {
 		if (isCollapsed) {
 			if (hoverTimeout) {
@@ -46,7 +55,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 		if (isCollapsed) {
 			const timeout = setTimeout(() => {
 				setHoveredItem(null);
-			}, 150);
+			}, 300);
 			setHoverTimeout(timeout);
 		}
 	};
@@ -56,15 +65,28 @@ const Sidebar: React.FC<SidebarProps> = ({
 		const path = location.pathname;
 		if (path === '/dashboard') return 'dashboard';
 		if (path === '/presales') return 'presales';
-		if (path.startsWith('/products')) return 'products';
-		if (path.startsWith('/customers')) return 'customers';
+		if (path === '/products') return 'products';
+		if (path === '/customers') return 'customers';
 		if (path === '/inventory') return 'inventory';
-		if (path.startsWith('/reports')) return 'reports';
 		if (path === '/settings') return 'settings';
 		return 'dashboard';
 	};
 
 	const activeItem = getActiveItem();
+
+	// Auto-expand parent menu if child is active
+	useEffect(() => {
+		const path = location.pathname;
+		if (path.startsWith('/products') && !expandedItems.includes('products')) {
+			setExpandedItems((prev) => [...prev, 'products']);
+		}
+		if (path.startsWith('/customers') && !expandedItems.includes('customers')) {
+			setExpandedItems((prev) => [...prev, 'customers']);
+		}
+		if (path.startsWith('/reports') && !expandedItems.includes('reports')) {
+			setExpandedItems((prev) => [...prev, 'reports']);
+		}
+	}, [location.pathname, expandedItems]);
 
 	// Menu items configuration
 	const menuItems: MenuItem[] = [
@@ -84,58 +106,19 @@ const Sidebar: React.FC<SidebarProps> = ({
 			id: 'products',
 			label: 'Produtos',
 			icon: 'Package',
-			children: [
-				{
-					id: 'products-list',
-					label: 'Lista de Produtos',
-					path: '/products',
-				},
-				{
-					id: 'products-add',
-					label: 'Cadastrar Produto',
-					path: '/products/add',
-				},
-			],
+			path: '/products',
 		},
 		{
 			id: 'customers',
 			label: 'Clientes',
 			icon: 'Users',
-			children: [
-				{
-					id: 'customers-list',
-					label: 'Lista de Clientes',
-					path: '/customers',
-				},
-				{
-					id: 'customers-add',
-					label: 'Cadastrar Cliente',
-					path: '/customers/add',
-				},
-			],
+			path: '/customers',
 		},
 		{
 			id: 'inventory',
 			label: 'Estoque',
 			icon: 'BarChart3',
 			path: '/inventory',
-		},
-		{
-			id: 'reports',
-			label: 'Relatórios',
-			icon: 'FileText',
-			children: [
-				{
-					id: 'reports-sales',
-					label: 'Relatório de Vendas',
-					path: '/reports/sales',
-				},
-				{
-					id: 'reports-inventory',
-					label: 'Relatório de Estoque',
-					path: '/reports/inventory',
-				},
-			],
 		},
 	];
 
@@ -213,41 +196,37 @@ const Sidebar: React.FC<SidebarProps> = ({
 		const isItemExpanded = isExpanded(item.id);
 		const isHovered = hoveredItem === item.id;
 		const isActive = activeItem === item.id;
+		const isParentActive =
+			hasChildren && item.children?.some((child) => activeItem === child.id);
 
 		return (
 			<div key={item.id} className="relative">
-				<div
-					className="relative"
-					onMouseEnter={() => handleMouseEnter(item.id)}
-					onMouseLeave={handleMouseLeave}
-				>
+				<div className="relative">
 					{/* Main menu item */}
-					<div
+					<button
+						type="button"
 						data-menu-id={item.id}
 						className={`
-                            group flex items-center px-4 py-3 mx-2 rounded-xl cursor-pointer 
+                            group flex items-center rounded-xl cursor-pointer 
                             transition-all duration-300 ease-in-out transform hover:scale-105
-                            ${level === 0 ? 'mb-1' : 'ml-4 mb-0.5'}
+                            ${level === 0 ? 'px-4 py-3 mx-2 mb-1' : 'px-4 py-2 mx-6 mb-0.5'}
                             ${
 															isActive && !hasChildren
 																? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25'
-																: hasChildren && isItemExpanded
-																	? 'bg-slate-800/50 text-blue-400'
-																	: 'text-slate-300 hover:bg-slate-800/50 hover:text-white'
+																: isActive && level > 0
+																	? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25'
+																	: hasChildren &&
+																			(isItemExpanded || isParentActive)
+																		? 'bg-slate-800/50 text-blue-400'
+																		: 'text-slate-300 hover:bg-slate-800/50 hover:text-white'
 														}
-                            ${isCollapsed && level === 0 ? 'justify-center px-3' : ''}
+                            ${isCollapsed && level === 0 ? 'justify-center px-3 mx-2' : ''}
                             ${level > 0 ? 'text-sm' : ''}
                         `}
-						role="button"
-						tabIndex={0}
 						aria-label={isCollapsed && level === 0 ? item.label : undefined}
 						onClick={() => handleItemClick(item)}
-						onKeyDown={(e) => {
-							if (e.key === 'Enter' || e.key === ' ') {
-								e.preventDefault();
-								handleItemClick(item);
-							}
-						}}
+						onMouseEnter={() => handleMouseEnter(item.id)}
+						onMouseLeave={handleMouseLeave}
 					>
 						{/* Icon */}
 						{level === 0 && (
@@ -265,7 +244,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 						{level > 0 && (
 							<div
 								className={`
-                            w-2 h-2 rounded-full mr-3 transition-all duration-300
+                            w-2 h-2 rounded-full mr-3 flex-shrink-0 transition-all duration-300
                             ${isActive ? 'bg-blue-400' : 'bg-slate-500 group-hover:bg-slate-300'}
                         `}
 							/>
@@ -306,14 +285,16 @@ const Sidebar: React.FC<SidebarProps> = ({
 
 						{/* Active indicator */}
 						{isActive && !hasChildren && !isCollapsed && (
-							<div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-white rounded-l-full" />
+							<div
+								className={`absolute right-0 top-1/2 transform -translate-y-1/2 w-1 bg-white rounded-l-full ${level === 0 ? 'h-8' : 'h-6'}`}
+							/>
 						)}
-					</div>
+					</button>
 
 					{/* Tooltip for collapsed state */}
 					{isCollapsed && level === 0 && isHovered && (
 						<div
-							className="absolute left-full top-0 ml-2 z-[9999] pointer-events-auto"
+							className="absolute left-full top-0 ml-2 z-[60] pointer-events-auto"
 							onMouseEnter={() => {
 								if (hoverTimeout) {
 									clearTimeout(hoverTimeout);
@@ -321,30 +302,35 @@ const Sidebar: React.FC<SidebarProps> = ({
 								}
 							}}
 							onMouseLeave={handleMouseLeave}
+							role="tooltip"
 						>
-							<div className="bg-gray-800 border border-gray-600 text-white rounded-lg shadow-lg py-2 min-w-48">
-								<div className="px-3 py-2 text-sm font-medium text-white border-b border-gray-600">
+							<div className="bg-slate-800 border border-slate-600 text-white rounded-lg shadow-xl py-2 min-w-48">
+								<div className="px-3 py-2 text-sm font-medium text-white border-b border-slate-600">
 									{item.label}
 								</div>
 								{hasChildren && item.children
 									? item.children.map((child) => (
 											<button
+												type="button"
 												key={child.id}
 												onClick={(e) => handleChildClick(child, e)}
-												className="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+												className="w-full text-left px-3 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors duration-200"
 											>
 												{child.label}
 											</button>
 										))
 									: item.path && (
 											<button
+												type="button"
 												onClick={(e) => handleChildClick(item, e)}
-												className="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+												className="w-full text-left px-3 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors duration-200"
 											>
 												Acessar {item.label}
 											</button>
 										)}
 							</div>
+							{/* Tooltip arrow */}
+							<div className="absolute left-0 top-4 transform -translate-x-1 w-2 h-2 bg-slate-800 border-l border-b border-slate-600 rotate-45" />
 						</div>
 					)}
 				</div>
@@ -357,7 +343,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                         ${isItemExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}
                     `}
 					>
-						<div className="ml-2 mt-1 space-y-1">
+						<div className="mt-1 space-y-1">
 							{item.children?.map((child) => renderMenuItem(child, level + 1))}
 						</div>
 					</div>
@@ -374,7 +360,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                 transition-all duration-300 ease-in-out
                 ${isCollapsed ? 'w-16' : 'w-64'}
                 ${className}
-                relative ${isCollapsed ? 'overflow-visible' : 'overflow-hidden'}
+                relative h-full flex flex-col
+                ${isCollapsed ? 'overflow-visible' : 'overflow-hidden'}
             `}
 		>
 			{/* Background decoration */}
@@ -386,6 +373,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 				{isCollapsed ? (
 					// Estado collapsed - apenas o ícone do carrinho
 					<button
+						type="button"
 						onClick={onToggleCollapse}
 						onKeyDown={(e) => {
 							if (e.key === 'Enter' || e.key === ' ') {
@@ -410,6 +398,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 							</h1>
 						</div>
 						<button
+							type="button"
 							onClick={onToggleCollapse}
 							onKeyDown={(e) => {
 								if (e.key === 'Enter' || e.key === ' ') {
@@ -431,16 +420,16 @@ const Sidebar: React.FC<SidebarProps> = ({
 
 			{/* Navigation */}
 			<div
-				className={`relative flex flex-col h-full ${isCollapsed ? 'overflow-visible' : ''}`}
+				className={`relative flex flex-col flex-1 ${isCollapsed ? 'overflow-visible' : 'overflow-hidden'}`}
 			>
 				<nav
-					className={`flex-1 py-4 space-y-1 ${isCollapsed ? 'overflow-visible' : ''}`}
+					className={`flex-1 py-4 ${isCollapsed ? 'overflow-visible' : 'overflow-y-auto'}`}
 				>
 					{menuItems.map((item) => renderMenuItem(item))}
 				</nav>
 
 				{/* Bottom menu */}
-				<div className="border-t border-slate-700/50 py-4 space-y-1">
+				<div className="border-t border-slate-700/50 py-4 flex-shrink-0">
 					{bottomMenuItems.map((item) => renderMenuItem(item))}
 				</div>
 
@@ -459,18 +448,20 @@ const Sidebar: React.FC<SidebarProps> = ({
 				{/* User section for collapsed state */}
 				{isCollapsed && (
 					<div className="border-t border-slate-700/50 p-4">
-						<div
-							className="relative"
-							onMouseEnter={() => handleMouseEnter('user')}
-							onMouseLeave={handleMouseLeave}
-						>
-							<div className="w-8 h-8 bg-slate-600 rounded-full flex items-center justify-center mx-auto cursor-pointer hover:bg-slate-500 transition-colors">
+						<div className="relative">
+							<button
+								type="button"
+								className="w-8 h-8 bg-slate-600 rounded-full flex items-center justify-center mx-auto cursor-pointer hover:bg-slate-500 transition-colors"
+								onMouseEnter={() => handleMouseEnter('user')}
+								onMouseLeave={handleMouseLeave}
+								aria-label="User menu"
+							>
 								<Users size={16} className="text-slate-300" />
-							</div>
+							</button>
 
 							{hoveredItem === 'user' && (
 								<div
-									className="absolute left-full bottom-0 ml-3 z-[9999]"
+									className="absolute left-full bottom-0 ml-3 z-[60] pointer-events-auto"
 									onMouseEnter={() => {
 										if (hoverTimeout) {
 											clearTimeout(hoverTimeout);
@@ -478,6 +469,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 										}
 									}}
 									onMouseLeave={handleMouseLeave}
+									role="tooltip"
 								>
 									<div className="bg-slate-800 border border-slate-700 text-white rounded-lg shadow-xl min-w-48">
 										<div className="px-3 py-2 text-sm border-b border-slate-600">
@@ -485,18 +477,20 @@ const Sidebar: React.FC<SidebarProps> = ({
 										</div>
 										<div className="py-2">
 											<button
+												type="button"
 												onClick={() => navigate('/settings')}
-												className="w-full text-left px-3 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors flex items-center gap-2"
+												className="w-full text-left px-3 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors duration-200 flex items-center gap-2"
 											>
 												<Settings size={16} />
 												Configurações
 											</button>
 											<button
+												type="button"
 												onClick={() => {
 													console.log('Logout clicked');
 													navigate('/dashboard');
 												}}
-												className="w-full text-left px-3 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors flex items-center gap-2"
+												className="w-full text-left px-3 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors duration-200 flex items-center gap-2"
 											>
 												<LogOut size={16} />
 												Sair

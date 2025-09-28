@@ -1,5 +1,5 @@
 import type React from 'react';
-import { forwardRef } from 'react';
+import { forwardRef, useId } from 'react';
 import type { InputProps } from '../../../types';
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
@@ -29,8 +29,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
 			onChange(e.target.value);
 		};
 
-		const inputId =
-			props.id || `input-${Math.random().toString(36).substring(2, 11)}`;
+		const generatedId = useId();
+		const inputId = props.id || generatedId;
 
 		return (
 			<div className="w-full">

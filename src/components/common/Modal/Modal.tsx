@@ -1,10 +1,11 @@
 import { X } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import type { ModalProps } from '../../../types';
 
 const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
 	const modalRef = useRef<HTMLDivElement>(null);
 	const previousFocusRef = useRef<HTMLElement | null>(null);
+	const modalTitleId = useId();
 
 	useEffect(() => {
 		if (isOpen) {
@@ -47,10 +48,8 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
 		};
 	}, [isOpen, onClose]);
 
-	const handleBackdropClick = (event: React.MouseEvent<HTMLDivElement>) => {
-		if (event.target === event.currentTarget) {
-			onClose();
-		}
+	const handleBackdropClick = () => {
+		onClose();
 	};
 
 	const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -90,18 +89,16 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
 	return (
 		<div
 			className="fixed inset-0 z-50 overflow-y-auto"
-			aria-labelledby="modal-title"
+			aria-labelledby={modalTitleId}
 			role="dialog"
 			aria-modal="true"
 		>
-			<div
-				className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
-				onClick={handleBackdropClick}
-			>
+			<div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
 				{/* Background overlay */}
 				<div
-					className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity duration-300 ease-out"
+					className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity duration-300 ease-out cursor-pointer"
 					aria-hidden="true"
+					onClick={handleBackdropClick}
 				/>
 
 				{/* This element is to trick the browser into centering the modal contents. */}
@@ -118,6 +115,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
 					className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all duration-300 ease-out sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6 animate-in fade-in-0 zoom-in-95"
 					onKeyDown={handleKeyDown}
 					tabIndex={-1}
+					role="dialog"
 				>
 					<div className="sm:flex sm:items-start">
 						<div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
@@ -125,7 +123,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
 							<div className="flex items-center justify-between mb-4">
 								<h3
 									className="text-lg leading-6 font-medium text-gray-900"
-									id="modal-title"
+									id={modalTitleId}
 								>
 									{title}
 								</h3>

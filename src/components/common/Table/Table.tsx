@@ -7,7 +7,8 @@ import {
 import { useMemo, useState } from 'react';
 import type { SortConfig, TableProps } from '../../../types';
 
-interface ExtendedTableProps<T = any> extends TableProps<T> {
+interface ExtendedTableProps<T = Record<string, unknown>>
+	extends TableProps<T> {
 	sortable?: boolean;
 	pagination?: boolean;
 	pageSize?: number;
@@ -15,7 +16,7 @@ interface ExtendedTableProps<T = any> extends TableProps<T> {
 	onSelectionChange?: (selectedRows: T[]) => void;
 }
 
-const Table = <T extends Record<string, any>>({
+const Table = <T extends Record<string, unknown>>({
 	columns,
 	data,
 	onRowClick,
@@ -38,10 +39,25 @@ const Table = <T extends Record<string, any>>({
 			const aValue = a[sortConfig.field];
 			const bValue = b[sortConfig.field];
 
-			if (aValue < bValue) {
+			// Handle null/undefined values
+			if (aValue == null && bValue == null) return 0;
+			if (aValue == null) return 1;
+			if (bValue == null) return -1;
+
+			// Convert to string for comparison if not primitive
+			const aStr =
+				typeof aValue === 'string' || typeof aValue === 'number'
+					? aValue
+					: String(aValue);
+			const bStr =
+				typeof bValue === 'string' || typeof bValue === 'number'
+					? bValue
+					: String(bValue);
+
+			if (aStr < bStr) {
 				return sortConfig.direction === 'asc' ? -1 : 1;
 			}
-			if (aValue > bValue) {
+			if (aStr > bStr) {
 				return sortConfig.direction === 'asc' ? 1 : -1;
 			}
 			return 0;
@@ -184,37 +200,45 @@ const Table = <T extends Record<string, any>>({
 								</td>
 							</tr>
 						) : (
-							paginatedData.map((row, index) => (
-								<tr
-									key={index}
-									className={`hover:bg-gray-50 ${onRowClick ? 'cursor-pointer' : ''} ${
-										selectedRows.has(index) ? 'bg-blue-50' : ''
-									}`}
-									onClick={() => onRowClick?.(row)}
-								>
-									{selectable && (
-										<td className="px-6 py-4 whitespace-nowrap">
-											<input
-												type="checkbox"
-												checked={selectedRows.has(index)}
-												onChange={() => handleRowSelection(index)}
-												onClick={(e) => e.stopPropagation()}
-												className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-											/>
-										</td>
-									)}
-									{columns.map((column) => (
-										<td
-											key={column.key as string}
-											className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
-										>
-											{column.render
-												? column.render(row[column.key], row)
-												: String(row[column.key] ?? '')}
-										</td>
-									))}
-								</tr>
-							))
+							paginatedData.map((row, index) => {
+								// Generate a unique key using row data or fallback to index
+								const rowKey =
+									typeof row === 'object' && row !== null && 'id' in row
+										? String(row.id)
+										: `row-${index}`;
+
+								return (
+									<tr
+										key={rowKey}
+										className={`hover:bg-gray-50 ${onRowClick ? 'cursor-pointer' : ''} ${
+											selectedRows.has(index) ? 'bg-blue-50' : ''
+										}`}
+										onClick={() => onRowClick?.(row)}
+									>
+										{selectable && (
+											<td className="px-6 py-4 whitespace-nowrap">
+												<input
+													type="checkbox"
+													checked={selectedRows.has(index)}
+													onChange={() => handleRowSelection(index)}
+													onClick={(e) => e.stopPropagation()}
+													className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+												/>
+											</td>
+										)}
+										{columns.map((column) => (
+											<td
+												key={column.key as string}
+												className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+											>
+												{column.render
+													? column.render(row[column.key], row)
+													: String(row[column.key] ?? '')}
+											</td>
+										))}
+									</tr>
+								);
+							})
 						)}
 					</tbody>
 				</table>
@@ -224,6 +248,7 @@ const Table = <T extends Record<string, any>>({
 				<div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
 					<div className="flex-1 flex justify-between sm:hidden">
 						<button
+							type="button"
 							onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
 							disabled={currentPage === 1}
 							className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -231,6 +256,7 @@ const Table = <T extends Record<string, any>>({
 							Previous
 						</button>
 						<button
+							type="button"
 							onClick={() =>
 								setCurrentPage((prev) => Math.min(prev + 1, totalPages))
 							}
@@ -260,6 +286,7 @@ const Table = <T extends Record<string, any>>({
 								aria-label="Pagination"
 							>
 								<button
+									type="button"
 									onClick={() =>
 										setCurrentPage((prev) => Math.max(prev - 1, 1))
 									}
@@ -273,6 +300,7 @@ const Table = <T extends Record<string, any>>({
 									(page) => (
 										<button
 											key={page}
+											type="button"
 											onClick={() => setCurrentPage(page)}
 											className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
 												page === currentPage
@@ -286,6 +314,7 @@ const Table = <T extends Record<string, any>>({
 								)}
 
 								<button
+									type="button"
 									onClick={() =>
 										setCurrentPage((prev) => Math.min(prev + 1, totalPages))
 									}

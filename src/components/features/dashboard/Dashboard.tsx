@@ -6,7 +6,7 @@ import {
 	Users,
 } from 'lucide-react';
 import type React from 'react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
 	type DashboardMetrics,
 	dashboardService,
@@ -36,7 +36,7 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
 
 	const [isRefreshing, setIsRefreshing] = useState(false);
 
-	const loadDashboardData = async () => {
+	const loadDashboardData = useCallback(async () => {
 		try {
 			// Load metrics
 			setLoadingStates((prev) => ({ ...prev, metrics: true }));
@@ -68,7 +68,7 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
 			}));
 			setLoadingStates((prev) => ({ ...prev, sales: false }));
 		}
-	};
+	}, []);
 
 	const handleRefresh = async () => {
 		setIsRefreshing(true);
@@ -78,7 +78,7 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
 
 	useEffect(() => {
 		loadDashboardData();
-	}, []);
+	}, [loadDashboardData]);
 
 	const metricsCards = metrics
 		? [
@@ -118,6 +118,7 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
 				</div>
 				<div className="mt-4 sm:mt-0 flex items-center space-x-4">
 					<button
+						type="button"
 						onClick={handleRefresh}
 						disabled={isRefreshing}
 						className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -135,9 +136,9 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
 
 			{/* KPI Cards Grid */}
 			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-				{metricsCards.map((card, index) => (
+				{metricsCards.map((card) => (
 					<MetricsCard
-						key={index}
+						key={card.title}
 						title={card.title}
 						value={card.value}
 						icon={card.icon}
@@ -169,15 +170,24 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
 							</h2>
 						</div>
 						<div className="p-6 space-y-3">
-							<button className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+							<button
+								type="button"
+								className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+							>
 								<ShoppingCart className="w-4 h-4 mr-2" />
 								Nova Venda
 							</button>
-							<button className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+							<button
+								type="button"
+								className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+							>
 								<Package className="w-4 h-4 mr-2" />
 								Cadastrar Produto
 							</button>
-							<button className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+							<button
+								type="button"
+								className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+							>
 								<Users className="w-4 h-4 mr-2" />
 								Cadastrar Cliente
 							</button>

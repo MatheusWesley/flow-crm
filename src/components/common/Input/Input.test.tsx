@@ -108,14 +108,7 @@ describe('Input Component', () => {
 
 	it('associates error message with input via aria-describedby', () => {
 		const handleChange = vi.fn();
-		render(
-			<Input
-				value=""
-				onChange={handleChange}
-				error="Invalid input"
-				id="test-input"
-			/>,
-		);
+		render(<Input value="" onChange={handleChange} error="Invalid input" />);
 
 		const input = screen.getByRole('textbox');
 		const errorMessage = screen.getByText('Invalid input');
@@ -195,14 +188,7 @@ describe('Input Component', () => {
 
 	it('maintains accessibility with label association', () => {
 		const handleChange = vi.fn();
-		render(
-			<Input
-				value=""
-				onChange={handleChange}
-				label="Email Address"
-				id="email"
-			/>,
-		);
+		render(<Input value="" onChange={handleChange} label="Email Address" />);
 
 		const label = screen.getByText('Email Address');
 		const input = screen.getByRole('textbox');

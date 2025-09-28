@@ -73,10 +73,7 @@ const SearchModal: React.FC<SearchModalProps> = ({
 	return (
 		<div className="fixed inset-0 z-50 overflow-y-auto">
 			{/* Backdrop */}
-			<div
-				className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
-				onClick={onClose}
-			/>
+			<div className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity" />
 
 			{/* Modal */}
 			<div className="flex min-h-full items-start justify-center p-4 pt-16">
@@ -125,9 +122,10 @@ const SearchModal: React.FC<SearchModalProps> = ({
 											Pesquisas recentes
 										</h3>
 										<div className="space-y-1">
-											{recentSearches.map((search, index) => (
+											{recentSearches.map((search) => (
 												<button
-													key={index}
+													key={search}
+													type="button"
 													onClick={() => handleSuggestionClick(search)}
 													className="
 														w-full text-left px-3 py-2 text-sm text-slate-300
@@ -148,9 +146,10 @@ const SearchModal: React.FC<SearchModalProps> = ({
 										Sugestões
 									</h3>
 									<div className="space-y-1">
-										{suggestions.map((suggestion, index) => (
+										{suggestions.map((suggestion) => (
 											<button
-												key={index}
+												key={suggestion}
+												type="button"
 												onClick={() => handleSuggestionClick(suggestion)}
 												className="
 													w-full text-left px-3 py-2 text-sm text-slate-300

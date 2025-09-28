@@ -36,6 +36,7 @@ const Button: React.FC<ButtonProps> = ({
 
 	return (
 		<button
+			type="button"
 			className={classes}
 			onClick={handleClick}
 			disabled={disabled || loading}
@@ -49,6 +50,7 @@ const Button: React.FC<ButtonProps> = ({
 					viewBox="0 0 24 24"
 					aria-label="Loading"
 				>
+					<title>Loading</title>
 					<circle
 						className="opacity-25"
 						cx="12"

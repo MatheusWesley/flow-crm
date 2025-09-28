@@ -69,7 +69,7 @@ const Layout: React.FC<LayoutProps> = ({
 			{/* Sidebar */}
 			<div
 				className={`
-          fixed top-0 left-0 h-full z-50 transition-transform duration-300 ease-in-out
+          fixed top-0 left-0 h-full z-40 transition-transform duration-300 ease-in-out
           ${
 						isMobile
 							? isMobileSidebarOpen
@@ -98,7 +98,7 @@ const Layout: React.FC<LayoutProps> = ({
 					title={title}
 					user={user}
 					onSearch={onSearch}
-					className="sticky top-0 z-30"
+					className="sticky top-0 z-20"
 				/>
 
 				{/* Page content */}
