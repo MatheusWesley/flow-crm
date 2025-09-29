@@ -3,6 +3,7 @@ import { LoginPage } from '../components/features/auth';
 import { Customers } from '../components/features/customers';
 import Dashboard from '../components/features/dashboard';
 import InventoryPage from '../components/features/inventory/InventoryPage';
+import { PaymentMethodsPage } from '../components/features/paymentMethods';
 import { Presales } from '../components/features/presales';
 import ProductsPage from '../components/features/products/ProductsPage';
 import Layout from '../components/layout/Layout';
@@ -81,6 +82,16 @@ export const router = createHashRouter([
 			<ProtectedRoute>
 				<LayoutWrapper title="Clientes">
 					<Customers />
+				</LayoutWrapper>
+			</ProtectedRoute>
+		),
+	},
+	{
+		path: '/payment-methods',
+		element: (
+			<ProtectedRoute>
+				<LayoutWrapper title="Formas de Pagamento">
+					<PaymentMethodsPage />
 				</LayoutWrapper>
 			</ProtectedRoute>
 		),

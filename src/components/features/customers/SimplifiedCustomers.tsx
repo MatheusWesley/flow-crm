@@ -5,7 +5,7 @@ import Button from '../../common/Button';
 import Input from '../../common/Input';
 
 type TabType = 'list' | 'register';
-type SubTabType = 'personal' | 'contact' | 'address';
+// All fields are now consolidated into a single form - no subtabs needed
 
 // Mock customer data interface for the component
 interface MockCustomer {
@@ -20,7 +20,6 @@ interface MockCustomer {
 
 const SimplifiedCustomers: React.FC = () => {
 	const [activeTab, setActiveTab] = useState<TabType>('list');
-	const [activeSubTab, setActiveSubTab] = useState<SubTabType>('personal');
 	const [customers] = useState<MockCustomer[]>([
 		{
 			id: '1',
@@ -44,11 +43,10 @@ const SimplifiedCustomers: React.FC = () => {
 
 	const [formData, setFormData] = useState({
 		name: '',
+		cpf: '',
 		email: '',
 		phone: '',
-		cpf: '',
-		city: '',
-		state: '',
+		address: '',
 	});
 
 	const [errors, setErrors] = useState<Record<string, string>>({});
@@ -113,11 +111,10 @@ const SimplifiedCustomers: React.FC = () => {
 			// Reset form after submit
 			setFormData({
 				name: '',
+				cpf: '',
 				email: '',
 				phone: '',
-				cpf: '',
-				city: '',
-				state: '',
+				address: '',
 			});
 			setErrors({});
 		}
@@ -185,10 +182,13 @@ const SimplifiedCustomers: React.FC = () => {
 			);
 		}
 
-		const renderSubTabContent = () => {
-			if (activeSubTab === 'personal') {
-				return (
+		// Register tab: consolidated form with all fields
+		return (
+			<form onSubmit={handleSubmit} className="space-y-8">
+				<div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+					<h3 className="text-lg font-medium text-gray-900 mb-6">Informações Pessoais</h3>
 					<div className="space-y-6">
+						{/* First row: Name and CPF */}
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 							<Input
 								label="Nome Completo*"
@@ -200,7 +200,7 @@ const SimplifiedCustomers: React.FC = () => {
 							/>
 
 							<Input
-								label="CPF*"
+								label="CPF/CNPJ*"
 								value={formData.cpf}
 								onChange={handleInputChange('cpf')}
 								placeholder="000.000.000-00"
@@ -209,16 +209,11 @@ const SimplifiedCustomers: React.FC = () => {
 								required
 							/>
 						</div>
-					</div>
-				);
-			}
 
-			if (activeSubTab === 'contact') {
-				return (
-					<div className="space-y-6">
+						{/* Second row: Email and Phone */}
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 							<Input
-								label="Email*"
+								label="E-mail*"
 								type="email"
 								value={formData.email}
 								onChange={handleInputChange('email')}
@@ -237,108 +232,42 @@ const SimplifiedCustomers: React.FC = () => {
 								required
 							/>
 						</div>
-					</div>
-				);
-			}
 
-			if (activeSubTab === 'address') {
-				return (
-					<div className="space-y-6">
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+						{/* Third row: Address */}
+						<div>
 							<Input
-								label="Cidade"
-								value={formData.city}
-								onChange={handleInputChange('city')}
-								placeholder="Ex: São Paulo"
-							/>
-
-							<Input
-								label="Estado"
-								value={formData.state}
-								onChange={handleInputChange('state')}
-								placeholder="Ex: SP"
-								maxLength={2}
+								label="Endereço"
+								value={formData.address}
+								onChange={handleInputChange('address')}
+								placeholder="Rua, número, bairro, cidade - UF"
 							/>
 						</div>
 					</div>
-				);
-			}
-
-			return null;
-		};
-
-		return (
-			<div className="w-full">
-				{/* Sub Tabs */}
-				<div className="mb-6">
-					<div className="border-b border-gray-200">
-						<nav className="-mb-px flex space-x-8" aria-label="Sub Tabs">
-							<button
-								onClick={() => setActiveSubTab('personal')}
-								className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
-									activeSubTab === 'personal'
-										? 'border-blue-500 text-blue-600'
-										: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-								}`}
-							>
-								Informações Pessoais
-							</button>
-							<button
-								onClick={() => setActiveSubTab('contact')}
-								className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
-									activeSubTab === 'contact'
-										? 'border-blue-500 text-blue-600'
-										: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-								}`}
-							>
-								Informações de Contato
-							</button>
-							<button
-								onClick={() => setActiveSubTab('address')}
-								className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
-									activeSubTab === 'address'
-										? 'border-blue-500 text-blue-600'
-										: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-								}`}
-							>
-								Endereço
-							</button>
-						</nav>
-					</div>
 				</div>
 
-				<form onSubmit={handleSubmit} className="space-y-8">
-					{/* Sub Tab Content */}
-					<div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-						{renderSubTabContent()}
-					</div>
-
-					{/* Botões de Ação */}
-					<div className="flex justify-end space-x-3">
-						<Button
-							type="button"
-							variant="secondary"
-							onClick={() => {
-								setFormData({
-									name: '',
-									email: '',
-									phone: '',
-									cpf: '',
-									city: '',
-									state: '',
-								});
-								setErrors({});
-								setActiveSubTab('personal');
-							}}
-						>
-							Limpar
-						</Button>
-						<Button type="submit" variant="primary">
-							Cadastrar Cliente
-						</Button>
-					</div>
-				</form>
-			</div>
+				{/* Botões de Ação */}
+				<div className="flex justify-end space-x-3">
+					<Button
+						type="button"
+						variant="secondary"
+						onClick={() => {
+							setFormData({
+								name: '',
+								cpf: '',
+								email: '',
+								phone: '',
+								address: '',
+							});
+							setErrors({});
+						}}
+					>
+						Limpar
+					</Button>
+					<Button type="submit" variant="primary">
+						Cadastrar Cliente
+					</Button>
+				</div>
+			</form>
 		);
 	};
 

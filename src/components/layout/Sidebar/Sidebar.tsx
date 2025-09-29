@@ -2,6 +2,7 @@ import {
 	BarChart3,
 	ChevronDown,
 	ChevronLeft,
+	CreditCard,
 	FileText,
 	Home,
 	LogOut,
@@ -67,6 +68,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 		if (path === '/presales') return 'presales';
 		if (path === '/products') return 'products';
 		if (path === '/customers') return 'customers';
+		if (path === '/payment-methods') return 'payment-methods';
 		if (path === '/inventory') return 'inventory';
 		if (path === '/settings') return 'settings';
 		return 'dashboard';
@@ -81,6 +83,9 @@ const Sidebar: React.FC<SidebarProps> = ({
 			setExpandedItems((prev) => [...prev, 'cadastros']);
 		}
 		if (path.startsWith('/customers') && !expandedItems.includes('cadastros')) {
+			setExpandedItems((prev) => [...prev, 'cadastros']);
+		}
+		if (path.startsWith('/payment-methods') && !expandedItems.includes('cadastros')) {
 			setExpandedItems((prev) => [...prev, 'cadastros']);
 		}
 		if (path.startsWith('/reports') && !expandedItems.includes('reports')) {
@@ -112,6 +117,12 @@ const Sidebar: React.FC<SidebarProps> = ({
 					label: 'Clientes',
 					icon: 'Users',
 					path: '/customers',
+				},
+				{
+					id: 'payment-methods',
+					label: 'Formas de Pagamento',
+					icon: 'CreditCard',
+					path: '/payment-methods',
 				},
 			],
 		},
@@ -161,6 +172,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 		FileText,
 		Settings,
 		LogOut,
+		CreditCard,
 	};
 
 	const toggleExpanded = (itemId: string) => {

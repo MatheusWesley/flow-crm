@@ -40,6 +40,12 @@ export interface Customer extends BaseEntity {
 	email: string;
 	phone: string;
 	cpf: string;
+	address?: string;
+}
+
+export interface PaymentMethod extends BaseEntity {
+	code: string;
+	description: string;
 }
 
 export interface PreSale extends BaseEntity {

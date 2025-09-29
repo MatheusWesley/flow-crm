@@ -1,15 +1,21 @@
 import type React from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Product } from '../../../types';
+import { AutoCodeService, PriceCalculationService } from '../../../utils';
 import Button from '../../common/Button';
+import type { CheckboxOption } from '../../common/CheckboxGroup';
+import CheckboxGroup from '../../common/CheckboxGroup';
 import Input from '../../common/Input';
+import type { SelectOption } from '../../common/Select';
+import Select from '../../common/Select';
 
 type TabType = 'list' | 'register';
-type SubTabType = 'basic' | 'control' | 'prices';
+type SubTabType = 'basic' | 'pricesStock';
 
 const ProductsPage: React.FC = () => {
 	const [activeTab, setActiveTab] = useState<TabType>('list');
 	const [activeSubTab, setActiveSubTab] = useState<SubTabType>('basic');
+
 	const [products] = useState<Product[]>([
 		{
 			id: '1',
@@ -41,11 +47,39 @@ const ProductsPage: React.FC = () => {
 		},
 	]);
 
+	// Initialize auto code service with existing product codes
+	useEffect(() => {
+		const existingCodes = products.map((p) => p.code);
+		AutoCodeService.initializeFromExisting('product', existingCodes);
+	}, [products]);
+
+	// Options for dropdowns
+	const unitOptions: SelectOption[] = [
+		{ value: 'pc', label: 'Peça (PC)' },
+		{ value: 'un', label: 'Unidade (UN)' },
+		{ value: 'kg', label: 'Quilograma (KG)' },
+		{ value: 'g', label: 'Grama (G)' },
+		{ value: 'l', label: 'Litro (L)' },
+	];
+
+	const saleTypeOptions: CheckboxOption[] = [
+		{
+			value: 'unit',
+			label: 'Venda por Unidade',
+			description: 'Produto vendido em unidades inteiras',
+		},
+		{
+			value: 'fractional',
+			label: 'Venda Fracionada',
+			description: 'Produto vendido em frações (peso, volume, etc.)',
+		},
+	];
+
 	const [formData, setFormData] = useState({
 		code: '',
 		name: '',
 		description: '',
-		unit: 'pc',
+		unit: 'un',
 		stock: '',
 		saleType: 'unit' as 'unit' | 'fractional',
 		purchasePrice: '',
@@ -53,7 +87,33 @@ const ProductsPage: React.FC = () => {
 	});
 
 	const handleInputChange = (field: string) => (value: string) => {
-		setFormData((prev) => ({ ...prev, [field]: value }));
+		setFormData((prev) => {
+			const updated = { ...prev, [field]: value };
+
+			// Auto-suggest sale price when purchase price changes
+			if (field === 'purchasePrice' && value) {
+				const purchasePrice = PriceCalculationService.parsePrice(value);
+				if (purchasePrice > 0) {
+					const suggestedPrice =
+						PriceCalculationService.calculateSuggestedPrice(purchasePrice);
+					// Only auto-fill if sale price is empty
+					if (!prev.salePrice) {
+						updated.salePrice = suggestedPrice.toFixed(2);
+					}
+				}
+			}
+
+			return updated;
+		});
+	};
+
+	// Generate new product code when switching to register tab
+	const handleTabChange = (tab: TabType) => {
+		setActiveTab(tab);
+		if (tab === 'register' && !formData.code) {
+			const newCode = AutoCodeService.generateCode('product');
+			setFormData((prev) => ({ ...prev, code: newCode }));
+		}
 	};
 
 	const handleSubmit = (e: React.FormEvent) => {
@@ -155,12 +215,15 @@ const ProductsPage: React.FC = () => {
 			if (activeSubTab === 'basic') {
 				return (
 					<div className="space-y-6">
+						{/* First row: Code and Product Name */}
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 							<Input
 								label="Código*"
 								value={formData.code}
 								onChange={handleInputChange('code')}
-								placeholder="Digite o código do produto"
+								placeholder="Código auto-gerado"
+								readOnly
+								className="w-1/3"
 								required
 							/>
 
@@ -171,32 +234,31 @@ const ProductsPage: React.FC = () => {
 								placeholder="Digite o nome do produto"
 								required
 							/>
-
-							<div>
-								<label className="block text-sm font-medium text-gray-700 mb-1">
-									Unid. de Medida*
-								</label>
-								<select
-									value={formData.unit}
-									onChange={(e) => handleInputChange('unit')(e.target.value)}
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-									required
-								>
-									<option value="">Selecione</option>
-									<option value="pc">Peça (pc)</option>
-									<option value="un">Unidade (un)</option>
-									<option value="kg">Quilograma (kg)</option>
-									<option value="g">Grama (g)</option>
-									<option value="l">Litro (l)</option>
-									<option value="ml">Mililitro (ml)</option>
-									<option value="m">Metro (m)</option>
-									<option value="cm">Centímetro (cm)</option>
-									
-
-								</select>
-							</div>
 						</div>
 
+						{/* Second row: Unit and Sale Type */}
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+							<Select
+								label="Unidade de Medida*"
+								value={formData.unit}
+								onChange={handleInputChange('unit')}
+								options={unitOptions}
+								placeholder="Selecione a unidade"
+								size="sm"
+								required
+							/>
+
+							<CheckboxGroup
+								label="Tipo de Venda*"
+								value={formData.saleType}
+								onChange={handleInputChange('saleType')}
+								options={saleTypeOptions}
+								direction="horizontal"
+								required
+							/>
+						</div>
+
+						{/* Description */}
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-2">
 								Descrição (Opcional)
@@ -215,79 +277,65 @@ const ProductsPage: React.FC = () => {
 				);
 			}
 
-			if (activeSubTab === 'control') {
+			if (activeSubTab === 'pricesStock') {
 				return (
 					<div className="space-y-6">
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-							<Input
-								label="Estoque Atual*"
-								type="number"
-								value={formData.stock}
-								onChange={handleInputChange('stock')}
-								placeholder="0"
-								min="0"
-								required
-							/>
+						{/* Prices Section */}
+						<div>
+							<h3 className="text-lg font-medium text-gray-900 mb-4">Preços</h3>
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+								<Input
+									label="Preço de Compra*"
+									type="number"
+									step="0.01"
+									value={formData.purchasePrice}
+									onChange={handleInputChange('purchasePrice')}
+									placeholder="0,00"
+									min="0"
+									required
+								/>
 
-							<div>
-								<label className="block text-sm font-medium text-gray-700 mb-3">
-									Tipo de Venda*
-								</label>
-								<div className="flex gap-4">
-									<button
-										type="button"
-										onClick={() => handleInputChange('saleType')('unit')}
-										className={`px-6 py-3 rounded-lg font-medium transition-colors ${
-											formData.saleType === 'unit'
-												? 'bg-blue-600 text-white'
-												: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-										}`}
-									>
-										Venda por Unidade
-									</button>
-									<button
-										type="button"
-										onClick={() => handleInputChange('saleType')('fractional')}
-										className={`px-6 py-3 rounded-lg font-medium transition-colors ${
-											formData.saleType === 'fractional'
-												? 'bg-blue-600 text-white'
-												: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-										}`}
-									>
-										Venda Fracionada
-									</button>
+								<div className="relative">
+									<Input
+										label="Preço de Venda*"
+										type="number"
+										step="0.01"
+										value={formData.salePrice}
+										onChange={handleInputChange('salePrice')}
+										placeholder="0,00"
+										min="0"
+										required
+									/>
+									{formData.purchasePrice && (
+										<p className="text-xs text-gray-500 mt-1">
+											Sugestão: R${' '}
+											{PriceCalculationService.calculateSuggestedPrice(
+												PriceCalculationService.parsePrice(
+													formData.purchasePrice,
+												),
+											).toFixed(2)}
+										</p>
+									)}
 								</div>
 							</div>
 						</div>
-					</div>
-				);
-			}
 
-			if (activeSubTab === 'prices') {
-				return (
-					<div className="space-y-6">
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-							<Input
-								label="Preço de Compra*"
-								type="number"
-								step="0.01"
-								value={formData.purchasePrice}
-								onChange={handleInputChange('purchasePrice')}
-								placeholder="0,00"
-								min="0"
-								required
-							/>
-
-							<Input
-								label="Preço de Venda*"
-								type="number"
-								step="0.01"
-								value={formData.salePrice}
-								onChange={handleInputChange('salePrice')}
-								placeholder="0,00"
-								min="0"
-								required
-							/>
+						{/* Stock Section */}
+						<div>
+							<h3 className="text-lg font-medium text-gray-900 mb-4">
+								Estoque
+							</h3>
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+								<Input
+									label="Estoque Inicial*"
+									type="number"
+									value={formData.stock}
+									onChange={handleInputChange('stock')}
+									placeholder="0"
+									min="0"
+									required
+								/>
+							</div>
 						</div>
 					</div>
 				);
@@ -315,25 +363,14 @@ const ProductsPage: React.FC = () => {
 							</button>
 							<button
 								type="button"
-								onClick={() => setActiveSubTab('control')}
+								onClick={() => setActiveSubTab('pricesStock')}
 								className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
-									activeSubTab === 'control'
+									activeSubTab === 'pricesStock'
 										? 'border-blue-500 text-blue-600'
 										: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
 								}`}
 							>
-								Controle e Tipo de Venda
-							</button>
-							<button
-								type="button"
-								onClick={() => setActiveSubTab('prices')}
-								className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
-									activeSubTab === 'prices'
-										? 'border-blue-500 text-blue-600'
-										: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-								}`}
-							>
-								Preços
+								Preços e Estoque
 							</button>
 						</nav>
 					</div>
@@ -385,7 +422,7 @@ const ProductsPage: React.FC = () => {
 					<nav className="-mb-px flex space-x-8" aria-label="Tabs">
 						<button
 							type="button"
-							onClick={() => setActiveTab('list')}
+							onClick={() => handleTabChange('list')}
 							className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
 								activeTab === 'list'
 									? 'border-blue-500 text-blue-600'
@@ -396,7 +433,7 @@ const ProductsPage: React.FC = () => {
 						</button>
 						<button
 							type="button"
-							onClick={() => setActiveTab('register')}
+							onClick={() => handleTabChange('register')}
 							className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
 								activeTab === 'register'
 									? 'border-blue-500 text-blue-600'
