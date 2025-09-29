@@ -1,4 +1,4 @@
-import { Bell, ChevronDown, LogOut, Search, X } from 'lucide-react';
+import { ChevronDown, LogOut, Search, X } from 'lucide-react';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
@@ -98,6 +98,7 @@ const Header: React.FC<HeaderProps> = ({
 					<div className="flex items-center space-x-3">
 						{/* Search button */}
 						<button
+							type="button"
 							onClick={handleSearchClick}
 							className="
 								flex items-center space-x-2 px-3 py-2 text-slate-300 
@@ -117,20 +118,11 @@ const Header: React.FC<HeaderProps> = ({
 							</kbd>
 						</button>
 
-						{/* Notifications */}
-						<button
-							className="relative p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800/50 transition-all duration-300 hover:scale-110"
-							aria-label="Notifications"
-						>
-							<Bell className="h-4 w-4" />
-							{/* Notification badge */}
-							<span className="absolute top-1 right-1 block h-2 w-2 rounded-full bg-gradient-to-r from-red-500 to-red-600 shadow-lg shadow-red-500/25"></span>
-						</button>
-
 						{/* User menu */}
 						{user && (
 							<div className="relative">
 								<button
+									type="button"
 									onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
 									className="flex items-center space-x-2 p-2 text-slate-300 hover:text-white rounded-xl hover:bg-slate-800/50 transition-all duration-300 hover:scale-105"
 									aria-label="User menu"
@@ -158,7 +150,8 @@ const Header: React.FC<HeaderProps> = ({
 								{isUserMenuOpen && (
 									<>
 										{/* Backdrop */}
-										<div
+										<button
+											type="button"
 											className="fixed inset-0 z-40"
 											onClick={() => setIsUserMenuOpen(false)}
 										/>
@@ -174,6 +167,7 @@ const Header: React.FC<HeaderProps> = ({
 											{/* Header */}
 											<div className="relative bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 px-4 py-4 text-center">
 												<button
+													type="button"
 													onClick={() => setIsUserMenuOpen(false)}
 													className="absolute top-3 right-3 p-1 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
 												>
@@ -207,6 +201,7 @@ const Header: React.FC<HeaderProps> = ({
 											{/* Account Management Button */}
 											<div className="px-4 py-3">
 												<button
+													type="button"
 													className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg text-slate-900 dark:text-white text-sm font-medium transition-colors border border-slate-200 dark:border-slate-600"
 													onClick={() => setIsUserMenuOpen(false)}
 												>
@@ -217,6 +212,7 @@ const Header: React.FC<HeaderProps> = ({
 											{/* Menu Items */}
 											<div className="border-t border-slate-200 dark:border-slate-700">
 												<button
+													type="button"
 													className="flex items-center w-full text-left px-4 py-2.5 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm"
 													onClick={handleLogout}
 													title="Sair do sistema"

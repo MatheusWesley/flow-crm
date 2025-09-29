@@ -77,11 +77,11 @@ const Sidebar: React.FC<SidebarProps> = ({
 	// Auto-expand parent menu if child is active
 	useEffect(() => {
 		const path = location.pathname;
-		if (path.startsWith('/products') && !expandedItems.includes('products')) {
-			setExpandedItems((prev) => [...prev, 'products']);
+		if (path.startsWith('/products') && !expandedItems.includes('cadastros')) {
+			setExpandedItems((prev) => [...prev, 'cadastros']);
 		}
-		if (path.startsWith('/customers') && !expandedItems.includes('customers')) {
-			setExpandedItems((prev) => [...prev, 'customers']);
+		if (path.startsWith('/customers') && !expandedItems.includes('cadastros')) {
+			setExpandedItems((prev) => [...prev, 'cadastros']);
 		}
 		if (path.startsWith('/reports') && !expandedItems.includes('reports')) {
 			setExpandedItems((prev) => [...prev, 'reports']);
@@ -97,28 +97,41 @@ const Sidebar: React.FC<SidebarProps> = ({
 			path: '/dashboard',
 		},
 		{
+			id: 'cadastros',
+			label: 'Cadastros',
+			icon: 'FileText',
+			children: [
+				{
+					id: 'products',
+					label: 'Produtos',
+					icon: 'Package',
+					path: '/products',
+				},
+				{
+					id: 'customers',
+					label: 'Clientes',
+					icon: 'Users',
+					path: '/customers',
+				},
+			],
+		},
+		{
 			id: 'presales',
-			label: 'Pré-vendas',
+			label: 'Pré-Vendas',
 			icon: 'ShoppingCart',
 			path: '/presales',
-		},
-		{
-			id: 'products',
-			label: 'Produtos',
-			icon: 'Package',
-			path: '/products',
-		},
-		{
-			id: 'customers',
-			label: 'Clientes',
-			icon: 'Users',
-			path: '/customers',
 		},
 		{
 			id: 'inventory',
 			label: 'Estoque',
 			icon: 'BarChart3',
 			path: '/inventory',
+		},
+		{
+			id: 'reports',
+			label: 'Relatórios',
+			icon: 'FileText',
+			path: '/reports',
 		},
 	];
 
@@ -294,7 +307,10 @@ const Sidebar: React.FC<SidebarProps> = ({
 					{/* Tooltip for collapsed state */}
 					{isCollapsed && level === 0 && isHovered && (
 						<div
-							className="absolute left-full top-0 ml-2 z-[60] pointer-events-auto"
+							className={`
+								absolute left-full ml-2 z-[60] pointer-events-auto
+								${item.id === 'logout' || item.id === 'settings' ? 'bottom-0' : 'top-0'}
+							`}
 							onMouseEnter={() => {
 								if (hoverTimeout) {
 									clearTimeout(hoverTimeout);
@@ -330,7 +346,10 @@ const Sidebar: React.FC<SidebarProps> = ({
 										)}
 							</div>
 							{/* Tooltip arrow */}
-							<div className="absolute left-0 top-4 transform -translate-x-1 w-2 h-2 bg-slate-800 border-l border-b border-slate-600 rotate-45" />
+							<div className={`
+								absolute w-2 h-2 bg-slate-800 border-l border-b border-slate-600 rotate-45
+								${item.id === 'logout' || item.id === 'settings' ? 'left-0 bottom-4 transform -translate-x-1' : 'left-0 top-4 transform -translate-x-1'}
+							`} />
 						</div>
 					)}
 				</div>
@@ -432,78 +451,6 @@ const Sidebar: React.FC<SidebarProps> = ({
 				<div className="border-t border-slate-700/50 py-4 flex-shrink-0">
 					{bottomMenuItems.map((item) => renderMenuItem(item))}
 				</div>
-
-				{/* User section for expanded state */}
-				{!isCollapsed && (
-					<div className="border-t border-slate-700/50 p-4">
-						<div className="flex items-center space-x-3 mb-3">
-							<div className="w-8 h-8 bg-slate-600 rounded-full flex items-center justify-center">
-								<Users size={16} className="text-slate-300" />
-							</div>
-							<span className="text-sm text-slate-300">Bem vindo, Usuário</span>
-						</div>
-					</div>
-				)}
-
-				{/* User section for collapsed state */}
-				{isCollapsed && (
-					<div className="border-t border-slate-700/50 p-4">
-						<div className="relative">
-							<button
-								type="button"
-								className="w-8 h-8 bg-slate-600 rounded-full flex items-center justify-center mx-auto cursor-pointer hover:bg-slate-500 transition-colors"
-								onMouseEnter={() => handleMouseEnter('user')}
-								onMouseLeave={handleMouseLeave}
-								aria-label="User menu"
-							>
-								<Users size={16} className="text-slate-300" />
-							</button>
-
-							{hoveredItem === 'user' && (
-								<div
-									className="absolute left-full bottom-0 ml-3 z-[60] pointer-events-auto"
-									onMouseEnter={() => {
-										if (hoverTimeout) {
-											clearTimeout(hoverTimeout);
-											setHoverTimeout(null);
-										}
-									}}
-									onMouseLeave={handleMouseLeave}
-									role="tooltip"
-								>
-									<div className="bg-slate-800 border border-slate-700 text-white rounded-lg shadow-xl min-w-48">
-										<div className="px-3 py-2 text-sm border-b border-slate-600">
-											Bem vindo, Usuário
-										</div>
-										<div className="py-2">
-											<button
-												type="button"
-												onClick={() => navigate('/settings')}
-												className="w-full text-left px-3 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors duration-200 flex items-center gap-2"
-											>
-												<Settings size={16} />
-												Configurações
-											</button>
-											<button
-												type="button"
-												onClick={() => {
-													console.log('Logout clicked');
-													navigate('/dashboard');
-												}}
-												className="w-full text-left px-3 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors duration-200 flex items-center gap-2"
-											>
-												<LogOut size={16} />
-												Sair
-											</button>
-										</div>
-										{/* Tooltip arrow */}
-										<div className="absolute left-0 bottom-4 transform -translate-x-1 w-2 h-2 bg-slate-800 border-l border-b border-slate-700 rotate-45" />
-									</div>
-								</div>
-							)}
-						</div>
-					</div>
-				)}
 			</div>
 
 			{/* Bottom decoration */}
