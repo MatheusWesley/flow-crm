@@ -57,3 +57,8 @@ export const generateProductCode = (): string => {
 	const random = Math.random().toString(36).substr(2, 3).toUpperCase();
 	return `PRD${timestamp}${random}`;
 };
+
+// Export new services
+export { default as AutoCodeService } from './autoCodeService';
+export { default as PriceCalculationService } from './priceCalculationService';
+export type { PriceCalculationConfig } from './priceCalculationService';

@@ -1,0 +1,71 @@
+// Auto code generation service for products, payment methods, etc.
+
+interface CodeConfig {
+  prefix: string;
+  currentCount: number;
+  padLength: number;
+}
+
+class AutoCodeService {
+  private static configs: Record<string, CodeConfig> = {
+    product: { prefix: 'PRD', currentCount: 0, padLength: 3 },
+    paymentMethod: { prefix: 'PAG', currentCount: 0, padLength: 3 },
+  };
+
+  /**
+   * Generate next code for a given entity type
+   */
+  static generateCode(entityType: keyof typeof AutoCodeService.configs): string {
+    const config = this.configs[entityType];
+    if (!config) {
+      throw new Error(`Entity type ${entityType} not configured`);
+    }
+
+    config.currentCount += 1;
+    const paddedNumber = config.currentCount.toString().padStart(config.padLength, '0');
+    return `${config.prefix}${paddedNumber}`;
+  }
+
+  /**
+   * Set the current count for an entity type (useful for initialization)
+   */
+  static setCurrentCount(entityType: keyof typeof AutoCodeService.configs, count: number): void {
+    const config = this.configs[entityType];
+    if (config) {
+      config.currentCount = count;
+    }
+  }
+
+  /**
+   * Get the next code without incrementing the counter
+   */
+  static previewNextCode(entityType: keyof typeof AutoCodeService.configs): string {
+    const config = this.configs[entityType];
+    if (!config) {
+      throw new Error(`Entity type ${entityType} not configured`);
+    }
+
+    const nextCount = config.currentCount + 1;
+    const paddedNumber = nextCount.toString().padStart(config.padLength, '0');
+    return `${config.prefix}${paddedNumber}`;
+  }
+
+  /**
+   * Initialize count based on existing data (e.g., on app startup)
+   */
+  static initializeFromExisting(entityType: keyof typeof AutoCodeService.configs, existingCodes: string[]): void {
+    const config = this.configs[entityType];
+    if (!config) return;
+
+    // Extract numbers from existing codes and find the highest one
+    const numbers = existingCodes
+      .filter(code => code.startsWith(config.prefix))
+      .map(code => parseInt(code.replace(config.prefix, ''), 10))
+      .filter(num => !isNaN(num));
+
+    const maxNumber = numbers.length > 0 ? Math.max(...numbers) : 0;
+    this.setCurrentCount(entityType, maxNumber);
+  }
+}
+
+export default AutoCodeService;
