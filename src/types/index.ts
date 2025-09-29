@@ -48,7 +48,6 @@ export interface PreSale extends BaseEntity {
 	total: number;
 	status: 'draft' | 'pending' | 'approved' | 'cancelled' | 'converted';
 	notes?: string;
-	validUntil?: Date;
 	discount?: number;
 	discountType?: 'percentage' | 'fixed';
 	salesperson?: string;
