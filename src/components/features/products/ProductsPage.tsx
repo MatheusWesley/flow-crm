@@ -184,12 +184,15 @@ const ProductsPage: React.FC = () => {
 								>
 									<option value="">Selecione</option>
 									<option value="pc">Peça (pc)</option>
+									<option value="un">Unidade (un)</option>
 									<option value="kg">Quilograma (kg)</option>
 									<option value="g">Grama (g)</option>
 									<option value="l">Litro (l)</option>
 									<option value="ml">Mililitro (ml)</option>
 									<option value="m">Metro (m)</option>
 									<option value="cm">Centímetro (cm)</option>
+									
+
 								</select>
 							</div>
 						</div>
