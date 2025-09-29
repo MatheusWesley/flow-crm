@@ -57,7 +57,6 @@ const PresalesPageDebug: React.FC = () => {
 			total: 59.98,
 			status: 'pending',
 			notes: 'Entrega urgente solicitada',
-			validUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
 			salesperson: 'Vendedor A',
 			createdAt: new Date('2024-01-15'),
 			updatedAt: new Date('2024-01-15'),
