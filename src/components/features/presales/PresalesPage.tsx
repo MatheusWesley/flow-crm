@@ -697,6 +697,7 @@ const PresalesPage: React.FC = () => {
 													Produto
 												</label>
 												<select
+													id={`product-select-${index}`}
 													value={item.product.id}
 													onChange={(e) => {
 														const product = products.find(
@@ -709,6 +710,16 @@ const PresalesPage: React.FC = () => {
 																'unitPrice',
 																product.salePrice,
 															);
+														}
+													}}
+													onKeyDown={(e) => {
+														if (e.key === 'Enter') {
+															e.preventDefault();
+															const quantityInput = document.getElementById(`quantity-input-${index}`);
+															if (quantityInput) {
+																quantityInput.focus();
+																quantityInput.select();
+															}
 														}
 													}}
 													className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
@@ -725,6 +736,7 @@ const PresalesPage: React.FC = () => {
 													Quantidade
 												</label>
 												<input
+													id={`quantity-input-${index}`}
 													type="number"
 													step="0.01"
 													min="0.01"
@@ -736,6 +748,16 @@ const PresalesPage: React.FC = () => {
 															Number(e.target.value),
 														)
 													}
+													onKeyDown={(e) => {
+														if (e.key === 'Enter') {
+															e.preventDefault();
+															const unitPriceInput = document.getElementById(`unit-price-input-${index}`);
+															if (unitPriceInput) {
+																unitPriceInput.focus();
+																unitPriceInput.select();
+															}
+														}
+													}}
 													className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
 												/>
 											</div>
@@ -744,6 +766,7 @@ const PresalesPage: React.FC = () => {
 													Preço Unit.
 												</label>
 												<input
+													id={`unit-price-input-${index}`}
 													type="number"
 													step="0.01"
 													min="0"
@@ -755,6 +778,25 @@ const PresalesPage: React.FC = () => {
 															Number(e.target.value),
 														)
 													}
+													onKeyDown={(e) => {
+														if (e.key === 'Enter') {
+															e.preventDefault();
+															// Se existir próximo item, vai para o produto do próximo
+															if (index + 1 < formItems.length) {
+																const nextProductSelect = document.getElementById(`product-select-${index + 1}`);
+																if (nextProductSelect) {
+																	nextProductSelect.focus();
+																}
+															} else {
+																// Se é o último item, vai para o campo de desconto
+																const discountInput = document.getElementById('discount-input');
+																if (discountInput) {
+																	discountInput.focus();
+																	discountInput.select();
+																}
+															}
+														}
+													}}
 													className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
 												/>
 											</div>
@@ -791,6 +833,7 @@ const PresalesPage: React.FC = () => {
 										Desconto
 									</label>
 									<input
+										id="discount-input"
 										type="number"
 										step="0.01"
 										min="0"
@@ -798,6 +841,15 @@ const PresalesPage: React.FC = () => {
 										onChange={(e) =>
 											handleInputChange('discount')(e.target.value)
 										}
+										onKeyDown={(e) => {
+											if (e.key === 'Enter') {
+												e.preventDefault();
+												const discountTypeSelect = document.getElementById('discount-type-select');
+												if (discountTypeSelect) {
+													discountTypeSelect.focus();
+												}
+											}
+										}}
 										placeholder="0.00"
 										className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 									/>
@@ -807,10 +859,20 @@ const PresalesPage: React.FC = () => {
 										Tipo de Desconto
 									</label>
 									<select
+										id="discount-type-select"
 										value={formData.discountType}
 										onChange={(e) =>
 											handleInputChange('discountType')(e.target.value)
 										}
+										onKeyDown={(e) => {
+											if (e.key === 'Enter') {
+												e.preventDefault();
+												const validUntilInput = document.getElementById('valid-until-input');
+												if (validUntilInput) {
+													validUntilInput.focus();
+												}
+											}
+										}}
 										className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 									>
 										<option value="percentage">Percentual (%)</option>
@@ -825,11 +887,21 @@ const PresalesPage: React.FC = () => {
 									Válida até
 								</label>
 								<input
+									id="valid-until-input"
 									type="date"
 									value={formData.validUntil}
 									onChange={(e) =>
 										handleInputChange('validUntil')(e.target.value)
 									}
+									onKeyDown={(e) => {
+										if (e.key === 'Enter') {
+											e.preventDefault();
+											const notesTextarea = document.getElementById('notes-textarea');
+											if (notesTextarea) {
+												notesTextarea.focus();
+											}
+										}
+									}}
 									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 								/>
 							</div>
@@ -840,10 +912,20 @@ const PresalesPage: React.FC = () => {
 									Observações
 								</label>
 								<textarea
+									id="notes-textarea"
 									value={formData.notes}
 									onChange={(e) => handleInputChange('notes')(e.target.value)}
 									placeholder="Observações sobre a pré-venda..."
 									rows={3}
+									onKeyDown={(e) => {
+										if (e.key === 'Enter' && e.ctrlKey) {
+											e.preventDefault();
+											const submitButton = document.getElementById('submit-presale-button');
+											if (submitButton) {
+												submitButton.focus();
+											}
+										}
+									}}
 									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
 								/>
 							</div>
@@ -869,7 +951,7 @@ const PresalesPage: React.FC = () => {
 								>
 									Cancelar
 								</Button>
-								<Button type="submit" variant="primary">
+								<Button id="submit-presale-button" type="submit" variant="primary">
 									Criar Pré-venda
 								</Button>
 							</div>
