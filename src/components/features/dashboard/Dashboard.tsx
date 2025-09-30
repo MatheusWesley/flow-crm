@@ -172,21 +172,21 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
 						<div className="p-6 space-y-3">
 							<button
 								type="button"
-								className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+								className="w-full flex items-center justify-center cursor-pointer px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
 							>
 								<ShoppingCart className="w-4 h-4 mr-2" />
 								Nova Venda
 							</button>
 							<button
 								type="button"
-								className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+								className="w-full flex items-center cursor-pointer justify-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
 							>
 								<Package className="w-4 h-4 mr-2" />
 								Cadastrar Produto
 							</button>
 							<button
 								type="button"
-								className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+								className="w-full flex items-center cursor-pointer justify-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
 							>
 								<Users className="w-4 h-4 mr-2" />
 								Cadastrar Cliente
