@@ -14,7 +14,7 @@ createRoot(rootElement).render(
 	<StrictMode>
 		<AuthProvider>
 			<RouterProvider router={router} />
-			<ToastContainer 
+			<ToastContainer
 				position="bottom-right"
 				autoClose={5000}
 				hideProgressBar={false}

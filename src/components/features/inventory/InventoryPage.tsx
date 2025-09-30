@@ -1,10 +1,10 @@
-import { Search } from 'lucide-react';
+import { Minus, Plus, Search } from 'lucide-react';
 import type React from 'react';
 import { useState } from 'react';
+import toastService, { TOAST_MESSAGES } from '../../../services/ToastService';
 import type { Product, StockAdjustment } from '../../../types';
 import Button from '../../common/Button';
 import Input from '../../common/Input';
-import toastService, { TOAST_MESSAGES } from '../../../services/ToastService';
 
 type TabType = 'adjustment' | 'history';
 
@@ -94,12 +94,12 @@ const InventoryPage: React.FC = () => {
 		e.preventDefault();
 
 		if (!selectedProduct) {
-		toastService.error(TOAST_MESSAGES.inventory.productNotFound);
+			toastService.error(TOAST_MESSAGES.inventory.productNotFound);
 			return;
 		}
 
 		if (!formData.quantity || !formData.reason) {
-		toastService.error(TOAST_MESSAGES.inventory.invalidData);
+			toastService.error(TOAST_MESSAGES.inventory.invalidData);
 			return;
 		}
 
@@ -117,8 +117,12 @@ const InventoryPage: React.FC = () => {
 
 		setAdjustments((prev) => [newAdjustment, ...prev]);
 
-		// Show success toast
-		toastService.success(TOAST_MESSAGES.inventory.adjusted);
+		// Show specific success toast based on action type
+		const toastMessage =
+			formData.adjustmentType === 'add'
+				? `Quantidade de ${formData.quantity} adicionada ao estoque!`
+				: `Quantidade de ${formData.quantity} removida do estoque!`;
+		toastService.success(toastMessage);
 
 		// Reset form
 		setFormData({
@@ -197,48 +201,59 @@ const InventoryPage: React.FC = () => {
 								Detalhes do Ajuste
 							</h3>
 
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-								<Input
-									label="Quantidade*"
-									type="number"
-									value={formData.quantity}
-									onChange={handleInputChange('quantity')}
-									placeholder="0"
-									min="1"
-									required
-								/>
-
+							<div className="flex items-start gap-4">
 								{/* Tipo de Ajuste */}
 								<div>
 									<label className="block text-sm font-medium text-gray-700 mb-3">
 										Tipo de Ajuste*
 									</label>
-									<div className="flex gap-4">
-										<button
+									<div className="flex gap-3">
+										<Button
 											type="button"
-											onClick={() => handleInputChange('adjustmentType')('add')}
-											className={`px-6 py-3 cursor-pointer rounded-lg font-medium transition-colors ${
+											variant={
 												formData.adjustmentType === 'add'
-													? 'bg-green-600 text-white'
-													: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-											}`}
+													? 'primary'
+													: 'secondary'
+											}
+											size="sm"
+											onClick={() => handleInputChange('adjustmentType')('add')}
+											aria-label="Somar ao estoque"
+											title="Somar"
+											className="flex items-center justify-center w-8 h-8"
 										>
-											Adicionar ao Estoque
-										</button>
-										<button
+											<Plus size={14} strokeWidth={2.5} />
+										</Button>
+										<Button
 											type="button"
+											variant={
+												formData.adjustmentType === 'remove'
+													? 'danger'
+													: 'secondary'
+											}
+											size="sm"
 											onClick={() =>
 												handleInputChange('adjustmentType')('remove')
 											}
-											className={`px-6 py-3 cursor-pointer rounded-lg font-medium transition-colors ${
-												formData.adjustmentType === 'remove'
-													? 'bg-red-600 text-white'
-													: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-											}`}
+											aria-label="Subtrair do estoque"
+											title="Subtrair"
+											className="flex items-center justify-center w-8 h-8"
 										>
-											Remover do Estoque
-										</button>
+											<Minus size={14} strokeWidth={2.5} />
+										</Button>
 									</div>
+								</div>
+
+								{/* Quantidade */}
+								<div className="w-32">
+									<Input
+										label="Quantidade*"
+										type="number"
+										value={formData.quantity}
+										onChange={handleInputChange('quantity')}
+										placeholder="0"
+										min="1"
+										required
+									/>
 								</div>
 							</div>
 
@@ -276,9 +291,7 @@ const InventoryPage: React.FC = () => {
 								Limpar
 							</Button>
 							<Button type="submit" variant="primary">
-								{formData.adjustmentType === 'add'
-									? 'Adicionar ao Estoque'
-									: 'Remover do Estoque'}
+								Confirmar Ajuste
 							</Button>
 						</div>
 					</form>
