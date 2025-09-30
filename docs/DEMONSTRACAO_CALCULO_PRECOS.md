@@ -56,7 +56,7 @@ Cálculo: 20,00 × (1 + 5.0) = 20,00 × 6.0 = R$ 120,00
 
 ### 1. Função Principal de Cálculo
 ```typescript
-static calculateSuggestedPrice(purchasePrice: number, marginPercentage?: number): number {
+calculateSuggestedPrice(purchasePrice: number, marginPercentage?: number): number {
     if (purchasePrice <= 0) return 0;
 
     const margin = marginPercentage ?? this.config.defaultMarginPercentage; // 0.3 (30%)
@@ -68,11 +68,12 @@ static calculateSuggestedPrice(purchasePrice: number, marginPercentage?: number)
 
 ### 2. Configuração do Sistema
 ```typescript
-private static config: PriceCalculationConfig = {
+// Instanciar o serviço
+const priceCalculationService = new PriceCalculationService({
     defaultMarginPercentage: 0.3,  // 30% de margem padrão
     minMargin: 0.05,              // 5% margem mínima
     maxMargin: 5.0,               // 500% margem máxima
-};
+});
 ```
 
 ### 3. Integração com o Formulário
@@ -84,9 +85,9 @@ const handleInputChange = (field: string) => (value: string) => {
 
         // Auto-sugerir preço de venda quando preço de compra muda
         if (field === 'purchasePrice' && value) {
-            const purchasePrice = PriceCalculationService.parsePrice(value);
+            const purchasePrice = priceCalculationService.parsePrice(value);
             if (purchasePrice > 0) {
-                const suggestedPrice = PriceCalculationService.calculateSuggestedPrice(purchasePrice);
+                const suggestedPrice = priceCalculationService.calculateSuggestedPrice(purchasePrice);
                 // Só preenche automaticamente se o preço de venda estiver vazio
                 if (!prev.salePrice) {
                     updated.salePrice = suggestedPrice.toFixed(2);
@@ -113,8 +114,8 @@ const handleInputChange = (field: string) => (value: string) => {
 3. **Exibição da Sugestão**:
    ```html
    <p className="text-xs text-gray-500 mt-1">
-       Sugestão: R$ {PriceCalculationService.calculateSuggestedPrice(
-           PriceCalculationService.parsePrice(formData.purchasePrice)
+       Sugestão: R$ {priceCalculationService.calculateSuggestedPrice(
+           priceCalculationService.parsePrice(formData.purchasePrice)
        ).toFixed(2)}
    </p>
    ```
@@ -124,7 +125,7 @@ const handleInputChange = (field: string) => (value: string) => {
 ### Parsing de Preços (Brasileiro)
 ```typescript
 // Converte string para número, lidando com formato brasileiro
-static parsePrice(priceString: string): number {
+parsePrice(priceString: string): number {
     // Remove símbolos de moeda e espaços: "R$ 10,50" → "10,50"
     const cleanString = priceString.replace(/[R$\s]/g, '');
     
@@ -132,14 +133,14 @@ static parsePrice(priceString: string): number {
     const normalized = cleanString.replace(',', '.');
     
     const parsed = parseFloat(normalized);
-    return isNaN(parsed) ? 0 : parsed;
+    return Number.isNaN(parsed) ? 0 : parsed;
 }
 ```
 
 ### Formatação de Moeda
 ```typescript
 // Formata número para moeda brasileira
-static formatPrice(price: number): string {
+formatPrice(price: number): string {
     return new Intl.NumberFormat('pt-BR', {
         style: 'currency',
         currency: 'BRL',
@@ -150,7 +151,7 @@ static formatPrice(price: number): string {
 ### Cálculo de Margem Reversa
 ```typescript
 // Calcula qual foi a margem aplicada entre compra e venda
-static calculateMarginPercentage(purchasePrice: number, salePrice: number): number {
+calculateMarginPercentage(purchasePrice: number, salePrice: number): number {
     if (purchasePrice <= 0) return 0;
     return (salePrice - purchasePrice) / purchasePrice;
 }
@@ -180,7 +181,7 @@ static calculateMarginPercentage(purchasePrice: number, salePrice: number): numb
 ### Alterar Margem Padrão
 ```typescript
 // Mudar para 25%
-PriceCalculationService.updateConfig({
+priceCalculationService.updateConfig({
     defaultMarginPercentage: 0.25
 });
 ```
@@ -188,7 +189,7 @@ PriceCalculationService.updateConfig({
 ### Alterar Limites
 ```typescript
 // Margem entre 10% e 200%
-PriceCalculationService.updateConfig({
+priceCalculationService.updateConfig({
     minMargin: 0.1,    // 10%
     maxMargin: 2.0     // 200%
 });

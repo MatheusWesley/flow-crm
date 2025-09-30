@@ -1,13 +1,15 @@
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import type { Product } from '../../../types';
-import { AutoCodeService, PriceCalculationService } from '../../../utils';
+import { AutoCodeService } from '../../../utils';
+import PriceCalculationService from '../../../utils/priceCalculationService';
 import Button from '../../common/Button';
 import type { CheckboxOption } from '../../common/CheckboxGroup';
 import CheckboxGroup from '../../common/CheckboxGroup';
 import Input from '../../common/Input';
 import type { SelectOption } from '../../common/Select';
 import Select from '../../common/Select';
+import toastService, { TOAST_MESSAGES } from '../../../services/ToastService';
 
 type TabType = 'list' | 'register';
 type SubTabType = 'basic' | 'pricesStock';
@@ -15,6 +17,9 @@ type SubTabType = 'basic' | 'pricesStock';
 const ProductsPage: React.FC = () => {
 	const [activeTab, setActiveTab] = useState<TabType>('list');
 	const [activeSubTab, setActiveSubTab] = useState<SubTabType>('basic');
+
+	// Initialize price calculation service
+	const priceCalculationService = new PriceCalculationService();
 
 	const [products] = useState<Product[]>([
 		{
@@ -92,10 +97,10 @@ const ProductsPage: React.FC = () => {
 
 			// Auto-suggest sale price when purchase price changes
 			if (field === 'purchasePrice' && value) {
-				const purchasePrice = PriceCalculationService.parsePrice(value);
+				const purchasePrice = priceCalculationService.parsePrice(value);
 				if (purchasePrice > 0) {
 					const suggestedPrice =
-						PriceCalculationService.calculateSuggestedPrice(purchasePrice);
+						priceCalculationService.calculateSuggestedPrice(purchasePrice);
 					// Only auto-fill if sale price is empty
 					if (!prev.salePrice) {
 						updated.salePrice = suggestedPrice.toFixed(2);
@@ -119,6 +124,8 @@ const ProductsPage: React.FC = () => {
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
 		console.log('Dados do produto:', formData);
+		// Show success toast
+		toastService.success(TOAST_MESSAGES.product.created);
 		// Aqui implementaria a lógica de salvamento
 		// Reset form after submit
 		setFormData({
@@ -131,6 +138,19 @@ const ProductsPage: React.FC = () => {
 			purchasePrice: '',
 			salePrice: '',
 		});
+	};
+
+	// Functions for product operations
+	const handleEditProduct = (product: Product) => {
+	toastService.info(`Editando produto: ${product.name}`);
+		// TODO: Implement edit functionality
+	};
+
+	const handleDeleteProduct = (product: Product) => {
+		if (confirm(TOAST_MESSAGES.product.deleteConfirm)) {
+			toastService.success(`Produto ${product.name} excluído com sucesso!`);
+			// TODO: Implement delete functionality
+		}
 	};
 
 	const renderTabContent = () => {
@@ -186,12 +206,14 @@ const ProductsPage: React.FC = () => {
 											<button
 												type="button"
 												className="text-blue-600 hover:text-blue-800 text-sm"
+												onClick={() => handleEditProduct(product)}
 											>
 												Editar
 											</button>
 											<button
 												type="button"
 												className="text-red-600 hover:text-red-800 text-sm"
+												onClick={() => handleDeleteProduct(product)}
 											>
 												Excluir
 											</button>
@@ -218,7 +240,7 @@ const ProductsPage: React.FC = () => {
 						{/* First row: Code and Product Name */}
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 							<Input
-								label="Código*"
+								label="Código"
 								value={formData.code}
 								onChange={handleInputChange('code')}
 								placeholder="Código auto-gerado"
@@ -228,7 +250,7 @@ const ProductsPage: React.FC = () => {
 							/>
 
 							<Input
-								label="Nome do Produto*"
+								label="Nome do Produto"
 								value={formData.name}
 								onChange={handleInputChange('name')}
 								placeholder="Digite o nome do produto"
@@ -239,7 +261,7 @@ const ProductsPage: React.FC = () => {
 						{/* Second row: Unit and Sale Type */}
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 							<Select
-								label="Unidade de Medida*"
+								label="Unidade de Medida"
 								value={formData.unit}
 								onChange={handleInputChange('unit')}
 								options={unitOptions}
@@ -249,7 +271,7 @@ const ProductsPage: React.FC = () => {
 							/>
 
 							<CheckboxGroup
-								label="Tipo de Venda*"
+								label="Tipo de Venda"
 								value={formData.saleType}
 								onChange={handleInputChange('saleType')}
 								options={saleTypeOptions}
@@ -285,7 +307,7 @@ const ProductsPage: React.FC = () => {
 							<h3 className="text-lg font-medium text-gray-900 mb-4">Preços</h3>
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 								<Input
-									label="Preço de Compra*"
+									label="Preço de Compra"
 									type="number"
 									step="0.01"
 									value={formData.purchasePrice}
@@ -297,7 +319,7 @@ const ProductsPage: React.FC = () => {
 
 								<div className="relative">
 									<Input
-										label="Preço de Venda*"
+										label="Preço de Venda"
 										type="number"
 										step="0.01"
 										value={formData.salePrice}
@@ -309,11 +331,13 @@ const ProductsPage: React.FC = () => {
 									{formData.purchasePrice && (
 										<p className="text-xs text-gray-500 mt-1">
 											Sugestão: R${' '}
-											{PriceCalculationService.calculateSuggestedPrice(
-												PriceCalculationService.parsePrice(
-													formData.purchasePrice,
-												),
-											).toFixed(2)}
+											{priceCalculationService
+												.calculateSuggestedPrice(
+													priceCalculationService.parsePrice(
+														formData.purchasePrice,
+													),
+												)
+												.toFixed(2)}
 										</p>
 									)}
 								</div>
@@ -327,7 +351,7 @@ const ProductsPage: React.FC = () => {
 							</h3>
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 								<Input
-									label="Estoque Inicial*"
+									label="Estoque Inicial"
 									type="number"
 									value={formData.stock}
 									onChange={handleInputChange('stock')}

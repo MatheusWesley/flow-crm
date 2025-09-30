@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { Product, StockAdjustment } from '../../../types';
 import Button from '../../common/Button';
 import Input from '../../common/Input';
+import toastService, { TOAST_MESSAGES } from '../../../services/ToastService';
 
 type TabType = 'adjustment' | 'history';
 
@@ -93,12 +94,12 @@ const InventoryPage: React.FC = () => {
 		e.preventDefault();
 
 		if (!selectedProduct) {
-			alert('Produto não encontrado!');
+		toastService.error(TOAST_MESSAGES.inventory.productNotFound);
 			return;
 		}
 
 		if (!formData.quantity || !formData.reason) {
-			alert('Preencha todos os campos obrigatórios!');
+		toastService.error(TOAST_MESSAGES.inventory.invalidData);
 			return;
 		}
 
@@ -115,6 +116,9 @@ const InventoryPage: React.FC = () => {
 		};
 
 		setAdjustments((prev) => [newAdjustment, ...prev]);
+
+		// Show success toast
+		toastService.success(TOAST_MESSAGES.inventory.adjusted);
 
 		// Reset form
 		setFormData({
@@ -213,7 +217,7 @@ const InventoryPage: React.FC = () => {
 										<button
 											type="button"
 											onClick={() => handleInputChange('adjustmentType')('add')}
-											className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+											className={`px-6 py-3 cursor-pointer rounded-lg font-medium transition-colors ${
 												formData.adjustmentType === 'add'
 													? 'bg-green-600 text-white'
 													: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -226,7 +230,7 @@ const InventoryPage: React.FC = () => {
 											onClick={() =>
 												handleInputChange('adjustmentType')('remove')
 											}
-											className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+											className={`px-6 py-3 cursor-pointer rounded-lg font-medium transition-colors ${
 												formData.adjustmentType === 'remove'
 													? 'bg-red-600 text-white'
 													: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
