@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { Product, StockAdjustment } from '../../../types';
 import Button from '../../common/Button';
 import Input from '../../common/Input';
+import toastService, { TOAST_MESSAGES } from '../../../services/ToastService';
 
 type TabType = 'adjustment' | 'history';
 
@@ -93,12 +94,12 @@ const InventoryPage: React.FC = () => {
 		e.preventDefault();
 
 		if (!selectedProduct) {
-			alert('Produto não encontrado!');
+		toastService.error(TOAST_MESSAGES.inventory.productNotFound);
 			return;
 		}
 
 		if (!formData.quantity || !formData.reason) {
-			alert('Preencha todos os campos obrigatórios!');
+		toastService.error(TOAST_MESSAGES.inventory.invalidData);
 			return;
 		}
 
@@ -115,6 +116,9 @@ const InventoryPage: React.FC = () => {
 		};
 
 		setAdjustments((prev) => [newAdjustment, ...prev]);
+
+		// Show success toast
+		toastService.success(TOAST_MESSAGES.inventory.adjusted);
 
 		// Reset form
 		setFormData({

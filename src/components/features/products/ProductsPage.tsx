@@ -9,6 +9,7 @@ import CheckboxGroup from '../../common/CheckboxGroup';
 import Input from '../../common/Input';
 import type { SelectOption } from '../../common/Select';
 import Select from '../../common/Select';
+import toastService, { TOAST_MESSAGES } from '../../../services/ToastService';
 
 type TabType = 'list' | 'register';
 type SubTabType = 'basic' | 'pricesStock';
@@ -123,6 +124,8 @@ const ProductsPage: React.FC = () => {
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
 		console.log('Dados do produto:', formData);
+		// Show success toast
+		toastService.success(TOAST_MESSAGES.product.created);
 		// Aqui implementaria a lógica de salvamento
 		// Reset form after submit
 		setFormData({
@@ -135,6 +138,19 @@ const ProductsPage: React.FC = () => {
 			purchasePrice: '',
 			salePrice: '',
 		});
+	};
+
+	// Functions for product operations
+	const handleEditProduct = (product: Product) => {
+	toastService.info(`Editando produto: ${product.name}`);
+		// TODO: Implement edit functionality
+	};
+
+	const handleDeleteProduct = (product: Product) => {
+		if (confirm(TOAST_MESSAGES.product.deleteConfirm)) {
+			toastService.success(`Produto ${product.name} excluído com sucesso!`);
+			// TODO: Implement delete functionality
+		}
 	};
 
 	const renderTabContent = () => {
@@ -190,12 +206,14 @@ const ProductsPage: React.FC = () => {
 											<button
 												type="button"
 												className="text-blue-600 hover:text-blue-800 text-sm"
+												onClick={() => handleEditProduct(product)}
 											>
 												Editar
 											</button>
 											<button
 												type="button"
 												className="text-red-600 hover:text-red-800 text-sm"
+												onClick={() => handleDeleteProduct(product)}
 											>
 												Excluir
 											</button>

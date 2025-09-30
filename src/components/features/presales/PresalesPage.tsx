@@ -1,6 +1,7 @@
 import { Calculator, Edit, Eye, Plus, Search, Trash2 } from 'lucide-react';
 import type React from 'react';
-import { useState, useId } from 'react';
+import { useId, useState } from 'react';
+import toastService, { TOAST_MESSAGES } from '../../../services/ToastService';
 import type { Customer, PreSale, PreSaleItem, Product } from '../../../types';
 import Button from '../../common/Button';
 import InPageModal from '../../common/InPageModal';
@@ -169,8 +170,9 @@ const PresalesPage: React.FC = () => {
 	};
 
 	const handleDeletePreSale = (id: string) => {
-		if (confirm('Tem certeza que deseja excluir esta pré-venda?')) {
+		if (confirm(TOAST_MESSAGES.presale.deleteConfirm)) {
 			setPreSales((prev) => prev.filter((preSale) => preSale.id !== id));
+			toastService.success(TOAST_MESSAGES.presale.deleted);
 		}
 	};
 
@@ -210,7 +212,9 @@ const PresalesPage: React.FC = () => {
 			),
 		);
 		setShowStatusModal(false);
-		alert(`Status da pré-venda alterado para ${getStatusLabel(newStatus)}`);
+		toastService.success(
+			`Status da pré-venda alterado para ${getStatusLabel(newStatus)}`,
+		);
 	};
 
 	const handleInputChange = (field: string) => (value: string) => {
@@ -263,7 +267,7 @@ const PresalesPage: React.FC = () => {
 		e.preventDefault();
 
 		if (!formData.customerId || formItems.length === 0) {
-			alert('Selecione um cliente e adicione pelo menos um item!');
+			toastService.error(TOAST_MESSAGES.presale.invalidData);
 			return;
 		}
 
@@ -316,10 +320,8 @@ const PresalesPage: React.FC = () => {
 		setSelectedPreSale(null);
 		setShowCreateModal(false);
 		setShowEditModal(false);
-		alert(
-			isEdit
-				? 'Pré-venda atualizada com sucesso!'
-				: 'Pré-venda criada com sucesso!',
+		toastService.success(
+			isEdit ? TOAST_MESSAGES.presale.updated : TOAST_MESSAGES.presale.created,
 		);
 	};
 
@@ -641,12 +643,16 @@ const PresalesPage: React.FC = () => {
 									onKeyDown={(e) => {
 										if (e.key === 'Enter') {
 											e.preventDefault();
-										const firstProductSelect = document.getElementById(`${createFormId}-product-select-0`);
+											const firstProductSelect = document.getElementById(
+												`${createFormId}-product-select-0`,
+											);
 											if (firstProductSelect) {
 												firstProductSelect.focus();
 											} else {
 												// Se não há itens, vai para o botão de adicionar item
-												const addItemButton = document.querySelector('[data-add-item-button]') as HTMLElement;
+												const addItemButton = document.querySelector(
+													'[data-add-item-button]',
+												) as HTMLElement;
 												if (addItemButton) {
 													addItemButton.focus();
 												}
@@ -708,7 +714,9 @@ const PresalesPage: React.FC = () => {
 													onKeyDown={(e) => {
 														if (e.key === 'Enter') {
 															e.preventDefault();
-															const quantityInput = document.getElementById(`${createFormId}-quantity-input-${index}`);
+															const quantityInput = document.getElementById(
+																`${createFormId}-quantity-input-${index}`,
+															);
 															if (quantityInput) {
 																quantityInput.focus();
 																(quantityInput as HTMLInputElement).select();
@@ -744,7 +752,9 @@ const PresalesPage: React.FC = () => {
 													onKeyDown={(e) => {
 														if (e.key === 'Enter') {
 															e.preventDefault();
-															const unitPriceInput = document.getElementById(`${createFormId}-unit-price-input-${index}`);
+															const unitPriceInput = document.getElementById(
+																`${createFormId}-unit-price-input-${index}`,
+															);
 															if (unitPriceInput) {
 																unitPriceInput.focus();
 																(unitPriceInput as HTMLInputElement).select();
@@ -776,17 +786,22 @@ const PresalesPage: React.FC = () => {
 															e.preventDefault();
 															// Se existir próximo item, vai para o produto do próximo
 															if (index + 1 < formItems.length) {
-																const nextProductSelect = document.getElementById(`${createFormId}-product-select-${index + 1}`);
+																const nextProductSelect =
+																	document.getElementById(
+																		`${createFormId}-product-select-${index + 1}`,
+																	);
 																if (nextProductSelect) {
 																	nextProductSelect.focus();
 																}
 															} else {
 																// Se é o último item, vai para o campo de desconto
-																const discountInput = document.getElementById(`${createFormId}-discount-input`);
-												if (discountInput) {
-													discountInput.focus();
-													(discountInput as HTMLInputElement).select();
-												}
+																const discountInput = document.getElementById(
+																	`${createFormId}-discount-input`,
+																);
+																if (discountInput) {
+																	discountInput.focus();
+																	(discountInput as HTMLInputElement).select();
+																}
 															}
 														}
 													}}
@@ -826,7 +841,7 @@ const PresalesPage: React.FC = () => {
 										Desconto
 									</label>
 									<input
-									id={`${createFormId}-discount-input`}
+										id={`${createFormId}-discount-input`}
 										type="number"
 										step="0.01"
 										min="0"
@@ -837,7 +852,9 @@ const PresalesPage: React.FC = () => {
 										onKeyDown={(e) => {
 											if (e.key === 'Enter') {
 												e.preventDefault();
-											const discountTypeSelect = document.getElementById(`${createFormId}-discount-type-select`);
+												const discountTypeSelect = document.getElementById(
+													`${createFormId}-discount-type-select`,
+												);
 												if (discountTypeSelect) {
 													discountTypeSelect.focus();
 												}
@@ -852,7 +869,7 @@ const PresalesPage: React.FC = () => {
 										Tipo de Desconto
 									</label>
 									<select
-									id={`${createFormId}-discount-type-select`}
+										id={`${createFormId}-discount-type-select`}
 										value={formData.discountType}
 										onChange={(e) =>
 											handleInputChange('discountType')(e.target.value)
@@ -860,7 +877,9 @@ const PresalesPage: React.FC = () => {
 										onKeyDown={(e) => {
 											if (e.key === 'Enter') {
 												e.preventDefault();
-											const notesTextarea = document.getElementById(`${createFormId}-notes-textarea`);
+												const notesTextarea = document.getElementById(
+													`${createFormId}-notes-textarea`,
+												);
 												if (notesTextarea) {
 													notesTextarea.focus();
 												}
@@ -880,7 +899,7 @@ const PresalesPage: React.FC = () => {
 									Observações
 								</label>
 								<textarea
-								id={`${createFormId}-notes-textarea`}
+									id={`${createFormId}-notes-textarea`}
 									value={formData.notes}
 									onChange={(e) => handleInputChange('notes')(e.target.value)}
 									placeholder="Observações sobre a pré-venda..."
@@ -888,7 +907,9 @@ const PresalesPage: React.FC = () => {
 									onKeyDown={(e) => {
 										if (e.key === 'Enter' && e.ctrlKey) {
 											e.preventDefault();
-											const submitButton = document.getElementById(`${createFormId}-submit-presale-button`);
+											const submitButton = document.getElementById(
+												`${createFormId}-submit-presale-button`,
+											);
 											if (submitButton) {
 												submitButton.focus();
 											}
@@ -919,7 +940,11 @@ const PresalesPage: React.FC = () => {
 								>
 									Cancelar
 								</Button>
-								<Button id={`${createFormId}-submit-presale-button `} type="submit" variant="primary" >
+								<Button
+									id={`${createFormId}-submit-presale-button `}
+									type="submit"
+									variant="primary"
+								>
 									Criar Pré-venda
 								</Button>
 							</div>
@@ -965,10 +990,12 @@ const PresalesPage: React.FC = () => {
 									onKeyDown={(e) => {
 										if (e.key === 'Enter') {
 											e.preventDefault();
-										const firstProductSelect = document.getElementById(`${editFormId}-product-select-0`);
-										if (firstProductSelect) {
-											firstProductSelect.focus();
-										}
+											const firstProductSelect = document.getElementById(
+												`${editFormId}-product-select-0`,
+											);
+											if (firstProductSelect) {
+												firstProductSelect.focus();
+											}
 										}
 									}}
 									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -1025,7 +1052,9 @@ const PresalesPage: React.FC = () => {
 													onKeyDown={(e) => {
 														if (e.key === 'Enter') {
 															e.preventDefault();
-															const quantityInput = document.getElementById(`${editFormId}-quantity-input-${index}`);
+															const quantityInput = document.getElementById(
+																`${editFormId}-quantity-input-${index}`,
+															);
 															if (quantityInput) {
 																quantityInput.focus();
 																(quantityInput as HTMLInputElement).select();
@@ -1061,7 +1090,9 @@ const PresalesPage: React.FC = () => {
 													onKeyDown={(e) => {
 														if (e.key === 'Enter') {
 															e.preventDefault();
-															const unitPriceInput = document.getElementById(`${editFormId}-unit-price-input-${index}`);
+															const unitPriceInput = document.getElementById(
+																`${editFormId}-unit-price-input-${index}`,
+															);
 															if (unitPriceInput) {
 																unitPriceInput.focus();
 																(unitPriceInput as HTMLInputElement).select();
@@ -1093,13 +1124,18 @@ const PresalesPage: React.FC = () => {
 															e.preventDefault();
 															// Se existir próximo item, vai para o produto do próximo
 															if (index + 1 < formItems.length) {
-																const nextProductSelect = document.getElementById(`${editFormId}-product-select-${index + 1}`);
+																const nextProductSelect =
+																	document.getElementById(
+																		`${editFormId}-product-select-${index + 1}`,
+																	);
 																if (nextProductSelect) {
 																	nextProductSelect.focus();
 																}
 															} else {
 																// Se é o último item, vai para o campo de desconto
-																const discountInput = document.getElementById(`${editFormId}-discount-input`);
+																const discountInput = document.getElementById(
+																	`${editFormId}-discount-input`,
+																);
 																if (discountInput) {
 																	discountInput.focus();
 																	(discountInput as HTMLInputElement).select();
@@ -1143,7 +1179,7 @@ const PresalesPage: React.FC = () => {
 										Desconto
 									</label>
 									<input
-									id={`${editFormId}-discount-input`}
+										id={`${editFormId}-discount-input`}
 										type="number"
 										step="0.01"
 										min="0"
@@ -1154,7 +1190,9 @@ const PresalesPage: React.FC = () => {
 										onKeyDown={(e) => {
 											if (e.key === 'Enter') {
 												e.preventDefault();
-											const discountTypeSelect = document.getElementById(`${editFormId}-discount-type-select`);
+												const discountTypeSelect = document.getElementById(
+													`${editFormId}-discount-type-select`,
+												);
 												if (discountTypeSelect) {
 													discountTypeSelect.focus();
 												}
@@ -1169,7 +1207,7 @@ const PresalesPage: React.FC = () => {
 										Tipo de Desconto
 									</label>
 									<select
-									id={`${editFormId}-discount-type-select`}
+										id={`${editFormId}-discount-type-select`}
 										value={formData.discountType}
 										onChange={(e) =>
 											handleInputChange('discountType')(e.target.value)
@@ -1177,7 +1215,9 @@ const PresalesPage: React.FC = () => {
 										onKeyDown={(e) => {
 											if (e.key === 'Enter') {
 												e.preventDefault();
-											const notesTextarea = document.getElementById(`${editFormId}-notes-textarea`);
+												const notesTextarea = document.getElementById(
+													`${editFormId}-notes-textarea`,
+												);
 												if (notesTextarea) {
 													notesTextarea.focus();
 												}
@@ -1196,7 +1236,7 @@ const PresalesPage: React.FC = () => {
 									Observações
 								</label>
 								<textarea
-								id={`${editFormId}-notes-textarea`}
+									id={`${editFormId}-notes-textarea`}
 									value={formData.notes}
 									onChange={(e) => handleInputChange('notes')(e.target.value)}
 									placeholder="Observações sobre a pré-venda..."
@@ -1204,7 +1244,9 @@ const PresalesPage: React.FC = () => {
 									onKeyDown={(e) => {
 										if (e.key === 'Enter' && e.ctrlKey) {
 											e.preventDefault();
-											const submitButton = document.getElementById(`${editFormId}-submit-presale-edit-button`);
+											const submitButton = document.getElementById(
+												`${editFormId}-submit-presale-edit-button`,
+											);
 											if (submitButton) {
 												submitButton.focus();
 											}
@@ -1245,7 +1287,11 @@ const PresalesPage: React.FC = () => {
 								>
 									Cancelar
 								</Button>
-								<Button id={`${editFormId}-submit-presale-edit-button`} type="submit" variant="primary">
+								<Button
+									id={`${editFormId}-submit-presale-edit-button`}
+									type="submit"
+									variant="primary"
+								>
 									Atualizar Pré-venda
 								</Button>
 							</div>

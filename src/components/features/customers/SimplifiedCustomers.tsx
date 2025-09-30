@@ -3,11 +3,12 @@ import { useState } from 'react';
 import { formatCPF, validateCPF } from '../../../utils';
 import Button from '../../common/Button';
 import Input from '../../common/Input';
+import toastService, { TOAST_MESSAGES } from '../../../services/ToastService';
 
 type TabType = 'list' | 'register';
 // All fields are now consolidated into a single form - no subtabs needed
 
-// Mock customer data interface for the component
+	// Mock customer data interface for the component
 interface MockCustomer {
 	id: string;
 	name: string;
@@ -17,6 +18,19 @@ interface MockCustomer {
 	city: string;
 	state: string;
 }
+
+// Functions for customer operations
+const handleEditCustomer = (customer: MockCustomer) => {
+	toastService.info(`Editando cliente: ${customer.name}`);
+	// TODO: Implement edit functionality
+};
+
+const handleDeleteCustomer = (customer: MockCustomer) => {
+	if (confirm(TOAST_MESSAGES.customer.deleteConfirm)) {
+		toastService.success(`Cliente ${customer.name} excluído com sucesso!`);
+		// TODO: Implement delete functionality
+	}
+};
 
 const SimplifiedCustomers: React.FC = () => {
 	const [activeTab, setActiveTab] = useState<TabType>('list');
@@ -108,6 +122,8 @@ const SimplifiedCustomers: React.FC = () => {
 
 		if (validateForm()) {
 			console.log('Dados do cliente:', formData);
+			// Show success toast
+			toastService.success(TOAST_MESSAGES.customer.created);
 			// Reset form after submit
 			setFormData({
 				name: '',
@@ -161,10 +177,16 @@ const SimplifiedCustomers: React.FC = () => {
 										</span>
 									</div>
 									<div className="flex space-x-2">
-										<button className="text-blue-600 hover:text-blue-800 text-sm">
+										<button 
+											className="text-blue-600 hover:text-blue-800 text-sm"
+											onClick={() => handleEditCustomer(customer)}
+										>
 											Editar
 										</button>
-										<button className="text-red-600 hover:text-red-800 text-sm">
+										<button 
+											className="text-red-600 hover:text-red-800 text-sm"
+											onClick={() => handleDeleteCustomer(customer)}
+										>
 											Excluir
 										</button>
 									</div>
