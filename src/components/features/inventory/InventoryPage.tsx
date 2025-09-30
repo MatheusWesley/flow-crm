@@ -213,7 +213,7 @@ const InventoryPage: React.FC = () => {
 										<button
 											type="button"
 											onClick={() => handleInputChange('adjustmentType')('add')}
-											className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+											className={`px-6 py-3 cursor-pointer rounded-lg font-medium transition-colors ${
 												formData.adjustmentType === 'add'
 													? 'bg-green-600 text-white'
 													: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -226,7 +226,7 @@ const InventoryPage: React.FC = () => {
 											onClick={() =>
 												handleInputChange('adjustmentType')('remove')
 											}
-											className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+											className={`px-6 py-3 cursor-pointer rounded-lg font-medium transition-colors ${
 												formData.adjustmentType === 'remove'
 													? 'bg-red-600 text-white'
 													: 'bg-gray-100 text-gray-700 hover:bg-gray-200'

@@ -357,8 +357,7 @@ const PresalesPage: React.FC = () => {
 					<Button
 						variant="primary"
 						onClick={() => setShowCreateModal(true)}
-						className="flex items-center space-x-2 cursor-pointer"
-					
+						className="flex items-center space-x-2"
 					>
 						<Plus className="h-4 w-4" />
 						<span>Nova Pré-venda</span>
@@ -480,7 +479,7 @@ const PresalesPage: React.FC = () => {
 								<Button
 									variant="primary"
 									onClick={() => setShowCreateModal(true)}
-									className="mt-4 cursor-pointer"
+									className="mt-4"
 								>
 									Criar primeira pré-venda
 								</Button>
