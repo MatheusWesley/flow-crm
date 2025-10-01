@@ -30,9 +30,9 @@ const InPageModal: React.FC<ModalProps> = ({
 				fixed z-50 transition-all duration-200 ease-in-out
 				${isOpen ? 'opacity-100' : 'opacity-0'}
 				/* Desktop: respeitar sidebar e header */
-				lg:top-16 lg:left-64 lg:right-0 lg:bottom-0
-				/* Mobile: tela toda */
-				inset-0 lg:inset-auto
+				xl:top-16 xl:left-64 xl:right-0 xl:bottom-0
+				/* Mobile e Tablet: tela toda */
+				inset-0 xl:inset-auto
 			`}
 		>
 			{/* Background com blur */}
@@ -46,13 +46,18 @@ const InPageModal: React.FC<ModalProps> = ({
 			/>
 
 			{/* Container do modal */}
-			<div className="relative flex items-center justify-center min-h-full p-4">
+			<div className="relative flex items-start justify-center min-h-full p-2 sm:p-4 md:p-6">
 				<div
 					className={`
 						relative bg-white/95 backdrop-blur-md rounded-lg shadow-2xl
-						border border-gray-200/50 w-full 
-						/* Mobile: ocupa quase toda a tela */
-						max-w-[95vw] max-h-[95vh] lg:max-w-4xl lg:max-h-[calc(100vh-8rem)]
+						border border-gray-200/50 w-full flex flex-col
+						/* Responsivo: ajusta conforme tamanho da tela */
+						max-w-[98vw] max-h-[98vh] 
+						sm:max-w-[95vw] sm:max-h-[95vh] 
+						md:max-w-4xl md:max-h-[90vh] 
+						lg:max-w-5xl lg:max-h-[85vh]
+						xl:max-w-4xl xl:max-h-[calc(100vh-8rem)]
+						my-2 sm:my-4 md:my-6
 						transition-all duration-200 ease-in-out transform
 						${
 							isOpen
@@ -63,7 +68,7 @@ const InPageModal: React.FC<ModalProps> = ({
 					onClick={(e) => e.stopPropagation()}
 				>
 					{/* Header */}
-					<div className="px-6 py-4 border-b border-gray-200/50 bg-gray-50/50 rounded-t-lg">
+					<div className="flex-shrink-0 px-6 py-4 border-b border-gray-200/50 bg-gray-50/50 rounded-t-lg">
 						<div className="flex items-center justify-between">
 							<h3 className="text-lg font-semibold text-gray-900">{title}</h3>
 							<button
@@ -89,7 +94,7 @@ const InPageModal: React.FC<ModalProps> = ({
 					</div>
 
 					{/* Content */}
-					<div className="overflow-y-auto max-h-[calc(95vh-8rem)] lg:max-h-[calc(100vh-12rem)]">
+					<div className="overflow-y-auto flex-1 min-h-0">
 						{children}
 					</div>
 				</div>

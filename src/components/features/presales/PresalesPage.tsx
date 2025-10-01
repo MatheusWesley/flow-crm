@@ -1,10 +1,20 @@
-import { Calculator, Edit, Eye, Plus, Search, Trash2 } from 'lucide-react';
+import {
+	Calculator,
+	Download,
+	Edit,
+	Eye,
+	Plus,
+	Search,
+	Trash2,
+} from 'lucide-react';
 import type React from 'react';
-import { useId, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import toastService, { TOAST_MESSAGES } from '../../../services/ToastService';
 import type { Customer, PreSale, PreSaleItem, Product } from '../../../types';
 import Button from '../../common/Button';
 import InPageModal from '../../common/InPageModal';
+import Select from '../../common/Select';
+import PreSaleItemsDisplay from './PreSaleItemsDisplay';
 
 const PresalesPage: React.FC = () => {
 	const createFormId = useId();
@@ -121,9 +131,49 @@ const PresalesPage: React.FC = () => {
 		},
 	]);
 
+	// Mock data for payment methods
+	const [paymentMethods] = useState([
+		{ id: '1', code: 'PAG001', description: 'Dinheiro' },
+		{ id: '2', code: 'PAG002', description: 'Cartão de Crédito' },
+		{ id: '3', code: 'PAG003', description: 'Cartão de Débito' },
+		{ id: '4', code: 'PAG004', description: 'PIX' },
+		{ id: '5', code: 'PAG005', description: 'Boleto Bancário' },
+	]);
+
+	// Select options
+	const customerOptions = customers.map((customer) => ({
+		value: customer.id,
+		label: `${customer.name} - ${customer.email}`,
+	}));
+
+	const productOptions = products.map((product) => ({
+		value: product.id,
+		label: product.name,
+	}));
+
+	const paymentMethodOptions = paymentMethods.map((method) => ({
+		value: method.id,
+		label: method.description,
+	}));
+
+	const statusOptions = [
+		{ value: 'all', label: 'Todos os Status' },
+		{ value: 'draft', label: 'Rascunho' },
+		{ value: 'pending', label: 'Pendente' },
+		{ value: 'approved', label: 'Aprovada' },
+		{ value: 'cancelled', label: 'Cancelada' },
+		{ value: 'converted', label: 'Convertida' },
+	];
+
+	const discountTypeOptions = [
+		{ value: 'percentage', label: 'Percentual (%)' },
+		{ value: 'fixed', label: 'Valor Fixo (R$)' },
+	];
+
 	// Form state for creating new pre-sale
 	const [formData, setFormData] = useState({
 		customerId: '',
+		paymentMethodId: '',
 		notes: '',
 		discount: '',
 		discountType: 'percentage' as 'percentage' | 'fixed',
@@ -132,6 +182,28 @@ const PresalesPage: React.FC = () => {
 	const [formItems, setFormItems] = useState<
 		Omit<PreSaleItem, 'id' | 'totalPrice'>[]
 	>([]);
+
+	// Product search state
+	const [productSearchTerm, setProductSearchTerm] = useState('');
+
+	// New item form state
+	const [newItemForm, setNewItemForm] = useState({
+		productCode: '',
+		productDescription: '',
+		quantity: 1,
+		unitPrice: 0,
+		selectedProduct: null as Product | null,
+	});
+
+	// Product dropdown state
+	const [showProductDropdown, setShowProductDropdown] = useState(false);
+
+	// Customer search state
+	const [customerSearchTerm, setCustomerSearchTerm] = useState('');
+	const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+	const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
+		null,
+	);
 
 	const getStatusLabel = (status: PreSale['status']) => {
 		const statusLabels = {
@@ -164,6 +236,28 @@ const PresalesPage: React.FC = () => {
 		return matchesSearch && matchesStatus;
 	});
 
+	// Filter products for search
+	const filteredProductsForSearch = products.filter(
+		(product) =>
+			product.name.toLowerCase().includes(productSearchTerm.toLowerCase()) ||
+			product.code.toLowerCase().includes(productSearchTerm.toLowerCase()),
+	);
+
+	// Filter customers for search
+	const filteredCustomers = useMemo(() => {
+		if (!customerSearchTerm) return [];
+		return customers.filter(
+			(customer) =>
+				customer.name
+					.toLowerCase()
+					.includes(customerSearchTerm.toLowerCase()) ||
+				customer.email
+					.toLowerCase()
+					.includes(customerSearchTerm.toLowerCase()) ||
+				customer.cpf?.includes(customerSearchTerm),
+		);
+	}, [customers, customerSearchTerm]);
+
 	const handleViewPreSale = (preSale: PreSale) => {
 		setSelectedPreSale(preSale);
 		setShowViewModal(true);
@@ -181,10 +275,16 @@ const PresalesPage: React.FC = () => {
 		// Populate form with existing data
 		setFormData({
 			customerId: preSale.customer.id,
+			paymentMethodId: preSale.paymentMethodId || '1', // Default to first payment method
 			notes: preSale.notes || '',
 			discount: preSale.discount?.toString() || '',
 			discountType: preSale.discountType || 'percentage',
 		});
+
+		// Initialize customer search state
+		setSelectedCustomer(preSale.customer);
+		setCustomerSearchTerm(preSale.customer.name);
+
 		setFormItems(
 			preSale.items.map((item) => ({
 				product: item.product,
@@ -233,6 +333,204 @@ const PresalesPage: React.FC = () => {
 		]);
 	};
 
+	const handleAddProductFromSearch = (product: Product) => {
+		// Check if product is already in the list
+		const existingItemIndex = formItems.findIndex(
+			(item) => item.product.id === product.id,
+		);
+
+		if (existingItemIndex >= 0) {
+			// If product already exists, increase quantity
+			setFormItems((prev) =>
+				prev.map((item, index) =>
+					index === existingItemIndex
+						? { ...item, quantity: item.quantity + 1 }
+						: item,
+				),
+			);
+			toastService.info(
+				`Quantidade de "${product.name}" aumentada para ${formItems[existingItemIndex].quantity + 1}`,
+			);
+		} else {
+			// Add new product to the list
+			setFormItems((prev) => [
+				...prev,
+				{
+					product,
+					quantity: 1,
+					unitPrice: product.salePrice,
+					notes: '',
+				},
+			]);
+			toastService.success(`"${product.name}" adicionado aos itens!`);
+		}
+
+		// Clear search term after adding
+		setProductSearchTerm('');
+	};
+
+	// Handle customer search
+	const handleCustomerSearch = (searchTerm: string) => {
+		setCustomerSearchTerm(searchTerm);
+		setShowCustomerDropdown(searchTerm.length > 0);
+
+		// Find matching customer
+		const matchingCustomer = customers.find(
+			(customer) =>
+				customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+				customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+				customer.cpf?.includes(searchTerm),
+		);
+
+		if (matchingCustomer) {
+			setSelectedCustomer(matchingCustomer);
+			setFormData((prev) => ({ ...prev, customerId: matchingCustomer.id }));
+		} else {
+			setSelectedCustomer(null);
+			setFormData((prev) => ({ ...prev, customerId: '' }));
+		}
+	};
+
+	// Handle customer selection from dropdown
+	const handleCustomerSelect = (customer: Customer) => {
+		setSelectedCustomer(customer);
+		setCustomerSearchTerm(customer.name);
+		setFormData((prev) => ({ ...prev, customerId: customer.id }));
+		setShowCustomerDropdown(false);
+	};
+
+	// Generate PDF function
+	const handleGeneratePDF = (preSale: PreSale) => {
+		// Simulated PDF generation
+		toastService.success(
+			`PDF da pré-venda #${preSale.id} será gerado em breve!`,
+		);
+		// TODO: Implement actual PDF generation using libraries like jsPDF or react-pdf
+		console.log('Generating PDF for pre-sale:', preSale);
+	};
+
+	// Handle product description search and auto-fill code
+	const handleProductDescriptionChange = (description: string) => {
+		setNewItemForm((prev) => ({
+			...prev,
+			productDescription: description,
+		}));
+
+		// Show/hide dropdown based on input
+		setShowProductDropdown(description.length > 0);
+
+		// Find product by description
+		const matchingProduct = products.find(
+			(product) =>
+				product.name.toLowerCase().includes(description.toLowerCase()) ||
+				product.code.toLowerCase().includes(description.toLowerCase()),
+		);
+
+		if (matchingProduct && description.length > 2) {
+			setNewItemForm((prev) => ({
+				...prev,
+				productCode: matchingProduct.code,
+				unitPrice: matchingProduct.salePrice,
+				selectedProduct: matchingProduct,
+			}));
+		} else if (!description) {
+			// Clear fields when description is empty
+			setNewItemForm((prev) => ({
+				...prev,
+				productCode: '',
+				unitPrice: 0,
+				selectedProduct: null,
+			}));
+		}
+	};
+
+	// Handle product selection from dropdown
+	const handleProductSelect = (product: Product) => {
+		setNewItemForm({
+			productCode: product.code,
+			productDescription: product.name,
+			quantity: newItemForm.quantity,
+			unitPrice: product.salePrice,
+			selectedProduct: product,
+		});
+		setShowProductDropdown(false);
+	};
+
+	// Filter products for dropdown
+	const filteredProductsForDropdown = products.filter(
+		(product) =>
+			product.name
+				.toLowerCase()
+				.includes(newItemForm.productDescription.toLowerCase()) ||
+			product.code
+				.toLowerCase()
+				.includes(newItemForm.productDescription.toLowerCase()),
+	);
+
+	// Add item from the new inline form
+	const handleAddItemFromForm = () => {
+		if (!newItemForm.selectedProduct) {
+			toastService.error('Selecione um produto válido!');
+			return;
+		}
+
+		if (newItemForm.quantity <= 0) {
+			toastService.error('Quantidade deve ser maior que zero!');
+			return;
+		}
+
+		if (newItemForm.unitPrice <= 0) {
+			toastService.error('Valor unitário deve ser maior que zero!');
+			return;
+		}
+
+		// Check if product is already in the list
+		const existingItemIndex = formItems.findIndex(
+			(item) => item.product.id === newItemForm.selectedProduct!.id,
+		);
+
+		if (existingItemIndex >= 0) {
+			// If product already exists, update quantity and price
+			setFormItems((prev) =>
+				prev.map((item, index) =>
+					index === existingItemIndex
+						? {
+								...item,
+								quantity: item.quantity + newItemForm.quantity,
+								unitPrice: newItemForm.unitPrice,
+							}
+						: item,
+				),
+			);
+			toastService.info(
+				`"${newItemForm.selectedProduct.name}" atualizado na lista!`,
+			);
+		} else {
+			// Add new product to the list
+			setFormItems((prev) => [
+				...prev,
+				{
+					product: newItemForm.selectedProduct!,
+					quantity: newItemForm.quantity,
+					unitPrice: newItemForm.unitPrice,
+					notes: '',
+				},
+			]);
+			toastService.success(
+				`"${newItemForm.selectedProduct.name}" adicionado aos itens!`,
+			);
+		}
+
+		// Clear the form
+		setNewItemForm({
+			productCode: '',
+			productDescription: '',
+			quantity: 1,
+			unitPrice: 0,
+			selectedProduct: null,
+		});
+	};
+
 	const removeItemFromForm = (index: number) => {
 		setFormItems((prev) => prev.filter((_, i) => i !== index));
 	};
@@ -266,8 +564,18 @@ const PresalesPage: React.FC = () => {
 	const handleSubmitForm = (e: React.FormEvent, isEdit = false) => {
 		e.preventDefault();
 
-		if (!formData.customerId || formItems.length === 0) {
-			toastService.error(TOAST_MESSAGES.presale.invalidData);
+		if (!formData.customerId) {
+			toastService.error('Selecione um cliente!');
+			return;
+		}
+
+		if (!formData.paymentMethodId) {
+			toastService.error('Selecione uma forma de pagamento!');
+			return;
+		}
+
+		if (formItems.length === 0) {
+			toastService.error('Adicione pelo menos um item à pré-venda!');
 			return;
 		}
 
@@ -312,11 +620,20 @@ const PresalesPage: React.FC = () => {
 		// Reset form
 		setFormData({
 			customerId: '',
+			paymentMethodId: '',
 			notes: '',
 			discount: '',
 			discountType: 'percentage',
 		});
 		setFormItems([]);
+		setProductSearchTerm('');
+		setNewItemForm({
+			productCode: '',
+			productDescription: '',
+			quantity: 1,
+			unitPrice: 0,
+			selectedProduct: null,
+		});
 		setSelectedPreSale(null);
 		setShowCreateModal(false);
 		setShowEditModal(false);
@@ -341,20 +658,15 @@ const PresalesPage: React.FC = () => {
 								className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 							/>
 						</div>
-						<select
+						<Select
 							value={statusFilter}
-							onChange={(e) =>
-								setStatusFilter(e.target.value as PreSale['status'] | 'all')
+							onChange={(value) =>
+								setStatusFilter(value as PreSale['status'] | 'all')
 							}
-							className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-						>
-							<option value="all">Todos os Status</option>
-							<option value="draft">Rascunho</option>
-							<option value="pending">Pendente</option>
-							<option value="approved">Aprovada</option>
-							<option value="cancelled">Cancelada</option>
-							<option value="converted">Convertida</option>
-						</select>
+							options={statusOptions}
+							size="sm"
+							className="w-48"
+						/>
 					</div>
 					<Button
 						variant="primary"
@@ -500,126 +812,107 @@ const PresalesPage: React.FC = () => {
 			{/* Tab Content */}
 			<div className="mt-6">{renderTabContent()}</div>
 
-			{/* View Pre-sale Modal */}
+			{/* View Pre-sale Modal - Modern Design */}
 			{showViewModal && selectedPreSale && (
 				<InPageModal
 					isOpen={showViewModal}
 					onClose={() => setShowViewModal(false)}
 					title={`Pré-venda #${selectedPreSale.id}`}
 				>
-					<div className="space-y-6">
-						{/* Customer Info */}
-						<div className="bg-gray-50 p-4 rounded-lg">
-							<h4 className="font-medium text-gray-900 mb-2">Cliente</h4>
-							<div className="grid grid-cols-2 gap-4 text-sm">
-								<div>
-									<span className="text-gray-600">Nome:</span>
-									<p className="font-medium">{selectedPreSale.customer.name}</p>
+					<div className="p-6 space-y-6">
+						{/* Header com informações e ações */}
+						<div className="flex items-center justify-between pb-4 border-b border-gray-200">
+							<div className="flex items-center gap-3">
+								<div className="p-2 bg-blue-100 rounded-lg">
+									<Eye className="h-5 w-5 text-blue-600" />
 								</div>
 								<div>
-									<span className="text-gray-600">Email:</span>
-									<p className="font-medium">
+									<p className="text-sm text-gray-500">
+										Criada em {selectedPreSale.createdAt.toLocaleDateString('pt-BR')}
+									</p>
+								</div>
+							</div>
+							<Button
+								variant="primary"
+								size="sm"
+								onClick={() => handleGeneratePDF(selectedPreSale)}
+								className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors duration-200"
+							>
+								<Download className="h-4 w-4" />
+								<span>Gerar PDF</span>
+							</Button>
+						</div>
+						{/* Cliente */}
+						<section className="bg-blue-50 rounded-lg p-4 border border-blue-100">
+							<h3 className="text-sm font-medium text-blue-900 mb-3">
+								Cliente
+							</h3>
+							<dl className="grid grid-cols-2 gap-4 text-sm">
+								<div>
+									<dt className="text-blue-700">Nome:</dt>
+									<dd className="font-semibold text-blue-900">
+										{selectedPreSale.customer.name}
+									</dd>
+								</div>
+								<div>
+									<dt className="text-blue-700">Email:</dt>
+									<dd className="font-medium text-blue-900">
 										{selectedPreSale.customer.email}
-									</p>
+									</dd>
 								</div>
 								<div>
-									<span className="text-gray-600">Telefone:</span>
-									<p className="font-medium">
+									<dt className="text-blue-700">Telefone:</dt>
+									<dd className="font-medium text-blue-900">
 										{selectedPreSale.customer.phone}
-									</p>
+									</dd>
 								</div>
 								<div>
-									<span className="text-gray-600">CPF:</span>
-									<p className="font-medium">{selectedPreSale.customer.cpf}</p>
+									<dt className="text-blue-700">CPF:</dt>
+									<dd className="font-mono font-medium text-blue-900">
+										{selectedPreSale.customer.cpf}
+									</dd>
 								</div>
-							</div>
-						</div>
+							</dl>
+						</section>
 
-						{/* Items */}
-						<div>
-							<h4 className="font-medium text-gray-900 mb-2">Itens</h4>
-							<div className="border rounded-lg overflow-hidden">
-								<table className="w-full">
-									<thead className="bg-gray-50">
-										<tr>
-											<th className="px-4 py-2 text-left text-sm font-medium text-gray-700">
-												Produto
-											</th>
-											<th className="px-4 py-2 text-right text-sm font-medium text-gray-700">
-												Qtd
-											</th>
-											<th className="px-4 py-2 text-right text-sm font-medium text-gray-700">
-												Preço Unit.
-											</th>
-											<th className="px-4 py-2 text-right text-sm font-medium text-gray-700">
-												Total
-											</th>
-										</tr>
-									</thead>
-									<tbody>
-										{selectedPreSale.items.map((item) => (
-											<tr key={item.id} className="border-t">
-												<td className="px-4 py-2">
-													<div>
-														<p className="font-medium text-sm">
-															{item.product.name}
-														</p>
-														<p className="text-xs text-gray-600">
-															{item.product.code}
-														</p>
-													</div>
-												</td>
-												<td className="px-4 py-2 text-right text-sm">
-													{item.quantity} {item.product.unit}
-												</td>
-												<td className="px-4 py-2 text-right text-sm">
-													R$ {item.unitPrice.toFixed(2)}
-												</td>
-												<td className="px-4 py-2 text-right text-sm font-medium">
-													R$ {item.totalPrice.toFixed(2)}
-												</td>
-											</tr>
-										))}
-									</tbody>
-								</table>
-							</div>
-						</div>
+						{/* Itens */}
+						<section>
+							<h3 className="text-sm font-medium text-gray-900 mb-3">Itens</h3>
+							<PreSaleItemsDisplay items={selectedPreSale.items} />
+						</section>
 
-						{/* Summary */}
-						<div className="bg-gray-50 p-4 rounded-lg">
+						{/* Total */}
+						<section className="bg-gray-50 p-4 rounded-lg space-y-3">
 							<div className="flex justify-between items-center">
 								<span className="text-lg font-medium">Total Geral:</span>
 								<span className="text-xl font-bold text-green-600">
 									R$ {selectedPreSale.total.toFixed(2)}
 								</span>
 							</div>
-							<div className="mt-2 text-sm text-gray-600">
+
+							<div className="text-sm text-gray-600 space-y-1">
 								<div className="flex justify-between">
 									<span>Status:</span>
 									<span
-										className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(selectedPreSale.status)}`}
+										className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(
+											selectedPreSale.status,
+										)}`}
 									>
 										{getStatusLabel(selectedPreSale.status)}
 									</span>
 								</div>
-								{selectedPreSale.salesperson && (
-									<div className="flex justify-between mt-1">
-										<span>Vendedor:</span>
-										<span>{selectedPreSale.salesperson}</span>
-									</div>
-								)}
 							</div>
+
 							{selectedPreSale.notes && (
-								<div className="mt-3 pt-3 border-t border-gray-200">
+								<div className="pt-3 border-t border-gray-200">
 									<span className="text-sm text-gray-600">Observações:</span>
 									<p className="text-sm mt-1">{selectedPreSale.notes}</p>
 								</div>
 							)}
-						</div>
+						</section>
 					</div>
 				</InPageModal>
 			)}
-
 			{/* Create Pre-sale Modal */}
 			{showCreateModal && (
 				<InPageModal
@@ -629,78 +922,225 @@ const PresalesPage: React.FC = () => {
 				>
 					<div className="px-6 py-6">
 						<form onSubmit={handleSubmitForm} className="space-y-6">
-							{/* Customer Selection */}
-							<div>
+							{/* Customer Search Field - Full width at the top */}
+							<div className="relative">
 								<label className="block text-sm font-medium text-gray-700 mb-1">
-									Cliente*
+									Cliente *
 								</label>
-								<select
-									id={`${createFormId}-customer-select`}
-									value={formData.customerId}
-									onChange={(e) =>
-										handleInputChange('customerId')(e.target.value)
+								<input
+									type="text"
+									value={customerSearchTerm}
+									onChange={(e) => handleCustomerSearch(e.target.value)}
+									onFocus={() =>
+										setShowCustomerDropdown(customerSearchTerm.length > 0)
 									}
-									onKeyDown={(e) => {
-										if (e.key === 'Enter') {
-											e.preventDefault();
-											const firstProductSelect = document.getElementById(
-												`${createFormId}-product-select-0`,
-											);
-											if (firstProductSelect) {
-												firstProductSelect.focus();
-											} else {
-												// Se não há itens, vai para o botão de adicionar item
-												const addItemButton = document.querySelector(
-													'[data-add-item-button]',
-												) as HTMLElement;
-												if (addItemButton) {
-													addItemButton.focus();
-												}
-											}
-										}
-									}}
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-									required
-								>
-									<option value="">Selecione um cliente</option>
-									{customers.map((customer) => (
-										<option key={customer.id} value={customer.id}>
-											{customer.name} - {customer.email}
-										</option>
-									))}
-								</select>
+									placeholder="Digite o nome do cliente..."
+									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+								/>
+								{/* Customer dropdown */}
+								{showCustomerDropdown && (
+									<div className="absolute top-full mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-40 overflow-y-auto">
+										{filteredCustomers.length === 0 ? (
+											<div className="px-3 py-2 text-gray-500 text-center">
+												{customerSearchTerm
+													? 'Nenhum cliente encontrado'
+													: 'Digite para buscar clientes'}
+											</div>
+										) : (
+											filteredCustomers.map((customer) => (
+												<div
+													key={customer.id}
+													onClick={() => handleCustomerSelect(customer)}
+													className="px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+												>
+													<div className="font-medium text-gray-900">
+														{customer.name}
+													</div>
+													<div className="text-sm text-gray-500">
+														{customer.email} • {customer.cpf}
+													</div>
+												</div>
+											))
+										)}
+									</div>
+								)}
 							</div>
 
-							{/* Items */}
-							<div>
-								<div className="flex justify-between items-center mb-2">
-									<label className="block text-sm font-medium text-gray-700">
-										Itens*
-									</label>
-									<Button
-										type="button"
-										variant="secondary"
-										onClick={addItemToForm}
-										data-add-item-button
-									>
-										<Plus className="h-4 w-4 mr-1" />
-										Adicionar Item
-									</Button>
+							{/* Add Item Form - Campos lado a lado */}
+							<div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+								<h3 className="text-sm font-medium text-gray-700 mb-3">
+									Adicionar Item
+								</h3>
+								<div className="grid grid-cols-12 gap-3 items-end">
+									{/* Código do Produto */}
+									<div className="col-span-2">
+										<label className="block text-xs font-medium text-gray-600 mb-1">
+											Cód. Prod
+										</label>
+										<input
+											type="text"
+											value={newItemForm.productCode}
+											readOnly
+											placeholder="Auto"
+											className="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg bg-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+										/>
+									</div>
+
+									{/* Descrição do Produto */}
+									<div className="col-span-4 relative">
+										<label className="block text-xs font-medium text-gray-600 mb-1">
+											Descrição
+										</label>
+										<input
+											type="text"
+											value={newItemForm.productDescription}
+											onChange={(e) =>
+												handleProductDescriptionChange(e.target.value)
+											}
+											onFocus={() => setShowProductDropdown(true)}
+											onBlur={(e) => {
+												// Delay hiding dropdown to allow clicking on items
+												setTimeout(() => setShowProductDropdown(false), 150);
+											}}
+											placeholder="Clique para buscar produto..."
+											className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+										/>
+
+										{/* Product Dropdown */}
+										{showProductDropdown && (
+											<div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+												{filteredProductsForDropdown.length > 0 ? (
+													filteredProductsForDropdown
+														.slice(0, 8)
+														.map((product) => (
+															<div
+																key={product.id}
+																onMouseDown={() => handleProductSelect(product)}
+																className="p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0 flex justify-between items-center"
+															>
+																<div>
+																	<p className="font-medium text-gray-900 text-sm">
+																		{product.name}
+																	</p>
+																	<p className="text-xs text-gray-600">
+																		Código: {product.code}
+																	</p>
+																</div>
+																<div className="text-right">
+																	<p className="font-medium text-green-600 text-sm">
+																		R$ {product.salePrice.toFixed(2)}
+																	</p>
+																	<p className="text-xs text-gray-500">
+																		Estoque: {product.stock}
+																	</p>
+																</div>
+															</div>
+														))
+												) : (
+													<div className="p-3 text-sm text-gray-500 text-center">
+														{newItemForm.productDescription
+															? 'Nenhum produto encontrado'
+															: 'Digite para buscar produtos'}
+													</div>
+												)}
+											</div>
+										)}
+									</div>
+
+									{/* Quantidade */}
+									<div className="col-span-2">
+										<label className="block text-xs font-medium text-gray-600 mb-1">
+											Quantidade
+										</label>
+										<input
+											type="number"
+											step="0.01"
+											min="0.01"
+											value={newItemForm.quantity}
+											onChange={(e) =>
+												setNewItemForm((prev) => ({
+													...prev,
+													quantity: Number(e.target.value),
+												}))
+											}
+											className="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-right"
+										/>
+									</div>
+
+									{/* Valor Unitário */}
+									<div className="col-span-2">
+										<label className="block text-xs font-medium text-gray-600 mb-1">
+											Valor Unitário
+										</label>
+										<input
+											type="number"
+											step="0.01"
+											min="0"
+											value={newItemForm.unitPrice}
+											onChange={(e) =>
+												setNewItemForm((prev) => ({
+													...prev,
+													unitPrice: Number(e.target.value),
+												}))
+											}
+											className="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-right"
+										/>
+									</div>
+
+									{/* Botão Adicionar */}
+									<div className="col-span-2">
+										<label className="block text-xs font-medium text-gray-600 mb-1">
+											&nbsp;
+										</label>
+										<Button
+											type="button"
+											variant="primary"
+											size="sm"
+											onClick={handleAddItemFromForm}
+											className="w-full h-[38px] flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200 shadow-sm hover:shadow-md"
+										>
+											<Plus className="h-4 w-4" />
+										</Button>
+									</div>
+								</div>
+							</div>
+
+							{/* Items Section */}
+							<div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+								<div className="flex justify-between items-center mb-4">
+									<h3 className="text-sm font-medium text-gray-700">
+										Itens da Pré-venda*
+									</h3>
 								</div>
 
+								{/* Items Header */}
+								{formItems.length > 0 && (
+									<div className="bg-white border border-gray-200 rounded-lg mb-2">
+										<div className="grid grid-cols-12 gap-2 px-3 py-2 bg-gray-50 rounded-t-lg border-b border-gray-200 text-xs font-medium text-gray-700">
+											<div className="col-span-4">Descrição do Item</div>
+											<div className="col-span-2 text-right">Valor</div>
+											<div className="col-span-2 text-right">Quantidade</div>
+											<div className="col-span-2 text-right">Preço Unit.</div>
+											<div className="col-span-1 text-right">Total</div>
+											<div className="col-span-1"></div>
+										</div>
+									</div>
+								)}
+
+								{/* Items List */}
 								{formItems.map((item, index) => (
-									<div key={index} className="bg-gray-50 p-4 rounded-lg mb-3">
-										<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-											<div>
-												<label className="block text-xs text-gray-600 mb-1">
-													Produto
-												</label>
-												<select
-													id={`${createFormId}-product-select-${index}`}
+									<div
+										key={index}
+										className="bg-white border border-gray-200 rounded-lg mb-2"
+									>
+										<div className="grid grid-cols-12 gap-2 px-3 py-2 items-center">
+											{/* Product Name */}
+											<div className="col-span-4">
+												<Select
 													value={item.product.id}
-													onChange={(e) => {
+													onChange={(value) => {
 														const product = products.find(
-															(p) => p.id === e.target.value,
+															(p) => p.id === value,
 														);
 														if (product) {
 															updateFormItem(index, 'product', product);
@@ -711,33 +1151,22 @@ const PresalesPage: React.FC = () => {
 															);
 														}
 													}}
-													onKeyDown={(e) => {
-														if (e.key === 'Enter') {
-															e.preventDefault();
-															const quantityInput = document.getElementById(
-																`${createFormId}-quantity-input-${index}`,
-															);
-															if (quantityInput) {
-																quantityInput.focus();
-																(quantityInput as HTMLInputElement).select();
-															}
-														}
-													}}
-													className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-												>
-													{products.map((product) => (
-														<option key={product.id} value={product.id}>
-															{product.name}
-														</option>
-													))}
-												</select>
+													options={productOptions}
+													size="sm"
+												/>
 											</div>
-											<div>
-												<label className="block text-xs text-gray-600 mb-1">
-													Quantidade
-												</label>
+
+											{/* Value Display */}
+											<div className="col-span-2 text-right text-sm font-medium">
+												{calculateItemTotal(
+													item.quantity,
+													item.unitPrice,
+												).toFixed(2)}
+											</div>
+
+											{/* Quantity Input */}
+											<div className="col-span-2">
 												<input
-													id={`${createFormId}-quantity-input-${index}`}
 													type="number"
 													step="0.01"
 													min="0.01"
@@ -749,27 +1178,13 @@ const PresalesPage: React.FC = () => {
 															Number(e.target.value),
 														)
 													}
-													onKeyDown={(e) => {
-														if (e.key === 'Enter') {
-															e.preventDefault();
-															const unitPriceInput = document.getElementById(
-																`${createFormId}-unit-price-input-${index}`,
-															);
-															if (unitPriceInput) {
-																unitPriceInput.focus();
-																(unitPriceInput as HTMLInputElement).select();
-															}
-														}
-													}}
-													className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+													className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-right"
 												/>
 											</div>
-											<div>
-												<label className="block text-xs text-gray-600 mb-1">
-													Preço Unit.
-												</label>
+
+											{/* Unit Price Input */}
+											<div className="col-span-2">
 												<input
-													id={`${createFormId}-unit-price-input-${index}`}
 													type="number"
 													step="0.01"
 													min="0"
@@ -781,150 +1196,109 @@ const PresalesPage: React.FC = () => {
 															Number(e.target.value),
 														)
 													}
-													onKeyDown={(e) => {
-														if (e.key === 'Enter') {
-															e.preventDefault();
-															// Se existir próximo item, vai para o produto do próximo
-															if (index + 1 < formItems.length) {
-																const nextProductSelect =
-																	document.getElementById(
-																		`${createFormId}-product-select-${index + 1}`,
-																	);
-																if (nextProductSelect) {
-																	nextProductSelect.focus();
-																}
-															} else {
-																// Se é o último item, vai para o campo de desconto
-																const discountInput = document.getElementById(
-																	`${createFormId}-discount-input`,
-																);
-																if (discountInput) {
-																	discountInput.focus();
-																	(discountInput as HTMLInputElement).select();
-																}
-															}
-														}
-													}}
-													className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+													className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-right"
 												/>
 											</div>
-											<div className="flex items-end">
-												<div className="flex-1">
-													<label className="block text-xs text-gray-600 mb-1">
-														Total
-													</label>
-													<input
-														type="text"
-														value={`R$ ${calculateItemTotal(item.quantity, item.unitPrice).toFixed(2)}`}
-														readOnly
-														className="w-full px-2 py-1 bg-gray-100 border border-gray-300 rounded text-sm"
-													/>
-												</div>
-												<Button
+
+											{/* Total Display */}
+											<div className="col-span-1 text-right text-sm font-semibold">
+												{calculateItemTotal(
+													item.quantity,
+													item.unitPrice,
+												).toFixed(2)}
+											</div>
+
+											{/* Delete Button */}
+											<div className="col-span-1 text-center">
+												<button
 													type="button"
-													variant="danger"
 													onClick={() => removeItemFromForm(index)}
-													className="ml-2 p-1"
+													className="p-1 text-red-600 hover:text-red-800 hover:bg-red-100 rounded"
+													title="Remover item"
 												>
 													<Trash2 className="h-4 w-4" />
-												</Button>
+												</button>
 											</div>
 										</div>
 									</div>
 								))}
+
+								{/* Total Summary */}
+								{formItems.length > 0 && (
+									<div className="bg-white border border-gray-200 rounded-lg px-3 py-2">
+										<div className="flex justify-between items-center">
+											<span className="text-sm font-medium text-gray-700">
+												Total dos itens:
+											</span>
+											<span className="text-lg font-bold text-green-600">
+												R$ {calculateFormTotal().toFixed(2)}
+											</span>
+										</div>
+									</div>
+								)}
 							</div>
 
-							{/* Discount */}
-							<div className="grid grid-cols-2 gap-4">
-								<div>
-									<label className="block text-sm font-medium text-gray-700 mb-1">
-										Desconto
-									</label>
-									<input
-										id={`${createFormId}-discount-input`}
-										type="number"
-										step="0.01"
-										min="0"
-										value={formData.discount}
-										onChange={(e) =>
-											handleInputChange('discount')(e.target.value)
+							{/* Payment Method, Discount and Notes Section */}
+							<div className="space-y-4">
+								{/* Payment Method and Discount in same row */}
+								<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+									<Select
+										label="Forma de Pagamento *"
+										value={formData.paymentMethodId}
+										onChange={(value) =>
+											handleInputChange('paymentMethodId')(value)
 										}
-										onKeyDown={(e) => {
-											if (e.key === 'Enter') {
-												e.preventDefault();
-												const discountTypeSelect = document.getElementById(
-													`${createFormId}-discount-type-select`,
-												);
-												if (discountTypeSelect) {
-													discountTypeSelect.focus();
-												}
+										options={paymentMethodOptions}
+										placeholder="Selecione a forma de pagamento"
+										required
+									/>
+									<div>
+										<label className="block text-sm font-medium text-gray-700 mb-1">
+											Desconto
+										</label>
+										<input
+											type="number"
+											step="0.01"
+											min="0"
+											value={formData.discount}
+											onChange={(e) =>
+												handleInputChange('discount')(e.target.value)
 											}
-										}}
-										placeholder="0.00"
-										className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+											placeholder="0.00"
+											className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+										/>
+									</div>
+									<Select
+										label="Tipo de Desconto"
+										value={formData.discountType}
+										onChange={(value) =>
+											handleInputChange('discountType')(value)
+										}
+										options={discountTypeOptions}
 									/>
 								</div>
+
+								{/* Observations - Full width */}
 								<div>
 									<label className="block text-sm font-medium text-gray-700 mb-1">
-										Tipo de Desconto
+										Observações
 									</label>
-									<select
-										id={`${createFormId}-discount-type-select`}
-										value={formData.discountType}
-										onChange={(e) =>
-											handleInputChange('discountType')(e.target.value)
-										}
-										onKeyDown={(e) => {
-											if (e.key === 'Enter') {
-												e.preventDefault();
-												const notesTextarea = document.getElementById(
-													`${createFormId}-notes-textarea`,
-												);
-												if (notesTextarea) {
-													notesTextarea.focus();
-												}
-											}
-										}}
-										className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-									>
-										<option value="percentage">Percentual (%)</option>
-										<option value="fixed">Valor Fixo (R$)</option>
-									</select>
+									<textarea
+										value={formData.notes}
+										onChange={(e) => handleInputChange('notes')(e.target.value)}
+										placeholder="Observações sobre a pré-venda..."
+										rows={3}
+										className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+									/>
 								</div>
-							</div>
-
-							{/* Notes */}
-							<div>
-								<label className="block text-sm font-medium text-gray-700 mb-1">
-									Observações
-								</label>
-								<textarea
-									id={`${createFormId}-notes-textarea`}
-									value={formData.notes}
-									onChange={(e) => handleInputChange('notes')(e.target.value)}
-									placeholder="Observações sobre a pré-venda..."
-									rows={3}
-									onKeyDown={(e) => {
-										if (e.key === 'Enter' && e.ctrlKey) {
-											e.preventDefault();
-											const submitButton = document.getElementById(
-												`${createFormId}-submit-presale-button`,
-											);
-											if (submitButton) {
-												submitButton.focus();
-											}
-										}
-									}}
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-								/>
 							</div>
 
 							{/* Total Summary */}
 							{formItems.length > 0 && (
-								<div className="bg-blue-50 p-4 rounded-lg">
+								<div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
 									<div className="flex justify-between items-center text-lg font-semibold">
-										<span>Total Geral:</span>
-										<span className="text-blue-600">
+										<span className="text-gray-700">Total Geral:</span>
+										<span className="text-blue-700">
 											R$ {calculateFormTotal().toFixed(2)}
 										</span>
 									</div>
@@ -936,7 +1310,30 @@ const PresalesPage: React.FC = () => {
 								<Button
 									type="button"
 									variant="secondary"
-									onClick={() => setShowCreateModal(false)}
+									onClick={() => {
+										setShowCreateModal(false);
+										// Reset all form states
+										setFormData({
+											customerId: '',
+											paymentMethodId: '',
+											notes: '',
+											discount: '',
+											discountType: 'percentage',
+										});
+										setFormItems([]);
+										setNewItemForm({
+											productCode: '',
+											productDescription: '',
+											quantity: 1,
+											unitPrice: 0,
+											selectedProduct: null,
+										});
+										// Reset customer search states
+										setCustomerSearchTerm('');
+										setSelectedCustomer(null);
+										setShowCustomerDropdown(false);
+										setShowProductDropdown(false);
+									}}
 								>
 									Cancelar
 								</Button>
@@ -953,7 +1350,7 @@ const PresalesPage: React.FC = () => {
 				</InPageModal>
 			)}
 
-			{/* Edit Pre-sale Modal */}
+			{/* Edit Pre-sale Modal - Using same layout as create modal */}
 			{showEditModal && selectedPreSale && (
 				<InPageModal
 					isOpen={showEditModal}
@@ -962,11 +1359,24 @@ const PresalesPage: React.FC = () => {
 						setSelectedPreSale(null);
 						setFormData({
 							customerId: '',
+							paymentMethodId: '',
 							notes: '',
 							discount: '',
 							discountType: 'percentage',
 						});
 						setFormItems([]);
+						setNewItemForm({
+							productCode: '',
+							productDescription: '',
+							quantity: 1,
+							unitPrice: 0,
+							selectedProduct: null,
+						});
+						// Reset customer search states
+						setCustomerSearchTerm('');
+						setSelectedCustomer(null);
+						setShowCustomerDropdown(false);
+						setShowProductDropdown(false);
 					}}
 					title={`Editar Pré-venda #${selectedPreSale.id}`}
 				>
@@ -975,70 +1385,225 @@ const PresalesPage: React.FC = () => {
 							onSubmit={(e) => handleSubmitForm(e, true)}
 							className="space-y-6"
 						>
-							{/* Same form content as create modal */}
-							{/* Customer Selection */}
-							<div>
+							{/* Customer Search Field - Full width at the top */}
+							<div className="relative">
 								<label className="block text-sm font-medium text-gray-700 mb-1">
-									Cliente*
+									Cliente *
 								</label>
-								<select
-									id={`${editFormId}-customer-select`}
-									value={formData.customerId}
-									onChange={(e) =>
-										handleInputChange('customerId')(e.target.value)
+								<input
+									type="text"
+									value={customerSearchTerm}
+									onChange={(e) => handleCustomerSearch(e.target.value)}
+									onFocus={() =>
+										setShowCustomerDropdown(customerSearchTerm.length > 0)
 									}
-									onKeyDown={(e) => {
-										if (e.key === 'Enter') {
-											e.preventDefault();
-											const firstProductSelect = document.getElementById(
-												`${editFormId}-product-select-0`,
-											);
-											if (firstProductSelect) {
-												firstProductSelect.focus();
-											}
-										}
-									}}
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-									required
-								>
-									<option value="">Selecione um cliente</option>
-									{customers.map((customer) => (
-										<option key={customer.id} value={customer.id}>
-											{customer.name} - {customer.email}
-										</option>
-									))}
-								</select>
+									placeholder="Digite o nome do cliente..."
+									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+								/>
+								{/* Customer dropdown */}
+								{showCustomerDropdown && (
+									<div className="absolute top-full mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-40 overflow-y-auto">
+										{filteredCustomers.length === 0 ? (
+											<div className="px-3 py-2 text-gray-500 text-center">
+												{customerSearchTerm
+													? 'Nenhum cliente encontrado'
+													: 'Digite para buscar clientes'}
+											</div>
+										) : (
+											filteredCustomers.map((customer) => (
+												<div
+													key={customer.id}
+													onClick={() => handleCustomerSelect(customer)}
+													className="px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+												>
+													<div className="font-medium text-gray-900">
+														{customer.name}
+													</div>
+													<div className="text-sm text-gray-500">
+														{customer.email} • {customer.cpf}
+													</div>
+												</div>
+											))
+										)}
+									</div>
+								)}
 							</div>
 
-							{/* Items - Same as create modal */}
-							<div>
-								<div className="flex justify-between items-center mb-2">
-									<label className="block text-sm font-medium text-gray-700">
-										Itens*
-									</label>
-									<Button
-										type="button"
-										variant="secondary"
-										onClick={addItemToForm}
-									>
-										<Plus className="h-4 w-4 mr-1" />
-										Adicionar Item
-									</Button>
+							{/* Add Item Form - Same as create modal */}
+							<div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+								<h3 className="text-sm font-medium text-gray-700 mb-3">
+									Adicionar Item
+								</h3>
+								<div className="grid grid-cols-12 gap-3 items-end">
+									{/* Código do Produto */}
+									<div className="col-span-2">
+										<label className="block text-xs font-medium text-gray-600 mb-1">
+											Cód. Prod
+										</label>
+										<input
+											type="text"
+											value={newItemForm.productCode}
+											readOnly
+											placeholder="Auto"
+											className="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg bg-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+										/>
+									</div>
+
+									{/* Descrição do Produto */}
+									<div className="col-span-4 relative">
+										<label className="block text-xs font-medium text-gray-600 mb-1">
+											Descrição
+										</label>
+										<input
+											type="text"
+											value={newItemForm.productDescription}
+											onChange={(e) =>
+												handleProductDescriptionChange(e.target.value)
+											}
+											onFocus={() => setShowProductDropdown(true)}
+											onBlur={(e) => {
+												// Delay hiding dropdown to allow clicking on items
+												setTimeout(() => setShowProductDropdown(false), 150);
+											}}
+											placeholder="Clique para buscar produto..."
+											className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+										/>
+
+										{/* Product Dropdown */}
+										{showProductDropdown && (
+											<div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+												{filteredProductsForDropdown.length > 0 ? (
+													filteredProductsForDropdown
+														.slice(0, 8)
+														.map((product) => (
+															<div
+																key={product.id}
+																onMouseDown={() => handleProductSelect(product)}
+																className="p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0 flex justify-between items-center"
+															>
+																<div>
+																	<p className="font-medium text-gray-900 text-sm">
+																		{product.name}
+																	</p>
+																	<p className="text-xs text-gray-600">
+																		Código: {product.code}
+																	</p>
+																</div>
+																<div className="text-right">
+																	<p className="font-medium text-green-600 text-sm">
+																		R$ {product.salePrice.toFixed(2)}
+																	</p>
+																	<p className="text-xs text-gray-500">
+																		Estoque: {product.stock}
+																	</p>
+																</div>
+															</div>
+														))
+												) : (
+													<div className="p-3 text-sm text-gray-500 text-center">
+														{newItemForm.productDescription
+															? 'Nenhum produto encontrado'
+															: 'Digite para buscar produtos'}
+													</div>
+												)}
+											</div>
+										)}
+									</div>
+
+									{/* Quantidade */}
+									<div className="col-span-2">
+										<label className="block text-xs font-medium text-gray-600 mb-1">
+											Quantidade
+										</label>
+										<input
+											type="number"
+											step="0.01"
+											min="0.01"
+											value={newItemForm.quantity}
+											onChange={(e) =>
+												setNewItemForm((prev) => ({
+													...prev,
+													quantity: Number(e.target.value),
+												}))
+											}
+											className="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-right"
+										/>
+									</div>
+
+									{/* Valor Unitário */}
+									<div className="col-span-2">
+										<label className="block text-xs font-medium text-gray-600 mb-1">
+											Valor Unitário
+										</label>
+										<input
+											type="number"
+											step="0.01"
+											min="0"
+											value={newItemForm.unitPrice}
+											onChange={(e) =>
+												setNewItemForm((prev) => ({
+													...prev,
+													unitPrice: Number(e.target.value),
+												}))
+											}
+											className="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-right"
+										/>
+									</div>
+
+									{/* Botão Adicionar */}
+									<div className="col-span-2">
+										<label className="block text-xs font-medium text-gray-600 mb-1">
+											&nbsp;
+										</label>
+										<Button
+											type="button"
+											variant="primary"
+											size="sm"
+											onClick={handleAddItemFromForm}
+											className="w-full h-[38px] flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200 shadow-sm hover:shadow-md"
+										>
+											<Plus className="h-4 w-4" />
+										</Button>
+									</div>
+								</div>
+							</div>
+
+							{/* Items Section - Same as create modal */}
+							<div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+								<div className="flex justify-between items-center mb-4">
+									<h3 className="text-sm font-medium text-gray-700">
+										Itens da Pré-venda*
+									</h3>
 								</div>
 
+								{/* Items Header */}
+								{formItems.length > 0 && (
+									<div className="bg-white border border-gray-200 rounded-lg mb-2">
+										<div className="grid grid-cols-12 gap-2 px-3 py-2 bg-gray-50 rounded-t-lg border-b border-gray-200 text-xs font-medium text-gray-700">
+											<div className="col-span-4">Descrição do Item</div>
+											<div className="col-span-2 text-right">Valor</div>
+											<div className="col-span-2 text-right">Quantidade</div>
+											<div className="col-span-2 text-right">Preço Unit.</div>
+											<div className="col-span-1 text-right">Total</div>
+											<div className="col-span-1"></div>
+										</div>
+									</div>
+								)}
+
+								{/* Items List */}
 								{formItems.map((item, index) => (
-									<div key={index} className="bg-gray-50 p-4 rounded-lg mb-3">
-										<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-											<div>
-												<label className="block text-xs text-gray-600 mb-1">
-													Produto
-												</label>
-												<select
-													id={`${editFormId}-product-select-${index}`}
+									<div
+										key={index}
+										className="bg-white border border-gray-200 rounded-lg mb-2"
+									>
+										<div className="grid grid-cols-12 gap-2 px-3 py-2 items-center">
+											{/* Product Name */}
+											<div className="col-span-4">
+												<Select
 													value={item.product.id}
-													onChange={(e) => {
+													onChange={(value) => {
 														const product = products.find(
-															(p) => p.id === e.target.value,
+															(p) => p.id === value,
 														);
 														if (product) {
 															updateFormItem(index, 'product', product);
@@ -1049,33 +1614,22 @@ const PresalesPage: React.FC = () => {
 															);
 														}
 													}}
-													onKeyDown={(e) => {
-														if (e.key === 'Enter') {
-															e.preventDefault();
-															const quantityInput = document.getElementById(
-																`${editFormId}-quantity-input-${index}`,
-															);
-															if (quantityInput) {
-																quantityInput.focus();
-																(quantityInput as HTMLInputElement).select();
-															}
-														}
-													}}
-													className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-												>
-													{products.map((product) => (
-														<option key={product.id} value={product.id}>
-															{product.name}
-														</option>
-													))}
-												</select>
+													options={productOptions}
+													size="sm"
+												/>
 											</div>
-											<div>
-												<label className="block text-xs text-gray-600 mb-1">
-													Quantidade
-												</label>
+
+											{/* Value Display */}
+											<div className="col-span-2 text-right text-sm font-medium">
+												{calculateItemTotal(
+													item.quantity,
+													item.unitPrice,
+												).toFixed(2)}
+											</div>
+
+											{/* Quantity Input */}
+											<div className="col-span-2">
 												<input
-													id={`${editFormId}-quantity-input-${index}`}
 													type="number"
 													step="0.01"
 													min="0.01"
@@ -1087,27 +1641,13 @@ const PresalesPage: React.FC = () => {
 															Number(e.target.value),
 														)
 													}
-													onKeyDown={(e) => {
-														if (e.key === 'Enter') {
-															e.preventDefault();
-															const unitPriceInput = document.getElementById(
-																`${editFormId}-unit-price-input-${index}`,
-															);
-															if (unitPriceInput) {
-																unitPriceInput.focus();
-																(unitPriceInput as HTMLInputElement).select();
-															}
-														}
-													}}
-													className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+													className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-right"
 												/>
 											</div>
-											<div>
-												<label className="block text-xs text-gray-600 mb-1">
-													Preço Unit.
-												</label>
+
+											{/* Unit Price Input */}
+											<div className="col-span-2">
 												<input
-													id={`${editFormId}-unit-price-input-${index}`}
 													type="number"
 													step="0.01"
 													min="0"
@@ -1119,149 +1659,109 @@ const PresalesPage: React.FC = () => {
 															Number(e.target.value),
 														)
 													}
-													onKeyDown={(e) => {
-														if (e.key === 'Enter') {
-															e.preventDefault();
-															// Se existir próximo item, vai para o produto do próximo
-															if (index + 1 < formItems.length) {
-																const nextProductSelect =
-																	document.getElementById(
-																		`${editFormId}-product-select-${index + 1}`,
-																	);
-																if (nextProductSelect) {
-																	nextProductSelect.focus();
-																}
-															} else {
-																// Se é o último item, vai para o campo de desconto
-																const discountInput = document.getElementById(
-																	`${editFormId}-discount-input`,
-																);
-																if (discountInput) {
-																	discountInput.focus();
-																	(discountInput as HTMLInputElement).select();
-																}
-															}
-														}
-													}}
-													className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+													className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-right"
 												/>
 											</div>
-											<div className="flex items-end">
-												<div className="flex-1">
-													<label className="block text-xs text-gray-600 mb-1">
-														Total
-													</label>
-													<input
-														type="text"
-														value={`R$ ${calculateItemTotal(item.quantity, item.unitPrice).toFixed(2)}`}
-														readOnly
-														className="w-full px-2 py-1 bg-gray-100 border border-gray-300 rounded text-sm"
-													/>
-												</div>
-												<Button
+
+											{/* Total Display */}
+											<div className="col-span-1 text-right text-sm font-semibold">
+												{calculateItemTotal(
+													item.quantity,
+													item.unitPrice,
+												).toFixed(2)}
+											</div>
+
+											{/* Delete Button */}
+											<div className="col-span-1 text-center">
+												<button
 													type="button"
-													variant="danger"
 													onClick={() => removeItemFromForm(index)}
-													className="ml-2 p-1"
+													className="p-1 text-red-600 hover:text-red-800 hover:bg-red-100 rounded"
+													title="Remover item"
 												>
 													<Trash2 className="h-4 w-4" />
-												</Button>
+												</button>
 											</div>
 										</div>
 									</div>
 								))}
+
+								{/* Total Summary */}
+								{formItems.length > 0 && (
+									<div className="bg-white border border-gray-200 rounded-lg px-3 py-2">
+										<div className="flex justify-between items-center">
+											<span className="text-sm font-medium text-gray-700">
+												Total dos itens:
+											</span>
+											<span className="text-lg font-bold text-green-600">
+												R$ {calculateFormTotal().toFixed(2)}
+											</span>
+										</div>
+									</div>
+								)}
 							</div>
 
-							{/* Other fields same as create */}
-							<div className="grid grid-cols-2 gap-4">
-								<div>
-									<label className="block text-sm font-medium text-gray-700 mb-1">
-										Desconto
-									</label>
-									<input
-										id={`${editFormId}-discount-input`}
-										type="number"
-										step="0.01"
-										min="0"
-										value={formData.discount}
-										onChange={(e) =>
-											handleInputChange('discount')(e.target.value)
+							{/* Payment Method, Discount and Notes Section - Same as create modal */}
+							<div className="space-y-4">
+								{/* Payment Method and Discount in same row */}
+								<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+									<Select
+										label="Forma de Pagamento *"
+										value={formData.paymentMethodId}
+										onChange={(value) =>
+											handleInputChange('paymentMethodId')(value)
 										}
-										onKeyDown={(e) => {
-											if (e.key === 'Enter') {
-												e.preventDefault();
-												const discountTypeSelect = document.getElementById(
-													`${editFormId}-discount-type-select`,
-												);
-												if (discountTypeSelect) {
-													discountTypeSelect.focus();
-												}
+										options={paymentMethodOptions}
+										placeholder="Selecione a forma de pagamento"
+										required
+									/>
+									<div>
+										<label className="block text-sm font-medium text-gray-700 mb-1">
+											Desconto
+										</label>
+										<input
+											type="number"
+											step="0.01"
+											min="0"
+											value={formData.discount}
+											onChange={(e) =>
+												handleInputChange('discount')(e.target.value)
 											}
-										}}
-										placeholder="0.00"
-										className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+											placeholder="0.00"
+											className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+										/>
+									</div>
+									<Select
+										label="Tipo de Desconto"
+										value={formData.discountType}
+										onChange={(value) =>
+											handleInputChange('discountType')(value)
+										}
+										options={discountTypeOptions}
 									/>
 								</div>
+
+								{/* Observations - Full width */}
 								<div>
 									<label className="block text-sm font-medium text-gray-700 mb-1">
-										Tipo de Desconto
+										Observações
 									</label>
-									<select
-										id={`${editFormId}-discount-type-select`}
-										value={formData.discountType}
-										onChange={(e) =>
-											handleInputChange('discountType')(e.target.value)
-										}
-										onKeyDown={(e) => {
-											if (e.key === 'Enter') {
-												e.preventDefault();
-												const notesTextarea = document.getElementById(
-													`${editFormId}-notes-textarea`,
-												);
-												if (notesTextarea) {
-													notesTextarea.focus();
-												}
-											}
-										}}
-										className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-									>
-										<option value="percentage">Percentual (%)</option>
-										<option value="fixed">Valor Fixo (R$)</option>
-									</select>
+									<textarea
+										value={formData.notes}
+										onChange={(e) => handleInputChange('notes')(e.target.value)}
+										placeholder="Observações sobre a pré-venda..."
+										rows={3}
+										className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+									/>
 								</div>
-							</div>
-
-							<div>
-								<label className="block text-sm font-medium text-gray-700 mb-1">
-									Observações
-								</label>
-								<textarea
-									id={`${editFormId}-notes-textarea`}
-									value={formData.notes}
-									onChange={(e) => handleInputChange('notes')(e.target.value)}
-									placeholder="Observações sobre a pré-venda..."
-									rows={3}
-									onKeyDown={(e) => {
-										if (e.key === 'Enter' && e.ctrlKey) {
-											e.preventDefault();
-											const submitButton = document.getElementById(
-												`${editFormId}-submit-presale-edit-button`,
-											);
-											if (submitButton) {
-												submitButton.focus();
-											}
-										}
-									}}
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-								/>
 							</div>
 
 							{/* Total Summary */}
 							{formItems.length > 0 && (
-								<div className="bg-blue-50 p-4 rounded-lg">
+								<div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
 									<div className="flex justify-between items-center text-lg font-semibold">
-										<span>Total Geral:</span>
-										<span className="text-blue-600">
+										<span className="text-gray-700">Total Geral:</span>
+										<span className="text-blue-700">
 											R$ {calculateFormTotal().toFixed(2)}
 										</span>
 									</div>
@@ -1278,11 +1778,24 @@ const PresalesPage: React.FC = () => {
 										setSelectedPreSale(null);
 										setFormData({
 											customerId: '',
+											paymentMethodId: '',
 											notes: '',
 											discount: '',
 											discountType: 'percentage',
 										});
 										setFormItems([]);
+										setNewItemForm({
+											productCode: '',
+											productDescription: '',
+											quantity: 1,
+											unitPrice: 0,
+											selectedProduct: null,
+										});
+										// Reset customer search states
+										setCustomerSearchTerm('');
+										setSelectedCustomer(null);
+										setShowCustomerDropdown(false);
+										setShowProductDropdown(false);
 									}}
 								>
 									Cancelar

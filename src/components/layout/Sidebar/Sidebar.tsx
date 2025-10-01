@@ -85,7 +85,10 @@ const Sidebar: React.FC<SidebarProps> = ({
 		if (path.startsWith('/customers') && !expandedItems.includes('cadastros')) {
 			setExpandedItems((prev) => [...prev, 'cadastros']);
 		}
-		if (path.startsWith('/payment-methods') && !expandedItems.includes('cadastros')) {
+		if (
+			path.startsWith('/payment-methods') &&
+			!expandedItems.includes('cadastros')
+		) {
 			setExpandedItems((prev) => [...prev, 'cadastros']);
 		}
 		if (path.startsWith('/reports') && !expandedItems.includes('reports')) {
@@ -358,10 +361,12 @@ const Sidebar: React.FC<SidebarProps> = ({
 										)}
 							</div>
 							{/* Tooltip arrow */}
-							<div className={`
+							<div
+								className={`
 								absolute w-2 h-2 bg-slate-800 border-l border-b border-slate-600 rotate-45
 								${item.id === 'logout' || item.id === 'settings' ? 'left-0 bottom-4 transform -translate-x-1' : 'left-0 top-4 transform -translate-x-1'}
-							`} />
+							`}
+							/>
 						</div>
 					)}
 				</div>

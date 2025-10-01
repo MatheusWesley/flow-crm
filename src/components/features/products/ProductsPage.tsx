@@ -142,7 +142,7 @@ const ProductsPage: React.FC = () => {
 
 	// Functions for product operations
 	const handleEditProduct = (product: Product) => {
-	toastService.info(`Editando produto: ${product.name}`);
+		toastService.info(`Editando produto: ${product.name}`);
 		// TODO: Implement edit functionality
 	};
 

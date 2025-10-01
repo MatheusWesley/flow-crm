@@ -8,7 +8,7 @@ import toastService, { TOAST_MESSAGES } from '../../../services/ToastService';
 type TabType = 'list' | 'register';
 // All fields are now consolidated into a single form - no subtabs needed
 
-	// Mock customer data interface for the component
+// Mock customer data interface for the component
 interface MockCustomer {
 	id: string;
 	name: string;
@@ -177,13 +177,13 @@ const SimplifiedCustomers: React.FC = () => {
 										</span>
 									</div>
 									<div className="flex space-x-2">
-										<button 
+										<button
 											className="text-blue-600 hover:text-blue-800 text-sm"
 											onClick={() => handleEditCustomer(customer)}
 										>
 											Editar
 										</button>
-										<button 
+										<button
 											className="text-red-600 hover:text-red-800 text-sm"
 											onClick={() => handleDeleteCustomer(customer)}
 										>
@@ -208,7 +208,9 @@ const SimplifiedCustomers: React.FC = () => {
 		return (
 			<form onSubmit={handleSubmit} className="space-y-8">
 				<div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-					<h3 className="text-lg font-medium text-gray-900 mb-6">Informações Pessoais</h3>
+					<h3 className="text-lg font-medium text-gray-900 mb-6">
+						Informações Pessoais
+					</h3>
 					<div className="space-y-6">
 						{/* First row: Name and CPF */}
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-6">

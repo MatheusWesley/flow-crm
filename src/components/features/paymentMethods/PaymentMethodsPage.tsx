@@ -35,7 +35,7 @@ const PaymentMethodsPage: React.FC = () => {
 
 	// Initialize auto code service with existing payment method codes
 	useEffect(() => {
-		const existingCodes = paymentMethods.map(pm => pm.code);
+		const existingCodes = paymentMethods.map((pm) => pm.code);
 		AutoCodeService.initializeFromExisting('paymentMethod', existingCodes);
 	}, [paymentMethods]);
 
@@ -53,7 +53,7 @@ const PaymentMethodsPage: React.FC = () => {
 		setActiveTab(tab);
 		if (tab === 'register' && !formData.code) {
 			const newCode = AutoCodeService.generateCode('paymentMethod');
-			setFormData(prev => ({ ...prev, code: newCode }));
+			setFormData((prev) => ({ ...prev, code: newCode }));
 		}
 	};
 
@@ -120,7 +120,9 @@ const PaymentMethodsPage: React.FC = () => {
 
 					{paymentMethods.length === 0 && (
 						<div className="text-center py-8">
-							<p className="text-gray-500">Nenhuma forma de pagamento cadastrada ainda.</p>
+							<p className="text-gray-500">
+								Nenhuma forma de pagamento cadastrada ainda.
+							</p>
 						</div>
 					)}
 				</div>
@@ -178,7 +180,9 @@ const PaymentMethodsPage: React.FC = () => {
 
 	return (
 		<div className="p-6">
-			<h1 className="text-2xl font-bold text-gray-900 mb-6">Formas de Pagamento</h1>
+			<h1 className="text-2xl font-bold text-gray-900 mb-6">
+				Formas de Pagamento
+			</h1>
 
 			{/* Tabs */}
 			<div className="mb-6">
