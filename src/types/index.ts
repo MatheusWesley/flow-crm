@@ -57,6 +57,7 @@ export interface PreSale extends BaseEntity {
 	discount?: number;
 	discountType?: 'percentage' | 'fixed';
 	salesperson?: string;
+	paymentMethodId?: string;
 }
 
 export interface PreSaleItem {

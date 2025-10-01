@@ -136,20 +136,16 @@ const PresalesPage: React.FC = () => {
 
 	// Payment methods from centralized service
 	const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
-	const [isLoadingPaymentMethods, setIsLoadingPaymentMethods] = useState(false);
 
 	// Load payment methods on component mount
 	useEffect(() => {
 		const loadPaymentMethods = async () => {
-			setIsLoadingPaymentMethods(true);
 			try {
 				const data = await mockPaymentMethodService.getAll();
 				setPaymentMethods(data);
 			} catch (error) {
 				console.error('Error loading payment methods:', error);
 				toastService.error('Erro ao carregar formas de pagamento');
-			} finally {
-				setIsLoadingPaymentMethods(false);
 			}
 		};
 		
@@ -157,10 +153,6 @@ const PresalesPage: React.FC = () => {
 	}, []);
 
 	// Select options
-	const customerOptions = customers.map((customer) => ({
-		value: customer.id,
-		label: `${customer.name} - ${customer.email}`,
-	}));
 
 	const productOptions = products.map((product) => ({
 		value: product.id,
@@ -199,8 +191,6 @@ const PresalesPage: React.FC = () => {
 		Omit<PreSaleItem, 'id' | 'totalPrice'>[]
 	>([]);
 
-	// Product search state
-	const [productSearchTerm, setProductSearchTerm] = useState('');
 
 	// New item form state
 	const [newItemForm, setNewItemForm] = useState({
@@ -217,9 +207,6 @@ const PresalesPage: React.FC = () => {
 	// Customer search state
 	const [customerSearchTerm, setCustomerSearchTerm] = useState('');
 	const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
-	const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
-		null,
-	);
 
 	const getStatusLabel = (status: PreSale['status']) => {
 		const statusLabels = {
@@ -252,12 +239,6 @@ const PresalesPage: React.FC = () => {
 		return matchesSearch && matchesStatus;
 	});
 
-	// Filter products for search
-	const filteredProductsForSearch = products.filter(
-		(product) =>
-			product.name.toLowerCase().includes(productSearchTerm.toLowerCase()) ||
-			product.code.toLowerCase().includes(productSearchTerm.toLowerCase()),
-	);
 
 	// Filter customers for search
 	const filteredCustomers = useMemo(() => {
@@ -298,7 +279,6 @@ const PresalesPage: React.FC = () => {
 		});
 
 		// Initialize customer search state
-		setSelectedCustomer(preSale.customer);
 		setCustomerSearchTerm(preSale.customer.name);
 
 		setFormItems(
@@ -337,53 +317,7 @@ const PresalesPage: React.FC = () => {
 		setFormData((prev) => ({ ...prev, [field]: value }));
 	};
 
-	const addItemToForm = () => {
-		setFormItems((prev) => [
-			...prev,
-			{
-				product: products[0],
-				quantity: 1,
-				unitPrice: products[0].salePrice,
-				notes: '',
-			},
-		]);
-	};
 
-	const handleAddProductFromSearch = (product: Product) => {
-		// Check if product is already in the list
-		const existingItemIndex = formItems.findIndex(
-			(item) => item.product.id === product.id,
-		);
-
-		if (existingItemIndex >= 0) {
-			// If product already exists, increase quantity
-			setFormItems((prev) =>
-				prev.map((item, index) =>
-					index === existingItemIndex
-						? { ...item, quantity: item.quantity + 1 }
-						: item,
-				),
-			);
-			toastService.info(
-				`Quantidade de "${product.name}" aumentada para ${formItems[existingItemIndex].quantity + 1}`,
-			);
-		} else {
-			// Add new product to the list
-			setFormItems((prev) => [
-				...prev,
-				{
-					product,
-					quantity: 1,
-					unitPrice: product.salePrice,
-					notes: '',
-				},
-			]);
-			toastService.success(`"${product.name}" adicionado aos itens!`);
-		}
-
-		// Clear search term after adding
-		setProductSearchTerm('');
-	};
 
 	// Handle customer search
 	const handleCustomerSearch = (searchTerm: string) => {
@@ -399,17 +333,14 @@ const PresalesPage: React.FC = () => {
 		);
 
 		if (matchingCustomer) {
-			setSelectedCustomer(matchingCustomer);
 			setFormData((prev) => ({ ...prev, customerId: matchingCustomer.id }));
 		} else {
-			setSelectedCustomer(null);
 			setFormData((prev) => ({ ...prev, customerId: '' }));
 		}
 	};
 
 	// Handle customer selection from dropdown
 	const handleCustomerSelect = (customer: Customer) => {
-		setSelectedCustomer(customer);
 		setCustomerSearchTerm(customer.name);
 		setFormData((prev) => ({ ...prev, customerId: customer.id }));
 		setShowCustomerDropdown(false);
@@ -642,7 +573,6 @@ const PresalesPage: React.FC = () => {
 			discountType: 'percentage',
 		});
 		setFormItems([]);
-		setProductSearchTerm('');
 		setNewItemForm({
 			productCode: '',
 			productDescription: '',
@@ -1014,10 +944,10 @@ const PresalesPage: React.FC = () => {
 												handleProductDescriptionChange(e.target.value)
 											}
 											onFocus={() => setShowProductDropdown(true)}
-											onBlur={(e) => {
-												// Delay hiding dropdown to allow clicking on items
-												setTimeout(() => setShowProductDropdown(false), 150);
-											}}
+									onBlur={() => {
+										// Delay hiding dropdown to allow clicking on items
+										setTimeout(() => setShowProductDropdown(false), 150);
+									}}
 											placeholder="Clique para buscar produto..."
 											className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
 										/>
@@ -1346,7 +1276,6 @@ const PresalesPage: React.FC = () => {
 										});
 										// Reset customer search states
 										setCustomerSearchTerm('');
-										setSelectedCustomer(null);
 										setShowCustomerDropdown(false);
 										setShowProductDropdown(false);
 									}}
@@ -1390,7 +1319,6 @@ const PresalesPage: React.FC = () => {
 						});
 						// Reset customer search states
 						setCustomerSearchTerm('');
-						setSelectedCustomer(null);
 						setShowCustomerDropdown(false);
 						setShowProductDropdown(false);
 					}}
@@ -1477,10 +1405,10 @@ const PresalesPage: React.FC = () => {
 												handleProductDescriptionChange(e.target.value)
 											}
 											onFocus={() => setShowProductDropdown(true)}
-											onBlur={(e) => {
-												// Delay hiding dropdown to allow clicking on items
-												setTimeout(() => setShowProductDropdown(false), 150);
-											}}
+									onBlur={() => {
+										// Delay hiding dropdown to allow clicking on items
+										setTimeout(() => setShowProductDropdown(false), 150);
+									}}
 											placeholder="Clique para buscar produto..."
 											className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
 										/>
@@ -1809,7 +1737,6 @@ const PresalesPage: React.FC = () => {
 										});
 										// Reset customer search states
 										setCustomerSearchTerm('');
-										setSelectedCustomer(null);
 										setShowCustomerDropdown(false);
 										setShowProductDropdown(false);
 									}}
@@ -1867,6 +1794,7 @@ const PresalesPage: React.FC = () => {
 							<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 								{(
 									[
+										'draft',
 										'pending',
 										'approved',
 										'cancelled',
@@ -1875,6 +1803,7 @@ const PresalesPage: React.FC = () => {
 								).map((status) => {
 									const isCurrent = selectedPreSale.status === status;
 									const statusInfo = {
+										draft: { icon: '📝', desc: 'Pré-venda em rascunho' },
 										pending: { icon: '⏳', desc: 'Aguardando aprovação do cliente' },
 										approved: { icon: '✅', desc: 'Cliente aprovou a proposta' },
 										cancelled: { icon: '❌', desc: 'Pré-venda foi cancelada' },
