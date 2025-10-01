@@ -6,13 +6,16 @@ import {
 	Plus,
 	Search,
 	Trash2,
+	RotateCcw,
 } from 'lucide-react';
 import type React from 'react';
-import { useId, useMemo, useState } from 'react';
+import { useId, useMemo, useState, useEffect } from 'react';
 import toastService, { TOAST_MESSAGES } from '../../../services/ToastService';
-import type { Customer, PreSale, PreSaleItem, Product } from '../../../types';
+import { mockPaymentMethodService } from '../../../data/mockPaymentMethodService';
+import type { Customer, PreSale, PreSaleItem, Product, PaymentMethod } from '../../../types';
 import Button from '../../common/Button';
 import InPageModal from '../../common/InPageModal';
+import SimpleModal from '../../common/SimpleModal';
 import Select from '../../common/Select';
 import PreSaleItemsDisplay from './PreSaleItemsDisplay';
 
@@ -131,14 +134,27 @@ const PresalesPage: React.FC = () => {
 		},
 	]);
 
-	// Mock data for payment methods
-	const [paymentMethods] = useState([
-		{ id: '1', code: 'PAG001', description: 'Dinheiro' },
-		{ id: '2', code: 'PAG002', description: 'Cartão de Crédito' },
-		{ id: '3', code: 'PAG003', description: 'Cartão de Débito' },
-		{ id: '4', code: 'PAG004', description: 'PIX' },
-		{ id: '5', code: 'PAG005', description: 'Boleto Bancário' },
-	]);
+	// Payment methods from centralized service
+	const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+	const [isLoadingPaymentMethods, setIsLoadingPaymentMethods] = useState(false);
+
+	// Load payment methods on component mount
+	useEffect(() => {
+		const loadPaymentMethods = async () => {
+			setIsLoadingPaymentMethods(true);
+			try {
+				const data = await mockPaymentMethodService.getAll();
+				setPaymentMethods(data);
+			} catch (error) {
+				console.error('Error loading payment methods:', error);
+				toastService.error('Erro ao carregar formas de pagamento');
+			} finally {
+				setIsLoadingPaymentMethods(false);
+			}
+		};
+		
+		loadPaymentMethods();
+	}, []);
 
 	// Select options
 	const customerOptions = customers.map((customer) => ({
@@ -594,7 +610,7 @@ const PresalesPage: React.FC = () => {
 				totalPrice: calculateItemTotal(item.quantity, item.unitPrice),
 			})),
 			total: calculateFormTotal(),
-			status: isEdit && selectedPreSale ? selectedPreSale.status : 'draft',
+		status: isEdit && selectedPreSale ? selectedPreSale.status : 'pending',
 			notes: formData.notes || undefined,
 			discount: Number(formData.discount) || undefined,
 			discountType: formData.discountType,
@@ -760,10 +776,10 @@ const PresalesPage: React.FC = () => {
 										<button
 											type="button"
 											onClick={() => handleStatusChange(preSale)}
-											className="p-1 text-purple-600 hover:text-purple-800 hover:bg-purple-100 rounded"
+											className="p-1 text-purple-600 hover:text-purple-800 hover:bg-purple-100 rounded transition-colors"
 											title="Alterar Status"
 										>
-											⚙️
+											<RotateCcw className="h-4 w-4" />
 										</button>
 										{preSale.status !== 'converted' && (
 											<button
@@ -1813,68 +1829,102 @@ const PresalesPage: React.FC = () => {
 				</InPageModal>
 			)}
 
-			{/* Status Change Modal */}
+			{/* Status Change Modal - Compact Design */}
 			{showStatusModal && selectedPreSale && (
-				<InPageModal
+				<SimpleModal
 					isOpen={showStatusModal}
 					onClose={() => setShowStatusModal(false)}
-					title={`Alterar Status - Pré-venda #${selectedPreSale.id}`}
+					title="Alterar Status"
 				>
-					<div className="space-y-4">
-						<div className="text-center">
-							<p className="text-gray-600 mb-4">
-								Status atual:{' '}
-								<span
-									className={`px-2 py-1 rounded text-sm font-medium ${getStatusColor(selectedPreSale.status)}`}
-								>
-									{getStatusLabel(selectedPreSale.status)}
-								</span>
-							</p>
-							<p className="text-sm text-gray-500 mb-6">
-								Selecione o novo status para esta pré-venda:
-							</p>
+					<div className="space-y-5">
+						{/* Header com ícone */}
+						<div className="flex items-center gap-3 pb-4 border-b border-gray-200">
+							<div className="p-2 bg-purple-100 rounded-lg">
+								<RotateCcw className="h-5 w-5 text-purple-600" />
+							</div>
+							<div>
+								<p className="text-sm text-gray-500">Pré-venda #{selectedPreSale.id}</p>
+							</div>
 						</div>
 
-						<div className="grid grid-cols-1 gap-3">
-							{(
-								[
-									'pending',
-									'approved',
-									'cancelled',
-									'converted',
-								] as PreSale['status'][]
-							).map((status) => (
-								<button
-									key={status}
-									onClick={() => updatePreSaleStatus(status)}
-									disabled={selectedPreSale.status === status}
-									className={`w-full p-3 rounded-lg border text-left transition-colors ${
-										selectedPreSale.status === status
-											? 'bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed'
-											: 'bg-white border-gray-200 hover:border-blue-300 hover:bg-blue-50 cursor-pointer'
-									}`}
-								>
-									<div className="flex items-center justify-between">
-										<span className="font-medium">
-											{getStatusLabel(status)}
-										</span>
-										<span
-											className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(status)}`}
+						{/* Lista de Status */}
+						<div className="space-y-4">
+							<p className="text-sm text-gray-600 mb-1">
+								Status atual:
+							</p>
+							<span
+								className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(selectedPreSale.status)}`}
+							>
+								{getStatusLabel(selectedPreSale.status)}
+							</span>
+						</div>
+
+						{/* Opções de Status - Cards Modernos */}
+						<div>
+							<p className="text-sm text-gray-600 mb-4 text-center">
+								Selecione o novo status:
+							</p>
+							<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+								{(
+									[
+										'pending',
+										'approved',
+										'cancelled',
+										'converted',
+									] as PreSale['status'][]
+								).map((status) => {
+									const isCurrent = selectedPreSale.status === status;
+									const statusInfo = {
+										pending: { icon: '⏳', desc: 'Aguardando aprovação do cliente' },
+										approved: { icon: '✅', desc: 'Cliente aprovou a proposta' },
+										cancelled: { icon: '❌', desc: 'Pré-venda foi cancelada' },
+										converted: { icon: '✨', desc: 'Convertida em venda final' },
+									};
+									
+									return (
+										<button
+											key={status}
+											onClick={() => updatePreSaleStatus(status)}
+											disabled={isCurrent}
+											className={`
+												relative p-4 rounded-xl border-2 text-left transition-all duration-200 transform
+												${isCurrent
+													? 'bg-gray-50 border-gray-300 text-gray-400 cursor-not-allowed'
+													: 'bg-white border-gray-200 hover:border-purple-300 hover:bg-purple-50 hover:scale-105 hover:shadow-md cursor-pointer'
+												}
+											`}
 										>
-											{status}
-										</span>
-									</div>
-									<p className="text-sm text-gray-500 mt-1">
-										{status === 'pending' && 'Aguardando aprovação do cliente'}
-										{status === 'approved' && 'Cliente aprovou a proposta'}
-										{status === 'cancelled' && 'Pré-venda foi cancelada'}
-										{status === 'converted' && 'Convertida em venda final'}
-									</p>
-								</button>
-							))}
+											{isCurrent && (
+												<div className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs px-2 py-1 rounded-full font-medium">
+													Atual
+												</div>
+											)}
+											
+											<div className="flex items-center gap-3 mb-2">
+												<span className="text-2xl">{statusInfo[status].icon}</span>
+												<div>
+													<div className="flex items-center gap-2">
+														<span className="font-semibold text-gray-900">
+															{getStatusLabel(status)}
+														</span>
+														<span
+															className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(status)}`}
+														>
+															{status}
+														</span>
+													</div>
+												</div>
+											</div>
+											<p className="text-sm text-gray-500 leading-relaxed">
+												{statusInfo[status].desc}
+											</p>
+										</button>
+									);
+								})}
+							</div>
 						</div>
 					</div>
-				</InPageModal>
+				</SimpleModal>
 			)}
 		</div>
 	);
