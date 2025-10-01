@@ -2,6 +2,7 @@ import type React from 'react';
 import { useState, useEffect } from 'react';
 import type { PaymentMethod } from '../../../types';
 import { AutoCodeService } from '../../../utils';
+import { mockPaymentMethodService } from '../../../data/mockPaymentMethodService';
 import Button from '../../common/Button';
 import Input from '../../common/Input';
 
@@ -9,35 +10,29 @@ type TabType = 'list' | 'register';
 
 const PaymentMethodsPage: React.FC = () => {
 	const [activeTab, setActiveTab] = useState<TabType>('list');
-	const [paymentMethods] = useState<PaymentMethod[]>([
-		{
-			id: '1',
-			code: 'PAG001',
-			description: 'Dinheiro',
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		},
-		{
-			id: '2',
-			code: 'PAG002',
-			description: 'Cartão de Crédito',
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		},
-		{
-			id: '3',
-			code: 'PAG003',
-			description: 'PIX',
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		},
-	]);
+	const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+	const [isLoading, setIsLoading] = useState(false);
 
-	// Initialize auto code service with existing payment method codes
+	// Load payment methods on component mount
 	useEffect(() => {
-		const existingCodes = paymentMethods.map((pm) => pm.code);
-		AutoCodeService.initializeFromExisting('paymentMethod', existingCodes);
-	}, [paymentMethods]);
+		const loadPaymentMethods = async () => {
+			setIsLoading(true);
+			try {
+				const data = await mockPaymentMethodService.getAll();
+				setPaymentMethods(data);
+				
+				// Initialize auto code service with existing codes
+				const existingCodes = data.map((pm) => pm.code);
+				AutoCodeService.initializeFromExisting('paymentMethod', existingCodes);
+			} catch (error) {
+				console.error('Error loading payment methods:', error);
+			} finally {
+				setIsLoading(false);
+			}
+		};
+		
+		loadPaymentMethods();
+	}, []);
 
 	const [formData, setFormData] = useState({
 		code: '',
@@ -57,15 +52,40 @@ const PaymentMethodsPage: React.FC = () => {
 		}
 	};
 
-	const handleSubmit = (e: React.FormEvent) => {
+	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		console.log('Dados da forma de pagamento:', formData);
-		// Here would implement the save logic
-		// Reset form after submit
-		setFormData({
-			code: '',
-			description: '',
-		});
+		
+		if (!formData.description.trim()) {
+			alert('Por favor, preencha a descrição da forma de pagamento.');
+			return;
+		}
+		
+		setIsLoading(true);
+		try {
+			const newPaymentMethod = await mockPaymentMethodService.create({
+				code: formData.code,
+				description: formData.description.trim(),
+			});
+			
+			// Update local state
+			setPaymentMethods(prev => [...prev, newPaymentMethod]);
+			
+			// Reset form after submit
+			setFormData({
+				code: '',
+				description: '',
+			});
+			
+			// Switch to list tab to show the newly created item
+			setActiveTab('list');
+			
+			console.log('Forma de pagamento criada:', newPaymentMethod);
+		} catch (error) {
+			console.error('Erro ao criar forma de pagamento:', error);
+			alert('Erro ao criar forma de pagamento. Tente novamente.');
+		} finally {
+			setIsLoading(false);
+		}
 	};
 
 	const renderTabContent = () => {
@@ -170,8 +190,8 @@ const PaymentMethodsPage: React.FC = () => {
 					>
 						Limpar
 					</Button>
-					<Button type="submit" variant="primary">
-						Cadastrar Forma de Pagamento
+					<Button type="submit" variant="primary" disabled={isLoading}>
+						{isLoading ? 'Salvando...' : 'Cadastrar Forma de Pagamento'}
 					</Button>
 				</div>
 			</form>
