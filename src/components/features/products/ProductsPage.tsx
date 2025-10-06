@@ -1,5 +1,6 @@
 import type React from 'react';
 import { useEffect, useState } from 'react';
+import toastService, { TOAST_MESSAGES } from '../../../services/ToastService';
 import type { Product } from '../../../types';
 import { AutoCodeService } from '../../../utils';
 import PriceCalculationService from '../../../utils/priceCalculationService';
@@ -9,7 +10,6 @@ import CheckboxGroup from '../../common/CheckboxGroup';
 import Input from '../../common/Input';
 import type { SelectOption } from '../../common/Select';
 import Select from '../../common/Select';
-import toastService, { TOAST_MESSAGES } from '../../../services/ToastService';
 
 type TabType = 'list' | 'register';
 type SubTabType = 'basic' | 'pricesStock';

@@ -1,8 +1,8 @@
 import type React from 'react';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { mockPaymentMethodService } from '../../../data/mockPaymentMethodService';
 import type { PaymentMethod } from '../../../types';
 import { AutoCodeService } from '../../../utils';
-import { mockPaymentMethodService } from '../../../data/mockPaymentMethodService';
 import Button from '../../common/Button';
 import Input from '../../common/Input';
 
@@ -20,7 +20,7 @@ const PaymentMethodsPage: React.FC = () => {
 			try {
 				const data = await mockPaymentMethodService.getAll();
 				setPaymentMethods(data);
-				
+
 				// Initialize auto code service with existing codes
 				const existingCodes = data.map((pm) => pm.code);
 				AutoCodeService.initializeFromExisting('paymentMethod', existingCodes);
@@ -30,7 +30,7 @@ const PaymentMethodsPage: React.FC = () => {
 				setIsLoading(false);
 			}
 		};
-		
+
 		loadPaymentMethods();
 	}, []);
 
@@ -54,31 +54,31 @@ const PaymentMethodsPage: React.FC = () => {
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		
+
 		if (!formData.description.trim()) {
 			alert('Por favor, preencha a descrição da forma de pagamento.');
 			return;
 		}
-		
+
 		setIsLoading(true);
 		try {
 			const newPaymentMethod = await mockPaymentMethodService.create({
 				code: formData.code,
 				description: formData.description.trim(),
 			});
-			
+
 			// Update local state
-			setPaymentMethods(prev => [...prev, newPaymentMethod]);
-			
+			setPaymentMethods((prev) => [...prev, newPaymentMethod]);
+
 			// Reset form after submit
 			setFormData({
 				code: '',
 				description: '',
 			});
-			
+
 			// Switch to list tab to show the newly created item
 			setActiveTab('list');
-			
+
 			console.log('Forma de pagamento criada:', newPaymentMethod);
 		} catch (error) {
 			console.error('Erro ao criar forma de pagamento:', error);

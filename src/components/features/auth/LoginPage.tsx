@@ -1,15 +1,23 @@
-import { AlertCircle, ShoppingCart } from 'lucide-react';
+import {
+	AlertCircle,
+	Eye,
+	EyeOff,
+	Loader,
+	Lock,
+	LogIn,
+	User,
+} from 'lucide-react';
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import flowcrmSvg from '../../../assets/flowcrm.svg';
 import { useAuth } from '../../../context/AuthContext';
-import Button from '../../common/Button';
-import Input from '../../common/Input';
 
 const LoginPage: React.FC = () => {
 	const navigate = useNavigate();
 	const location = useLocation();
 	const { login, isAuthenticated, isLoading, error, clearError } = useAuth();
+	const [showPassword, setShowPassword] = useState(false);
 
 	// Form state
 	const [formData, setFormData] = useState({
@@ -28,17 +36,17 @@ const LoginPage: React.FC = () => {
 		(location.state as { from?: { pathname: string } })?.from?.pathname ||
 		'/dashboard';
 
-	// Redirect if already authenticated
-	if (isAuthenticated) {
-		return <Navigate to={from} replace />;
-	}
-
 	// Clear errors when component mounts or form data changes
 	useEffect(() => {
 		if (error) {
 			clearError();
 		}
-	}, [formData, clearError]);
+	}, [error, clearError]);
+
+	// Redirect if already authenticated
+	if (isAuthenticated) {
+		return <Navigate to={from} replace />;
+	}
 
 	// Handle input changes
 	const handleInputChange =
@@ -97,112 +105,137 @@ const LoginPage: React.FC = () => {
 		}
 	};
 
-	// Handle key press for accessibility
-	const handleKeyPress = (e: React.KeyboardEvent) => {
-		if (e.key === 'Enter') {
-			handleSubmit(e as unknown as React.FormEvent);
-		}
-	};
-
 	return (
-		<div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-			<div className="w-full max-w-md">
-				{/* Logo and Header */}
-				<div className="text-center mb-8">
-					<div className="mx-auto w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-4">
-						<ShoppingCart className="w-8 h-8 text-white" />
+		<div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-white">
+			{/* Coluna da imagem (desktop) */}
+			<div className="hidden lg:block relative h-full min-h-screen">
+				<img
+					src={flowcrmSvg}
+					alt="Flow CRM Illustration"
+					className="absolute inset-0 h-full w-full object-cover"
+					loading="eager"
+				/>
+				<div className="absolute inset-0 bg-gradient-to-tr from-indigo-700/50 via-sky-600/30 to-transparent" />
+			</div>
+
+			{/* Coluna do formulário */}
+			<div className="relative flex w-full items-center justify-center p-6 sm:p-10 lg:p-16 bg-gradient-to-br from-sky-50 via-white to-indigo-50 overflow-hidden">
+				{/* Background esmaecido atrás do formulário */}
+				<img
+					src={flowcrmSvg}
+					alt="Fundo Flow CRM esmaecido"
+					className="pointer-events-none select-none absolute inset-0 h-full w-full object-cover opacity-10 grayscale"
+					aria-hidden="true"
+				/>
+				<div
+					className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-white/70 via-white/40 to-transparent"
+					aria-hidden="true"
+				/>
+
+				{/* Card do formulário */}
+				<div className="relative z-10 w-full max-w-sm mx-auto bg-white shadow-lg shadow-gray-500 rounded-xl">
+					{/* Header */}
+					<div className="space-y-2 p-6 pb-4">
+						<h1 className="text-center text-2xl font-bold text-gray-900">
+							<span className="text-orange-500">Flow</span>{' '}
+							<strong className="text-indigo-600">CRM</strong> | Entrar
+						</h1>
+						<p className="text-center text-sm text-gray-600">
+							Acesse sua conta para continuar
+						</p>
 					</div>
-					<h1 className="text-3xl font-bold text-gray-900 mb-2">Flow CRM</h1>
-					<p className="text-gray-600">Sistema de Gestão de Vendas</p>
-				</div>
 
-				{/* Login Form Card */}
-				<div className="bg-white rounded-xl shadow-lg p-8">
-					<h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">
-						Fazer Login
-					</h2>
-
-					{/* Global Error Display */}
-					{error && (
-						<div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-3">
-							<AlertCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
-							<div>
-								<p className="text-red-800 font-medium">Erro no login</p>
-								<p className="text-red-700 text-sm mt-1">{error.message}</p>
+					{/* Content */}
+					<div className="space-y-4 p-6 pt-2">
+						{/* Global Error Display */}
+						{error && (
+							<div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+								<div className="flex items-start space-x-2">
+									<AlertCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+									<div>
+										<p className="text-red-800 font-medium text-sm">
+											Erro no login
+										</p>
+										<p className="text-red-700 text-xs mt-1">{error.message}</p>
+									</div>
+								</div>
 							</div>
-						</div>
-					)}
+						)}
 
-					{/* Demo Credentials Info */}
-					<div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-						<p className="text-blue-800 font-medium text-sm mb-2">
-							Credenciais de demonstração:
-						</p>
-						<div className="text-blue-700 text-sm space-y-1">
-							<p>
-								<strong>Email:</strong> admin@flowcrm.com
-							</p>
-							<p>
-								<strong>Senha:</strong> admin123
-							</p>
-						</div>
-					</div>
+						{/* Login Form */}
+						<form onSubmit={handleSubmit} className="space-y-4">
+							{/* Email Field */}
+							<div className="space-y-2">
+								<label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+									<User size={16} />
+									Usuário
+								</label>
+								<input
+									type="email"
+									placeholder="Informe seu nome de usuário"
+									value={formData.email}
+									onChange={(e) => handleInputChange('email')(e.target.value)}
+									className="w-full h-10 px-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors outline-none"
+									disabled={isLoading}
+									autoComplete="username"
+								/>
+								{validationErrors.email && (
+									<p className="text-xs text-red-600">
+										{validationErrors.email}
+									</p>
+								)}
+							</div>
 
-					{/* Login Form */}
-					<form
-						onSubmit={handleSubmit}
-						className="space-y-6"
-						onKeyPress={handleKeyPress}
-					>
-						{/* Email Field */}
-						<div>
-							<Input
-								type="email"
-								label="Email"
-								placeholder="Digite seu email"
-								value={formData.email}
-								onChange={handleInputChange('email')}
-								error={validationErrors.email}
-								required
+							{/* Password Field */}
+							<div className="space-y-2">
+								<label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+									<Lock size={16} />
+									Senha
+								</label>
+								<div className="relative">
+									<input
+										type={showPassword ? 'text' : 'password'}
+										placeholder="Informe sua senha"
+										value={formData.password}
+										onChange={(e) =>
+											handleInputChange('password')(e.target.value)
+										}
+										className="w-full h-10 px-3 pr-10 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors outline-none"
+										disabled={isLoading}
+										autoComplete="current-password"
+									/>
+									<button
+										type="button"
+										onClick={() => setShowPassword(!showPassword)}
+										className="absolute right-0 top-0 h-10 w-10 flex items-center justify-center text-gray-500 hover:text-gray-700"
+									>
+										{showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+									</button>
+								</div>
+								{validationErrors.password && (
+									<p className="text-xs text-red-600">
+										{validationErrors.password}
+									</p>
+								)}
+							</div>
+
+							{/* Submit Button */}
+							<button
+								type="submit"
 								disabled={isLoading}
-								autoComplete="username"
-								autoFocus
-							/>
+								className="w-full h-10 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 text-white font-medium text-sm rounded-lg transition-colors flex items-center justify-center space-x-2"
+							>
+								{isLoading ? <Loader size={16} /> : <LogIn size={16} />}
+								<span>{isLoading ? 'Entrando...' : 'Entrar'}</span>
+							</button>
+						</form>
+
+						{/* Footer */}
+						<div className="text-center pt-2">
+							<p className="mt-1 text-xs text-gray-500">
+								Ao continuar, você concorda com os termos de uso.
+							</p>
 						</div>
-
-						{/* Password Field */}
-						<div>
-							<Input
-								type="password"
-								label="Senha"
-								placeholder="Digite sua senha"
-								value={formData.password}
-								onChange={handleInputChange('password')}
-								error={validationErrors.password}
-								required
-								disabled={isLoading}
-								autoComplete="current-password"
-							/>
-						</div>
-
-						{/* Submit Button */}
-						<Button
-							type="submit"
-							variant="primary"
-							size="lg"
-							className="w-full"
-							loading={isLoading}
-							disabled={isLoading}
-						>
-							{isLoading ? 'Entrando...' : 'Entrar'}
-						</Button>
-					</form>
-
-					{/* Footer */}
-					<div className="mt-8 text-center">
-						<p className="text-sm text-gray-600">
-							Desenvolvido com ❤️ para gestão de vendas
-						</p>
 					</div>
 				</div>
 			</div>

@@ -18,7 +18,7 @@ class AutoCodeService {
 	static generateCode(
 		entityType: keyof typeof AutoCodeService.configs,
 	): string {
-		const config = this.configs[entityType];
+		const config = AutoCodeService.configs[entityType];
 		if (!config) {
 			throw new Error(`Entity type ${entityType} not configured`);
 		}
@@ -37,7 +37,7 @@ class AutoCodeService {
 		entityType: keyof typeof AutoCodeService.configs,
 		count: number,
 	): void {
-		const config = this.configs[entityType];
+		const config = AutoCodeService.configs[entityType];
 		if (config) {
 			config.currentCount = count;
 		}
@@ -49,7 +49,7 @@ class AutoCodeService {
 	static previewNextCode(
 		entityType: keyof typeof AutoCodeService.configs,
 	): string {
-		const config = this.configs[entityType];
+		const config = AutoCodeService.configs[entityType];
 		if (!config) {
 			throw new Error(`Entity type ${entityType} not configured`);
 		}
@@ -66,7 +66,7 @@ class AutoCodeService {
 		entityType: keyof typeof AutoCodeService.configs,
 		existingCodes: string[],
 	): void {
-		const config = this.configs[entityType];
+		const config = AutoCodeService.configs[entityType];
 		if (!config) return;
 
 		// Extract numbers from existing codes and find the highest one
@@ -76,7 +76,7 @@ class AutoCodeService {
 			.filter((num) => !isNaN(num));
 
 		const maxNumber = numbers.length > 0 ? Math.max(...numbers) : 0;
-		this.setCurrentCount(entityType, maxNumber);
+		AutoCodeService.setCurrentCount(entityType, maxNumber);
 	}
 }
 
