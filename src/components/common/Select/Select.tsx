@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useState, useRef, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export interface SelectOption {
 	value: string;

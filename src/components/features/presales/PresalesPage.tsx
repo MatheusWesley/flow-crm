@@ -4,19 +4,25 @@ import {
 	Edit,
 	Eye,
 	Plus,
+	RotateCcw,
 	Search,
 	Trash2,
-	RotateCcw,
 } from 'lucide-react';
 import type React from 'react';
-import { useId, useMemo, useState, useEffect } from 'react';
-import toastService, { TOAST_MESSAGES } from '../../../services/ToastService';
+import { useEffect, useId, useMemo, useState } from 'react';
 import { mockPaymentMethodService } from '../../../data/mockPaymentMethodService';
-import type { Customer, PreSale, PreSaleItem, Product, PaymentMethod } from '../../../types';
+import toastService, { TOAST_MESSAGES } from '../../../services/ToastService';
+import type {
+	Customer,
+	PaymentMethod,
+	PreSale,
+	PreSaleItem,
+	Product,
+} from '../../../types';
 import Button from '../../common/Button';
 import InPageModal from '../../common/InPageModal';
-import SimpleModal from '../../common/SimpleModal';
 import Select from '../../common/Select';
+import SimpleModal from '../../common/SimpleModal';
 import PreSaleItemsDisplay from './PreSaleItemsDisplay';
 
 const PresalesPage: React.FC = () => {
@@ -148,7 +154,7 @@ const PresalesPage: React.FC = () => {
 				toastService.error('Erro ao carregar formas de pagamento');
 			}
 		};
-		
+
 		loadPaymentMethods();
 	}, []);
 
@@ -190,7 +196,6 @@ const PresalesPage: React.FC = () => {
 	const [formItems, setFormItems] = useState<
 		Omit<PreSaleItem, 'id' | 'totalPrice'>[]
 	>([]);
-
 
 	// New item form state
 	const [newItemForm, setNewItemForm] = useState({
@@ -238,7 +243,6 @@ const PresalesPage: React.FC = () => {
 			statusFilter === 'all' || preSale.status === statusFilter;
 		return matchesSearch && matchesStatus;
 	});
-
 
 	// Filter customers for search
 	const filteredCustomers = useMemo(() => {
@@ -316,8 +320,6 @@ const PresalesPage: React.FC = () => {
 	const handleInputChange = (field: string) => (value: string) => {
 		setFormData((prev) => ({ ...prev, [field]: value }));
 	};
-
-
 
 	// Handle customer search
 	const handleCustomerSearch = (searchTerm: string) => {
@@ -541,7 +543,7 @@ const PresalesPage: React.FC = () => {
 				totalPrice: calculateItemTotal(item.quantity, item.unitPrice),
 			})),
 			total: calculateFormTotal(),
-		status: isEdit && selectedPreSale ? selectedPreSale.status : 'pending',
+			status: isEdit && selectedPreSale ? selectedPreSale.status : 'pending',
 			notes: formData.notes || undefined,
 			discount: Number(formData.discount) || undefined,
 			discountType: formData.discountType,
@@ -774,7 +776,8 @@ const PresalesPage: React.FC = () => {
 								</div>
 								<div>
 									<p className="text-sm text-gray-500">
-										Criada em {selectedPreSale.createdAt.toLocaleDateString('pt-BR')}
+										Criada em{' '}
+										{selectedPreSale.createdAt.toLocaleDateString('pt-BR')}
 									</p>
 								</div>
 							</div>
@@ -944,10 +947,10 @@ const PresalesPage: React.FC = () => {
 												handleProductDescriptionChange(e.target.value)
 											}
 											onFocus={() => setShowProductDropdown(true)}
-									onBlur={() => {
-										// Delay hiding dropdown to allow clicking on items
-										setTimeout(() => setShowProductDropdown(false), 150);
-									}}
+											onBlur={() => {
+												// Delay hiding dropdown to allow clicking on items
+												setTimeout(() => setShowProductDropdown(false), 150);
+											}}
 											placeholder="Clique para buscar produto..."
 											className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
 										/>
@@ -1405,10 +1408,10 @@ const PresalesPage: React.FC = () => {
 												handleProductDescriptionChange(e.target.value)
 											}
 											onFocus={() => setShowProductDropdown(true)}
-									onBlur={() => {
-										// Delay hiding dropdown to allow clicking on items
-										setTimeout(() => setShowProductDropdown(false), 150);
-									}}
+											onBlur={() => {
+												// Delay hiding dropdown to allow clicking on items
+												setTimeout(() => setShowProductDropdown(false), 150);
+											}}
 											placeholder="Clique para buscar produto..."
 											className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
 										/>
@@ -1770,15 +1773,15 @@ const PresalesPage: React.FC = () => {
 								<RotateCcw className="h-5 w-5 text-purple-600" />
 							</div>
 							<div>
-								<p className="text-sm text-gray-500">Pré-venda #{selectedPreSale.id}</p>
+								<p className="text-sm text-gray-500">
+									Pré-venda #{selectedPreSale.id}
+								</p>
 							</div>
 						</div>
 
 						{/* Lista de Status */}
 						<div className="space-y-4">
-							<p className="text-sm text-gray-600 mb-1">
-								Status atual:
-							</p>
+							<p className="text-sm text-gray-600 mb-1">Status atual:</p>
 							<span
 								className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(selectedPreSale.status)}`}
 							>
@@ -1804,12 +1807,21 @@ const PresalesPage: React.FC = () => {
 									const isCurrent = selectedPreSale.status === status;
 									const statusInfo = {
 										draft: { icon: '📝', desc: 'Pré-venda em rascunho' },
-										pending: { icon: '⏳', desc: 'Aguardando aprovação do cliente' },
-										approved: { icon: '✅', desc: 'Cliente aprovou a proposta' },
+										pending: {
+											icon: '⏳',
+											desc: 'Aguardando aprovação do cliente',
+										},
+										approved: {
+											icon: '✅',
+											desc: 'Cliente aprovou a proposta',
+										},
 										cancelled: { icon: '❌', desc: 'Pré-venda foi cancelada' },
-										converted: { icon: '✨', desc: 'Convertida em venda final' },
+										converted: {
+											icon: '✨',
+											desc: 'Convertida em venda final',
+										},
 									};
-									
+
 									return (
 										<button
 											key={status}
@@ -1817,9 +1829,10 @@ const PresalesPage: React.FC = () => {
 											disabled={isCurrent}
 											className={`
 												relative p-4 rounded-xl border-2 text-left transition-all duration-200 transform
-												${isCurrent
-													? 'bg-gray-50 border-gray-300 text-gray-400 cursor-not-allowed'
-													: 'bg-white border-gray-200 hover:border-purple-300 hover:bg-purple-50 hover:scale-105 hover:shadow-md cursor-pointer'
+												${
+													isCurrent
+														? 'bg-gray-50 border-gray-300 text-gray-400 cursor-not-allowed'
+														: 'bg-white border-gray-200 hover:border-purple-300 hover:bg-purple-50 hover:scale-105 hover:shadow-md cursor-pointer'
 												}
 											`}
 										>
@@ -1828,9 +1841,11 @@ const PresalesPage: React.FC = () => {
 													Atual
 												</div>
 											)}
-											
+
 											<div className="flex items-center gap-3 mb-2">
-												<span className="text-2xl">{statusInfo[status].icon}</span>
+												<span className="text-2xl">
+													{statusInfo[status].icon}
+												</span>
 												<div>
 													<div className="flex items-center gap-2">
 														<span className="font-semibold text-gray-900">

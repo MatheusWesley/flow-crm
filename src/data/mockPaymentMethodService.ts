@@ -48,12 +48,14 @@ export const mockPaymentMethodService = {
 
 	// Get payment method by ID
 	getById: async (id: string): Promise<PaymentMethod | null> => {
-		const paymentMethod = mockPaymentMethods.find(pm => pm.id === id);
+		const paymentMethod = mockPaymentMethods.find((pm) => pm.id === id);
 		return Promise.resolve(paymentMethod || null);
 	},
 
 	// Create new payment method
-	create: async (data: Omit<PaymentMethod, 'id' | 'createdAt' | 'updatedAt'>): Promise<PaymentMethod> => {
+	create: async (
+		data: Omit<PaymentMethod, 'id' | 'createdAt' | 'updatedAt'>,
+	): Promise<PaymentMethod> => {
 		const newPaymentMethod: PaymentMethod = {
 			id: Date.now().toString(),
 			...data,
@@ -65,28 +67,31 @@ export const mockPaymentMethodService = {
 	},
 
 	// Update payment method
-	update: async (id: string, data: Partial<Omit<PaymentMethod, 'id' | 'createdAt'>>): Promise<PaymentMethod | null> => {
-		const index = mockPaymentMethods.findIndex(pm => pm.id === id);
+	update: async (
+		id: string,
+		data: Partial<Omit<PaymentMethod, 'id' | 'createdAt'>>,
+	): Promise<PaymentMethod | null> => {
+		const index = mockPaymentMethods.findIndex((pm) => pm.id === id);
 		if (index === -1) {
 			return Promise.resolve(null);
 		}
-		
+
 		mockPaymentMethods[index] = {
 			...mockPaymentMethods[index],
 			...data,
 			updatedAt: new Date(),
 		};
-		
+
 		return Promise.resolve(mockPaymentMethods[index]);
 	},
 
 	// Delete payment method
 	delete: async (id: string): Promise<boolean> => {
-		const index = mockPaymentMethods.findIndex(pm => pm.id === id);
+		const index = mockPaymentMethods.findIndex((pm) => pm.id === id);
 		if (index === -1) {
 			return Promise.resolve(false);
 		}
-		
+
 		mockPaymentMethods.splice(index, 1);
 		return Promise.resolve(true);
 	},

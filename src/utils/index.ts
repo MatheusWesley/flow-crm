@@ -60,5 +60,5 @@ export const generateProductCode = (): string => {
 
 // Export new services
 export { default as AutoCodeService } from './autoCodeService';
-export { default as PriceCalculationService } from './priceCalculationService';
 export type { PriceCalculationConfig } from './priceCalculationService';
+export { default as PriceCalculationService } from './priceCalculationService';

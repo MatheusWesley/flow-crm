@@ -1,7 +1,7 @@
+import { Package } from 'lucide-react';
 import type React from 'react';
 import type { PreSaleItem } from '../../../../types';
 import { formatCurrency } from '../../../../utils';
-import { Package } from 'lucide-react';
 
 interface PreSaleItemsDisplayProps {
 	items: PreSaleItem[];
@@ -20,7 +20,11 @@ const PreSaleItemsDisplay: React.FC<PreSaleItemsDisplayProps> = ({ items }) => {
 	return (
 		<div className="w-full">
 			{/* Mobile Card Layout (< md) */}
-			<div className="block md:hidden space-y-3" role="list" aria-label="Itens da pré-venda">
+			<div
+				className="block md:hidden space-y-3"
+				role="list"
+				aria-label="Itens da pré-venda"
+			>
 				{items.map((item, index) => (
 					<div
 						key={item.id}
@@ -44,7 +48,7 @@ const PreSaleItemsDisplay: React.FC<PreSaleItemsDisplayProps> = ({ items }) => {
 								</p>
 							</div>
 						</div>
-						
+
 						<div className="grid grid-cols-2 gap-4 text-sm">
 							<div>
 								<span className="text-gray-600">Quantidade:</span>
@@ -67,18 +71,44 @@ const PreSaleItemsDisplay: React.FC<PreSaleItemsDisplayProps> = ({ items }) => {
 
 			{/* Desktop Table Layout (≥ md) */}
 			<div className="hidden md:block">
-				<div 
+				<div
 					className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm"
 					role="table"
 					aria-label="Itens da pré-venda"
 				>
 					{/* Table Header */}
-					<div className="bg-gray-50 px-6 py-3 border-b border-gray-200" role="rowgroup">
-						<div className="grid grid-cols-12 gap-4 text-xs font-medium text-gray-700 uppercase tracking-wider" role="row">
-							<div className="col-span-5" role="columnheader" aria-sort="none">Produto</div>
-							<div className="col-span-2 text-center" role="columnheader" aria-sort="none">Quantidade</div>
-							<div className="col-span-2 text-right" role="columnheader" aria-sort="none">Preço Unit.</div>
-							<div className="col-span-3 text-right" role="columnheader" aria-sort="none">Total</div>
+					<div
+						className="bg-gray-50 px-6 py-3 border-b border-gray-200"
+						role="rowgroup"
+					>
+						<div
+							className="grid grid-cols-12 gap-4 text-xs font-medium text-gray-700 uppercase tracking-wider"
+							role="row"
+						>
+							<div className="col-span-5" role="columnheader" aria-sort="none">
+								Produto
+							</div>
+							<div
+								className="col-span-2 text-center"
+								role="columnheader"
+								aria-sort="none"
+							>
+								Quantidade
+							</div>
+							<div
+								className="col-span-2 text-right"
+								role="columnheader"
+								aria-sort="none"
+							>
+								Preço Unit.
+							</div>
+							<div
+								className="col-span-3 text-right"
+								role="columnheader"
+								aria-sort="none"
+							>
+								Total
+							</div>
 						</div>
 					</div>
 

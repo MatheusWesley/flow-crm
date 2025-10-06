@@ -1,9 +1,9 @@
 import type React from 'react';
 import { useState } from 'react';
+import toastService, { TOAST_MESSAGES } from '../../../services/ToastService';
 import { formatCPF, validateCPF } from '../../../utils';
 import Button from '../../common/Button';
 import Input from '../../common/Input';
-import toastService, { TOAST_MESSAGES } from '../../../services/ToastService';
 
 type TabType = 'list' | 'register';
 // All fields are now consolidated into a single form - no subtabs needed
