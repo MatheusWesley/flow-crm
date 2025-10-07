@@ -23,6 +23,7 @@ import Button from '../../common/Button';
 import InPageModal from '../../common/InPageModal';
 import Select from '../../common/Select';
 import SimpleModal from '../../common/SimpleModal';
+import { PresaleModal } from '../shared/presaleModal';
 import PreSaleItemsDisplay from './PreSaleItemsDisplay';
 
 const PresalesPage: React.FC = () => {
@@ -510,84 +511,36 @@ const PresalesPage: React.FC = () => {
 		return itemsTotal - discountAmount;
 	};
 
-	const handleSubmitForm = (e: React.FormEvent, isEdit = false) => {
-		e.preventDefault();
-
-		if (!formData.customerId) {
-			toastService.error('Selecione um cliente!');
-			return;
-		}
-
-		if (!formData.paymentMethodId) {
-			toastService.error('Selecione uma forma de pagamento!');
-			return;
-		}
-
-		if (formItems.length === 0) {
-			toastService.error('Adicione pelo menos um item à pré-venda!');
-			return;
-		}
-
-		const selectedCustomer = customers.find(
-			(c) => c.id === formData.customerId,
-		);
-		if (!selectedCustomer) return;
-
-		const preSaleData: PreSale = {
-			id:
-				isEdit && selectedPreSale ? selectedPreSale.id : Date.now().toString(),
-			customer: selectedCustomer,
-			items: formItems.map((item, index) => ({
-				id: `item-${index}`,
-				...item,
-				totalPrice: calculateItemTotal(item.quantity, item.unitPrice),
-			})),
-			total: calculateFormTotal(),
-			status: isEdit && selectedPreSale ? selectedPreSale.status : 'pending',
-			notes: formData.notes || undefined,
-			discount: Number(formData.discount) || undefined,
-			discountType: formData.discountType,
-			salesperson:
-				isEdit && selectedPreSale
-					? selectedPreSale.salesperson
-					: 'Current User',
-			createdAt:
-				isEdit && selectedPreSale ? selectedPreSale.createdAt : new Date(),
+	const handleCreatePresale = (presaleData: Omit<PreSale, 'id' | 'createdAt' | 'updatedAt'>) => {
+		const newPresale: PreSale = {
+			...presaleData,
+			id: Date.now().toString(),
+			createdAt: new Date(),
 			updatedAt: new Date(),
 		};
 
-		if (isEdit && selectedPreSale) {
-			setPreSales((prev) =>
-				prev.map((preSale) =>
-					preSale.id === selectedPreSale.id ? preSaleData : preSale,
-				),
-			);
-		} else {
-			setPreSales((prev) => [preSaleData, ...prev]);
-		}
+		setPreSales((prev) => [newPresale, ...prev]);
+		toastService.success(TOAST_MESSAGES.presale.created);
+	};
 
-		// Reset form
-		setFormData({
-			customerId: '',
-			paymentMethodId: '',
-			notes: '',
-			discount: '',
-			discountType: 'percentage',
-		});
-		setFormItems([]);
-		setNewItemForm({
-			productCode: '',
-			productDescription: '',
-			quantity: 1,
-			unitPrice: 0,
-			selectedProduct: null,
-		});
-		setSelectedPreSale(null);
-		setShowCreateModal(false);
-		setShowEditModal(false);
-		toastService.success(
-			isEdit ? TOAST_MESSAGES.presale.updated : TOAST_MESSAGES.presale.created,
+	const handleUpdatePresale = (presaleData: Omit<PreSale, 'id' | 'createdAt' | 'updatedAt'>) => {
+		if (!selectedPreSale) return;
+
+		const updatedPresale: PreSale = {
+			...presaleData,
+			id: selectedPreSale.id,
+			createdAt: selectedPreSale.createdAt,
+			updatedAt: new Date(),
+		};
+
+		setPreSales((prev) =>
+			prev.map((preSale) =>
+				preSale.id === selectedPreSale.id ? updatedPresale : preSale,
+			),
 		);
+
+		setSelectedPreSale(null);
+		toastService.success(TOAST_MESSAGES.presale.updated);
 	};
 
 	const renderTabContent = () => {
@@ -863,440 +816,14 @@ const PresalesPage: React.FC = () => {
 				</InPageModal>
 			)}
 			{/* Create Pre-sale Modal */}
-			{showCreateModal && (
-				<InPageModal
-					isOpen={showCreateModal}
-					onClose={() => setShowCreateModal(false)}
-					title="Nova Pré-venda"
-				>
-					<div className="px-6 py-6">
-						<form onSubmit={handleSubmitForm} className="space-y-6">
-							{/* Customer Search Field - Full width at the top */}
-							<div className="relative">
-								<label className="block text-sm font-medium text-gray-700 mb-1">
-									Cliente *
-								</label>
-								<input
-									type="text"
-									value={customerSearchTerm}
-									onChange={(e) => handleCustomerSearch(e.target.value)}
-									onFocus={() =>
-										setShowCustomerDropdown(customerSearchTerm.length > 0)
-									}
-									placeholder="Digite o nome do cliente..."
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-								/>
-								{/* Customer dropdown */}
-								{showCustomerDropdown && (
-									<div className="absolute top-full mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-40 overflow-y-auto">
-										{filteredCustomers.length === 0 ? (
-											<div className="px-3 py-2 text-gray-500 text-center">
-												{customerSearchTerm
-													? 'Nenhum cliente encontrado'
-													: 'Digite para buscar clientes'}
-											</div>
-										) : (
-											filteredCustomers.map((customer) => (
-												<div
-													key={customer.id}
-													onClick={() => handleCustomerSelect(customer)}
-													className="px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-												>
-													<div className="font-medium text-gray-900">
-														{customer.name}
-													</div>
-													<div className="text-sm text-gray-500">
-														{customer.email} • {customer.cpf}
-													</div>
-												</div>
-											))
-										)}
-									</div>
-								)}
-							</div>
-
-							{/* Add Item Form - Campos lado a lado */}
-							<div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-								<h3 className="text-sm font-medium text-gray-700 mb-3">
-									Adicionar Item
-								</h3>
-								<div className="grid grid-cols-12 gap-3 items-end">
-									{/* Código do Produto */}
-									<div className="col-span-2">
-										<label className="block text-xs font-medium text-gray-600 mb-1">
-											Cód. Prod
-										</label>
-										<input
-											type="text"
-											value={newItemForm.productCode}
-											readOnly
-											placeholder="Auto"
-											className="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg bg-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
-										/>
-									</div>
-
-									{/* Descrição do Produto */}
-									<div className="col-span-4 relative">
-										<label className="block text-xs font-medium text-gray-600 mb-1">
-											Descrição
-										</label>
-										<input
-											type="text"
-											value={newItemForm.productDescription}
-											onChange={(e) =>
-												handleProductDescriptionChange(e.target.value)
-											}
-											onFocus={() => setShowProductDropdown(true)}
-											onBlur={() => {
-												// Delay hiding dropdown to allow clicking on items
-												setTimeout(() => setShowProductDropdown(false), 150);
-											}}
-											placeholder="Clique para buscar produto..."
-											className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
-										/>
-
-										{/* Product Dropdown */}
-										{showProductDropdown && (
-											<div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-												{filteredProductsForDropdown.length > 0 ? (
-													filteredProductsForDropdown
-														.slice(0, 8)
-														.map((product) => (
-															<div
-																key={product.id}
-																onMouseDown={() => handleProductSelect(product)}
-																className="p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0 flex justify-between items-center"
-															>
-																<div>
-																	<p className="font-medium text-gray-900 text-sm">
-																		{product.name}
-																	</p>
-																	<p className="text-xs text-gray-600">
-																		Código: {product.code}
-																	</p>
-																</div>
-																<div className="text-right">
-																	<p className="font-medium text-green-600 text-sm">
-																		R$ {product.salePrice.toFixed(2)}
-																	</p>
-																	<p className="text-xs text-gray-500">
-																		Estoque: {product.stock}
-																	</p>
-																</div>
-															</div>
-														))
-												) : (
-													<div className="p-3 text-sm text-gray-500 text-center">
-														{newItemForm.productDescription
-															? 'Nenhum produto encontrado'
-															: 'Digite para buscar produtos'}
-													</div>
-												)}
-											</div>
-										)}
-									</div>
-
-									{/* Quantidade */}
-									<div className="col-span-2">
-										<label className="block text-xs font-medium text-gray-600 mb-1">
-											Quantidade
-										</label>
-										<input
-											type="number"
-											step="0.01"
-											min="0.01"
-											value={newItemForm.quantity}
-											onChange={(e) =>
-												setNewItemForm((prev) => ({
-													...prev,
-													quantity: Number(e.target.value),
-												}))
-											}
-											className="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-right"
-										/>
-									</div>
-
-									{/* Valor Unitário */}
-									<div className="col-span-2">
-										<label className="block text-xs font-medium text-gray-600 mb-1">
-											Valor Unitário
-										</label>
-										<input
-											type="number"
-											step="0.01"
-											min="0"
-											value={newItemForm.unitPrice}
-											onChange={(e) =>
-												setNewItemForm((prev) => ({
-													...prev,
-													unitPrice: Number(e.target.value),
-												}))
-											}
-											className="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-right"
-										/>
-									</div>
-
-									{/* Botão Adicionar */}
-									<div className="col-span-2">
-										<label className="block text-xs font-medium text-gray-600 mb-1">
-											&nbsp;
-										</label>
-										<Button
-											type="button"
-											variant="primary"
-											size="sm"
-											onClick={handleAddItemFromForm}
-											className="w-full h-[38px] flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200 shadow-sm hover:shadow-md"
-										>
-											<Plus className="h-4 w-4" />
-										</Button>
-									</div>
-								</div>
-							</div>
-
-							{/* Items Section */}
-							<div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-								<div className="flex justify-between items-center mb-4">
-									<h3 className="text-sm font-medium text-gray-700">
-										Itens da Pré-venda*
-									</h3>
-								</div>
-
-								{/* Items Header */}
-								{formItems.length > 0 && (
-									<div className="bg-white border border-gray-200 rounded-lg mb-2">
-										<div className="grid grid-cols-12 gap-2 px-3 py-2 bg-gray-50 rounded-t-lg border-b border-gray-200 text-xs font-medium text-gray-700">
-											<div className="col-span-4">Descrição do Item</div>
-											<div className="col-span-2 text-right">Valor</div>
-											<div className="col-span-2 text-right">Quantidade</div>
-											<div className="col-span-2 text-right">Preço Unit.</div>
-											<div className="col-span-1 text-right">Total</div>
-											<div className="col-span-1"></div>
-										</div>
-									</div>
-								)}
-
-								{/* Items List */}
-								{formItems.map((item, index) => (
-									<div
-										key={index}
-										className="bg-white border border-gray-200 rounded-lg mb-2"
-									>
-										<div className="grid grid-cols-12 gap-2 px-3 py-2 items-center">
-											{/* Product Name */}
-											<div className="col-span-4">
-												<Select
-													value={item.product.id}
-													onChange={(value) => {
-														const product = products.find(
-															(p) => p.id === value,
-														);
-														if (product) {
-															updateFormItem(index, 'product', product);
-															updateFormItem(
-																index,
-																'unitPrice',
-																product.salePrice,
-															);
-														}
-													}}
-													options={productOptions}
-													size="sm"
-												/>
-											</div>
-
-											{/* Value Display */}
-											<div className="col-span-2 text-right text-sm font-medium">
-												{calculateItemTotal(
-													item.quantity,
-													item.unitPrice,
-												).toFixed(2)}
-											</div>
-
-											{/* Quantity Input */}
-											<div className="col-span-2">
-												<input
-													type="number"
-													step="0.01"
-													min="0.01"
-													value={item.quantity}
-													onChange={(e) =>
-														updateFormItem(
-															index,
-															'quantity',
-															Number(e.target.value),
-														)
-													}
-													className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-right"
-												/>
-											</div>
-
-											{/* Unit Price Input */}
-											<div className="col-span-2">
-												<input
-													type="number"
-													step="0.01"
-													min="0"
-													value={item.unitPrice}
-													onChange={(e) =>
-														updateFormItem(
-															index,
-															'unitPrice',
-															Number(e.target.value),
-														)
-													}
-													className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-right"
-												/>
-											</div>
-
-											{/* Total Display */}
-											<div className="col-span-1 text-right text-sm font-semibold">
-												{calculateItemTotal(
-													item.quantity,
-													item.unitPrice,
-												).toFixed(2)}
-											</div>
-
-											{/* Delete Button */}
-											<div className="col-span-1 text-center">
-												<button
-													type="button"
-													onClick={() => removeItemFromForm(index)}
-													className="p-1 text-red-600 hover:text-red-800 hover:bg-red-100 rounded"
-													title="Remover item"
-												>
-													<Trash2 className="h-4 w-4" />
-												</button>
-											</div>
-										</div>
-									</div>
-								))}
-
-								{/* Total Summary */}
-								{formItems.length > 0 && (
-									<div className="bg-white border border-gray-200 rounded-lg px-3 py-2">
-										<div className="flex justify-between items-center">
-											<span className="text-sm font-medium text-gray-700">
-												Total dos itens:
-											</span>
-											<span className="text-lg font-bold text-green-600">
-												R$ {calculateFormTotal().toFixed(2)}
-											</span>
-										</div>
-									</div>
-								)}
-							</div>
-
-							{/* Payment Method, Discount and Notes Section */}
-							<div className="space-y-4">
-								{/* Payment Method and Discount in same row */}
-								<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-									<Select
-										label="Forma de Pagamento *"
-										value={formData.paymentMethodId}
-										onChange={(value) =>
-											handleInputChange('paymentMethodId')(value)
-										}
-										options={paymentMethodOptions}
-										placeholder="Selecione a forma de pagamento"
-										required
-									/>
-									<div>
-										<label className="block text-sm font-medium text-gray-700 mb-1">
-											Desconto
-										</label>
-										<input
-											type="number"
-											step="0.01"
-											min="0"
-											value={formData.discount}
-											onChange={(e) =>
-												handleInputChange('discount')(e.target.value)
-											}
-											placeholder="0.00"
-											className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-										/>
-									</div>
-									<Select
-										label="Tipo de Desconto"
-										value={formData.discountType}
-										onChange={(value) =>
-											handleInputChange('discountType')(value)
-										}
-										options={discountTypeOptions}
-									/>
-								</div>
-
-								{/* Observations - Full width */}
-								<div>
-									<label className="block text-sm font-medium text-gray-700 mb-1">
-										Observações
-									</label>
-									<textarea
-										value={formData.notes}
-										onChange={(e) => handleInputChange('notes')(e.target.value)}
-										placeholder="Observações sobre a pré-venda..."
-										rows={3}
-										className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-									/>
-								</div>
-							</div>
-
-							{/* Total Summary */}
-							{formItems.length > 0 && (
-								<div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-									<div className="flex justify-between items-center text-lg font-semibold">
-										<span className="text-gray-700">Total Geral:</span>
-										<span className="text-blue-700">
-											R$ {calculateFormTotal().toFixed(2)}
-										</span>
-									</div>
-								</div>
-							)}
-
-							{/* Actions */}
-							<div className="flex justify-end space-x-3 pt-4">
-								<Button
-									type="button"
-									variant="secondary"
-									onClick={() => {
-										setShowCreateModal(false);
-										// Reset all form states
-										setFormData({
-											customerId: '',
-											paymentMethodId: '',
-											notes: '',
-											discount: '',
-											discountType: 'percentage',
-										});
-										setFormItems([]);
-										setNewItemForm({
-											productCode: '',
-											productDescription: '',
-											quantity: 1,
-											unitPrice: 0,
-											selectedProduct: null,
-										});
-										// Reset customer search states
-										setCustomerSearchTerm('');
-										setShowCustomerDropdown(false);
-										setShowProductDropdown(false);
-									}}
-								>
-									Cancelar
-								</Button>
-								<Button
-									id={`${createFormId}-submit-presale-button `}
-									type="submit"
-									variant="primary"
-								>
-									Criar Pré-venda
-								</Button>
-							</div>
-						</form>
-					</div>
-				</InPageModal>
-			)}
+			<PresaleModal
+				isOpen={showCreateModal}
+				onClose={() => setShowCreateModal(false)}
+				onSubmit={handleCreatePresale}
+				customers={customers}
+				products={products}
+				title="Nova Pré-venda"
+			/>
 
 			{/* Edit Pre-sale Modal - Using same layout as create modal */}
 			{showEditModal && selectedPreSale && (

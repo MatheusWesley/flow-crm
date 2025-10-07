@@ -7,12 +7,16 @@ import {
 } from 'lucide-react';
 import type React from 'react';
 import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
 	type DashboardMetrics,
 	dashboardService,
 	MockDashboardService,
 	type SalesData,
 } from '../../../data/mockDashboardService';
+import toastService, { TOAST_MESSAGES } from '../../../services/ToastService';
+import type { Customer, PreSale, Product } from '../../../types';
+import { PresaleModal } from '../shared/presaleModal';
 import MetricsCard from './MetricsCard';
 import SalesChart from './SalesChart';
 
@@ -21,8 +25,10 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
+	const navigate = useNavigate();
 	const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
 	const [salesData, setSalesData] = useState<SalesData[]>([]);
+	const [showPresaleModal, setShowPresaleModal] = useState(false);
 
 	const [loadingStates, setLoadingStates] = useState({
 		metrics: true,
@@ -35,6 +41,59 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
 	});
 
 	const [isRefreshing, setIsRefreshing] = useState(false);
+
+	// Mock data for customers and products (in a real app, these would come from API)
+	const [customers] = useState<Customer[]>([
+		{
+			id: '1',
+			name: 'João Silva',
+			email: 'joao@email.com',
+			phone: '(11) 99999-9999',
+			cpf: '123.456.789-01',
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		},
+		{
+			id: '2',
+			name: 'Maria Santos',
+			email: 'maria@email.com',
+			phone: '(11) 88888-8888',
+			cpf: '987.654.321-00',
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		},
+	]);
+
+	const [products] = useState<Product[]>([
+		{
+			id: '1',
+			code: 'PRD001',
+			name: 'Produto Exemplo 1',
+			description: 'Descrição do produto exemplo 1',
+			unit: 'pc',
+			stock: 100,
+			category: 'Categoria A',
+			saleType: 'unit',
+			purchasePrice: 20.0,
+			salePrice: 29.99,
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		},
+		{
+			id: '2',
+			code: 'PRD002',
+			name: 'Produto Exemplo 2',
+			description: 'Descrição do produto exemplo 2',
+			unit: 'kg',
+			stock: 50,
+			category: 'Categoria B',
+			saleType: 'fractional',
+			purchasePrice: 30.0,
+			salePrice: 45.5,
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		},
+	]);
 
 	const loadDashboardData = useCallback(async () => {
 		try {
@@ -98,15 +157,29 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
 					trend: metrics.monthlyRevenue.trend,
 					color: 'blue' as const,
 				},
-				{
-					title: 'Produtos Cadastrados',
-					value: MockDashboardService.formatNumber(metrics.totalProducts.value),
-					icon: <Package className="w-6 h-6" />,
-					trend: metrics.totalProducts.trend,
-					color: 'blue' as const,
-				},
 			]
 		: [];
+
+	const handleNewSale = () => {
+		setShowPresaleModal(true);
+	};
+
+	const handleRegisterProduct = () => {
+		navigate('/products');
+	};
+
+	const handleRegisterCustomer = () => {
+		navigate('/customers');
+	};
+
+	const handlePresaleSubmit = (presaleData: Omit<PreSale, 'id' | 'createdAt' | 'updatedAt'>) => {
+		// In a real app, this would save to the backend
+		console.log('Nova pré-venda criada:', presaleData);
+		toastService.success(TOAST_MESSAGES.presale.created);
+		
+		// Optionally redirect to presales page to see the created presale
+		navigate('/presales');
+	};
 
 	return (
 		<div className={`space-y-6 ${className}`}>
@@ -135,7 +208,7 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
 			</div>
 
 			{/* KPI Cards Grid */}
-			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+			<div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
 				{metricsCards.map((card) => (
 					<MetricsCard
 						key={card.title}
@@ -172,6 +245,7 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
 						<div className="p-6 space-y-3">
 							<button
 								type="button"
+								onClick={handleNewSale}
 								className="w-full flex items-center justify-center cursor-pointer px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
 							>
 								<ShoppingCart className="w-4 h-4 mr-2" />
@@ -179,6 +253,7 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
 							</button>
 							<button
 								type="button"
+								onClick={handleRegisterProduct}
 								className="w-full flex items-center cursor-pointer justify-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
 							>
 								<Package className="w-4 h-4 mr-2" />
@@ -186,6 +261,7 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
 							</button>
 							<button
 								type="button"
+								onClick={handleRegisterCustomer}
 								className="w-full flex items-center cursor-pointer justify-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
 							>
 								<Users className="w-4 h-4 mr-2" />
@@ -195,6 +271,16 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
 					</div>
 				</div>
 			</div>
+
+			{/* Modal para Nova Pré-venda */}
+			<PresaleModal
+				isOpen={showPresaleModal}
+				onClose={() => setShowPresaleModal(false)}
+				onSubmit={handlePresaleSubmit}
+				customers={customers}
+				products={products}
+				title="Nova Pré-venda"
+			/>
 		</div>
 	);
 };
