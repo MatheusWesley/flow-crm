@@ -178,12 +178,14 @@ const SimplifiedCustomers: React.FC = () => {
 									</div>
 									<div className="flex space-x-2">
 										<button
+											type="button"
 											className="text-blue-600 hover:text-blue-800 text-sm"
 											onClick={() => handleEditCustomer(customer)}
 										>
 											Editar
 										</button>
 										<button
+											type="button"
 											className="text-red-600 hover:text-red-800 text-sm"
 											onClick={() => handleDeleteCustomer(customer)}
 										>
@@ -304,6 +306,7 @@ const SimplifiedCustomers: React.FC = () => {
 				<div className="border-b border-gray-200">
 					<nav className="-mb-px flex space-x-8" aria-label="Tabs">
 						<button
+							type="button"
 							onClick={() => setActiveTab('list')}
 							className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
 								activeTab === 'list'
@@ -314,6 +317,7 @@ const SimplifiedCustomers: React.FC = () => {
 							Listagem
 						</button>
 						<button
+							type="button"
 							onClick={() => setActiveTab('register')}
 							className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
 								activeTab === 'register'

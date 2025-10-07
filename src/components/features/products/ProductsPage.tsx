@@ -1,3 +1,4 @@
+import { SquarePen, Trash2 } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import toastService, { TOAST_MESSAGES } from '../../../services/ToastService';
@@ -24,29 +25,137 @@ const ProductsPage: React.FC = () => {
 	const [products] = useState<Product[]>([
 		{
 			id: '1',
-			code: 'PRD001',
-			name: 'Produto Exemplo 1',
-			description: 'Descrição do produto exemplo 1',
+			code: 'PROD0000001',
+			name: 'Pilhas Alcalinas AA de Longa Duração (Pacote Econômico com 4 Unidades)',
+			description:
+				'Pacote com 4 unidades de pilhas alcalinas AA - Compra de emergência para controles, relógios e pequenos brinquedos. Longa duração garantida para não deixar seus dispositivos na mão nos momentos mais importantes do dia a dia.',
 			unit: 'pc',
-			stock: 100,
-			category: 'Categoria A',
+			stock: 50,
 			saleType: 'unit' as const,
-			purchasePrice: 20.0,
-			salePrice: 29.99,
+			purchasePrice: 12.0,
+			salePrice: 18.0,
 			createdAt: new Date(),
 			updatedAt: new Date(),
 		},
 		{
 			id: '2',
-			code: 'PRD002',
-			name: 'Produto Exemplo 2',
-			description: 'Descrição do produto exemplo 2',
+			code: 'PROD0000002',
+			name: 'Pão de Alho Congelado Tradicional (4un)',
+			description: '',
+			unit: 'un',
+			stock: 35,
+			saleType: 'unit' as const,
+			purchasePrice: 8.5,
+			salePrice: 12.9,
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		},
+		{
+			id: '3',
+			code: 'PROD0000003',
+			name: 'Saco de Gelo Purificado (33kg)',
+			description:
+				'Gelo em cubos, saco de 3 kg, ideal para festas, bebidas geladas e resfriamento rápido. Gelo de água potável, pronto para uso imediato em grandes quantidades.',
+			unit: 'pc',
+			stock: 0,
+			saleType: 'unit' as const,
+			purchasePrice: 5.0,
+			salePrice: 8.0,
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		},
+		{
+			id: '4',
+			code: 'PROD0000004',
+			name: 'Molho de Tomate Extrato Concentrado (Lata 340g)',
+			description:
+				'Extrato de tomate lata 340g - Item básico de reposição rápida. Concentrado e essencial para o preparo de massas, molhos e refogados com sabor intenso e cor vibrante.',
+			unit: 'un',
+			stock: 120,
+			saleType: 'unit' as const,
+			purchasePrice: 2.5,
+			salePrice: 3.99,
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		},
+		{
+			id: '5',
+			code: 'PROD0000005',
+			name: 'Lâmpada LED Econômica 9W Bivolt',
+			description: '',
+			unit: 'un',
+			stock: 0,
+			saleType: 'unit' as const,
+			purchasePrice: 10.0,
+			salePrice: 14.5,
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		},
+		{
+			id: '6',
+			code: 'PROD0000006',
+			name: 'Salgadinho Crocante de Queijo Cheddar (Pacote 100g)',
+			description:
+				'Pacote de salgadinho sabor queijo 100g. Este snack crocante é perfeito para aquele momento de conveniência, seja assistindo a um filme, fazendo uma pausa no trabalho ou complementando a lancheira. Possui um sabor intenso e irresistível de queijo temperado, sendo um dos itens de maior giro no ponto de venda por ser uma compra por impulso. Sua embalagem metalizada garante frescor e crocância por mais tempo, tornando-o a escolha ideal para satisfazer aquela vontade súbita de petiscar.',
+			unit: 'un',
+			stock: 80,
+			saleType: 'unit' as const,
+			purchasePrice: 4.0,
+			salePrice: 6.5,
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		},
+		{
+			id: '7',
+			code: 'PROD0000007',
+			name: 'Touca de Banho Descartável de Plástico',
+			description:
+				'Touca de banho de plástico (unidade) - Ideal para clientes de hotel ou para quem esqueceu a sua. Garante a proteção total dos cabelos durante o banho ou em procedimentos de beleza.',
+			unit: 'un',
+			stock: 0,
+			saleType: 'unit' as const,
+			purchasePrice: 1.0,
+			salePrice: 2.5,
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		},
+		{
+			id: '8',
+			code: 'PROD0000008',
+			name: 'Salsicha Congelada Tipo Viena (Pacote 1kg)',
+			description: '',
 			unit: 'kg',
-			stock: 50,
-			category: 'Categoria B',
-			saleType: 'fractional' as const,
-			purchasePrice: 30.0,
-			salePrice: 45.5,
+			stock: 15,
+			saleType: 'unit' as const,
+			purchasePrice: 11.0,
+			salePrice: 17.9,
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		},
+		{
+			id: '9',
+			code: 'PROD0000009',
+			name: 'Goma de Mascar Menta Refrescante Sem Açúcar (Caixa Display com 10 Unidades)',
+			description:
+				'Caixa c/ 10 unidades de chiclete sem açúcar - Próximo ao caixa. Sabor refrescante de menta que ajuda a manter o hálito fresco.',
+			unit: 'cx',
+			stock: 15,
+			saleType: 'unit' as const,
+			purchasePrice: 8.0,
+			salePrice: 13.9,
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		},
+		{
+			id: '10',
+			code: 'PROD0000010',
+			name: 'Bateria de Lítio CR2032 Pequena',
+			description: '',
+			unit: 'un',
+			stock: 60,
+			saleType: 'unit' as const,
+			purchasePrice: 3.0,
+			salePrice: 5.0,
 			createdAt: new Date(),
 			updatedAt: new Date(),
 		},
@@ -162,54 +271,60 @@ const ProductsPage: React.FC = () => {
 						{products.map((product) => (
 							<div
 								key={product.id}
-								className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow"
+								className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow flex flex-col h-full" // Adicionado flex flex-col h-full
 							>
 								<div className="flex justify-between items-start mb-2">
-									<div>
-										<h3 className="font-semibold text-gray-900">
+									<div className="flex-grow pr-2">
+										<h3 className="font-semibold text-gray-900 line-clamp-1">
 											{product.name}
 										</h3>
-										<p className="text-sm text-gray-600">
-											Código: {product.code}
+										<p className="text-xs text-gray-600">
+											Código Interno: {product.code}
 										</p>
 									</div>
-									<div className="text-right">
-										<p className="text-lg font-bold text-green-600">
+									<div className="text-right flex-shrink-0">
+										<p className="text-lg font-bold text-green-600 whitespace-nowrap">
 											R$ {product.salePrice.toFixed(2)}
 										</p>
 										<p className="text-sm text-gray-500">{product.unit}</p>
 									</div>
 								</div>
-
-								<p className="text-gray-700 text-sm mb-3">
-									{product.description}
-								</p>
-
-								<div className="flex justify-between items-center">
-									<span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-										{product.category}
-									</span>
-									<div className="flex items-center space-x-4">
-										<span className="text-sm text-gray-600">
+								<div className="text-gray-700 text-sm mb-3">
+									{product.description ? (
+										<p className="line-clamp-2">{product.description}</p>
+									) : (
+										<p className="italic text-gray-400 min-h-[3.5rem]">
+											Sem Descrição
+										</p>
+									)}
+								</div>
+								<div className="flex justify-between items-center pt-3 border-t border-gray-100 mt-auto">
+									{product.stock > 0 ? (
+										<span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
 											Estoque:{' '}
 											<span className="font-semibold">{product.stock}</span>
 										</span>
-										<div className="flex space-x-2">
-											<button
-												type="button"
-												className="text-blue-600 hover:text-blue-800 text-sm"
-												onClick={() => handleEditProduct(product)}
-											>
-												Editar
-											</button>
-											<button
-												type="button"
-												className="text-red-600 hover:text-red-800 text-sm"
-												onClick={() => handleDeleteProduct(product)}
-											>
-												Excluir
-											</button>
-										</div>
+									) : (
+										<span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">
+											Estoque:{' '}
+											<span className="font-semibold">{product.stock}</span>
+										</span>
+									)}
+									<div className="flex space-x-2">
+										<button
+											type="button"
+											className="text-blue-600 hover:text-blue-800 text-sm"
+											onClick={() => handleEditProduct(product)}
+										>
+											<SquarePen size={16} />
+										</button>
+										<button
+											type="button"
+											className="text-red-600 hover:text-red-800 text-sm"
+											onClick={() => handleDeleteProduct(product)}
+										>
+											<Trash2 size={16} />
+										</button>
 									</div>
 								</div>
 							</div>
@@ -246,6 +361,7 @@ const ProductsPage: React.FC = () => {
 								value={formData.name}
 								onChange={handleInputChange('name')}
 								placeholder="Digite o nome do produto"
+								maxLength={50}
 								required
 							/>
 						</div>
@@ -282,10 +398,23 @@ const ProductsPage: React.FC = () => {
 								onChange={(e) =>
 									handleInputChange('description')(e.target.value)
 								}
-								placeholder="Descrição detalhada do produto"
+								placeholder="Descrição resumida do produto."
 								className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-								rows={4}
+								rows={2}
+								maxLength={150}
 							/>
+
+							<div className="flex justify-end mt-1">
+								<span
+									className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+										formData.description.length >= 140
+											? 'bg-red-100 text-red-800'
+											: 'bg-green-100 text-green-800'
+									}`}
+								>
+									{formData.description.length} / 150
+								</span>
+							</div>
 						</div>
 					</div>
 				);
@@ -294,16 +423,20 @@ const ProductsPage: React.FC = () => {
 			if (activeSubTab === 'pricesStock') {
 				// Calculate suggested price based on purchase price and markup
 				const calculateSuggestedPrice = () => {
-					const purchasePrice = priceCalculationService.parsePrice(formData.purchasePrice || '0');
+					const purchasePrice = priceCalculationService.parsePrice(
+						formData.purchasePrice || '0',
+					);
 					const markupPercent = parseFloat(formData.markup || '0');
-					
+
 					if (purchasePrice > 0) {
 						if (markupPercent > 0) {
 							// Use custom markup
 							return purchasePrice * (1 + markupPercent / 100);
 						} else {
 							// Use default suggestion from service
-							return priceCalculationService.calculateSuggestedPrice(purchasePrice);
+							return priceCalculationService.calculateSuggestedPrice(
+								purchasePrice,
+							);
 						}
 					}
 					return 0;
@@ -313,7 +446,10 @@ const ProductsPage: React.FC = () => {
 
 				const applySuggestedPrice = () => {
 					if (suggestedPrice > 0) {
-						setFormData(prev => ({ ...prev, salePrice: suggestedPrice.toFixed(2) }));
+						setFormData((prev) => ({
+							...prev,
+							salePrice: suggestedPrice.toFixed(2),
+						}));
 					}
 				};
 

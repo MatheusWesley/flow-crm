@@ -8,8 +8,8 @@ interface CodeConfig {
 
 class AutoCodeService {
 	private static configs: Record<string, CodeConfig> = {
-		product: { prefix: 'PRD', currentCount: 0, padLength: 3 },
-		paymentMethod: { prefix: 'PAG', currentCount: 0, padLength: 3 },
+		product: { prefix: 'PROD', currentCount: 0, padLength: 7 },
+		paymentMethod: { prefix: 'PAG', currentCount: 0, padLength: 8 },
 	};
 
 	/**
