@@ -1,3 +1,4 @@
+import { SquarePen, Trash2 } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import { mockPaymentMethodService } from '../../../data/mockPaymentMethodService';
@@ -105,32 +106,42 @@ const PaymentMethodsPage: React.FC = () => {
 						{paymentMethods.map((paymentMethod) => (
 							<div
 								key={paymentMethod.id}
-								className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow"
+								className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow flex flex-col h-full"
 							>
 								<div className="flex justify-between items-start mb-2">
-									<div>
-										<h3 className="font-semibold text-gray-900">
+									<div className="flex-grow pr-2">
+										<h3 className="font-semibold text-gray-900 line-clamp-1">
 											{paymentMethod.description}
 										</h3>
-										<p className="text-sm text-gray-600">
-											Código: {paymentMethod.code}
+										<p className="text-xs text-gray-600">
+											Código Interno: {paymentMethod.code}
 										</p>
 									</div>
+									<div className="text-right flex-shrink-0">
+										<p className="text-sm font-medium text-blue-600">Ativo</p>
+									</div>
 								</div>
-
-								<div className="flex justify-end items-center">
+								<div className="text-gray-700 text-sm mb-3">
+									<p className="italic text-gray-400 min-h-[3.5rem]">
+										Forma de pagamento disponível para vendas
+									</p>
+								</div>
+								<div className="flex justify-between items-center pt-3 border-t border-gray-100 mt-auto">
+									<span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+										Disponível
+									</span>
 									<div className="flex space-x-2">
 										<button
 											type="button"
 											className="text-blue-600 hover:text-blue-800 text-sm"
 										>
-											Editar
+											<SquarePen size={16} />
 										</button>
 										<button
 											type="button"
 											className="text-red-600 hover:text-red-800 text-sm"
 										>
-											Excluir
+											<Trash2 size={16} />
 										</button>
 									</div>
 								</div>
