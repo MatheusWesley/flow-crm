@@ -88,6 +88,7 @@ const ProductsPage: React.FC = () => {
 		stock: '',
 		saleType: 'unit' as 'unit' | 'fractional',
 		purchasePrice: '',
+		markup: '',
 		salePrice: '',
 	});
 
@@ -95,18 +96,8 @@ const ProductsPage: React.FC = () => {
 		setFormData((prev) => {
 			const updated = { ...prev, [field]: value };
 
-			// Auto-suggest sale price when purchase price changes
-			if (field === 'purchasePrice' && value) {
-				const purchasePrice = priceCalculationService.parsePrice(value);
-				if (purchasePrice > 0) {
-					const suggestedPrice =
-						priceCalculationService.calculateSuggestedPrice(purchasePrice);
-					// Only auto-fill if sale price is empty
-					if (!prev.salePrice) {
-						updated.salePrice = suggestedPrice.toFixed(2);
-					}
-				}
-			}
+			// Note: Price calculation is now handled in the render function
+			// to show real-time suggestions without auto-filling the field
 
 			return updated;
 		});
@@ -136,6 +127,7 @@ const ProductsPage: React.FC = () => {
 			stock: '',
 			saleType: 'unit' as 'unit' | 'fractional',
 			purchasePrice: '',
+			markup: '',
 			salePrice: '',
 		});
 	};
@@ -300,12 +292,37 @@ const ProductsPage: React.FC = () => {
 			}
 
 			if (activeSubTab === 'pricesStock') {
+				// Calculate suggested price based on purchase price and markup
+				const calculateSuggestedPrice = () => {
+					const purchasePrice = priceCalculationService.parsePrice(formData.purchasePrice || '0');
+					const markupPercent = parseFloat(formData.markup || '0');
+					
+					if (purchasePrice > 0) {
+						if (markupPercent > 0) {
+							// Use custom markup
+							return purchasePrice * (1 + markupPercent / 100);
+						} else {
+							// Use default suggestion from service
+							return priceCalculationService.calculateSuggestedPrice(purchasePrice);
+						}
+					}
+					return 0;
+				};
+
+				const suggestedPrice = calculateSuggestedPrice();
+
+				const applySuggestedPrice = () => {
+					if (suggestedPrice > 0) {
+						setFormData(prev => ({ ...prev, salePrice: suggestedPrice.toFixed(2) }));
+					}
+				};
+
 				return (
 					<div className="space-y-6">
 						{/* Prices Section */}
 						<div>
 							<h3 className="text-lg font-medium text-gray-900 mb-4">Preços</h3>
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+							<div className="grid grid-cols-3 md:grid-cols-3 gap-6">
 								<Input
 									label="Preço de Compra"
 									type="number"
@@ -315,6 +332,16 @@ const ProductsPage: React.FC = () => {
 									placeholder="0,00"
 									min="0"
 									required
+								/>
+
+								<Input
+									label="Markup (%)"
+									type="number"
+									step="0.01"
+									value={formData.markup}
+									onChange={handleInputChange('markup')}
+									placeholder="Ex: 50 (para 50%)"
+									min="0"
 								/>
 
 								<div className="relative">
@@ -328,17 +355,16 @@ const ProductsPage: React.FC = () => {
 										min="0"
 										required
 									/>
-									{formData.purchasePrice && (
-										<p className="text-xs text-gray-500 mt-1">
-											Sugestão: R${' '}
-											{priceCalculationService
-												.calculateSuggestedPrice(
-													priceCalculationService.parsePrice(
-														formData.purchasePrice,
-													),
-												)
-												.toFixed(2)}
-										</p>
+									{suggestedPrice > 0 && (
+										<div className="mt-2">
+											<button
+												type="button"
+												onClick={applySuggestedPrice}
+												className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors cursor-pointer"
+											>
+												Sugestão: R$ {suggestedPrice.toFixed(2)}
+											</button>
+										</div>
 									)}
 								</div>
 							</div>
@@ -420,6 +446,7 @@ const ProductsPage: React.FC = () => {
 									stock: '',
 									saleType: 'unit' as 'unit' | 'fractional',
 									purchasePrice: '',
+									markup: '',
 									salePrice: '',
 								});
 								setActiveSubTab('basic');
