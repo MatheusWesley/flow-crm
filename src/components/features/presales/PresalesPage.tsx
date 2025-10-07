@@ -27,7 +27,6 @@ import { PresaleModal } from '../shared/presaleModal';
 import PreSaleItemsDisplay from './PreSaleItemsDisplay';
 
 const PresalesPage: React.FC = () => {
-	const createFormId = useId();
 	const editFormId = useId();
 	const [searchTerm, setSearchTerm] = useState('');
 	const [selectedPreSale, setSelectedPreSale] = useState<PreSale | null>(null);
@@ -540,8 +539,57 @@ const PresalesPage: React.FC = () => {
 		);
 
 		setSelectedPreSale(null);
+		setShowEditModal(false);
 		toastService.success(TOAST_MESSAGES.presale.updated);
 	};
+
+	const handleSubmitForm = (e: React.FormEvent, isEdit = false) => {
+		e.preventDefault();
+
+		if (!formData.customerId) {
+			toastService.error('Selecione um cliente!');
+			return;
+		}
+
+		if (!formData.paymentMethodId) {
+			toastService.error('Selecione uma forma de pagamento!');
+			return;
+		}
+
+		if (formItems.length === 0) {
+			toastService.error('Adicione pelo menos um item à pré-venda!');
+			return;
+		}
+
+		const selectedCustomer = customers.find(
+			(c) => c.id === formData.customerId,
+		);
+		if (!selectedCustomer) return;
+
+		const presaleData: Omit<PreSale, 'id' | 'createdAt' | 'updatedAt'> = {
+			customer: selectedCustomer,
+			items: formItems.map((item, index) => ({
+				id: `item-${index}`,
+				...item,
+				totalPrice: calculateItemTotal(item.quantity, item.unitPrice),
+			})),
+			total: calculateFormTotal(),
+			status: isEdit && selectedPreSale ? selectedPreSale.status : 'pending',
+			notes: formData.notes || undefined,
+			discount: Number(formData.discount) || undefined,
+			discountType: formData.discountType,
+			paymentMethodId: formData.paymentMethodId,
+			salesperson: isEdit && selectedPreSale ? selectedPreSale.salesperson : 'Current User',
+		};
+
+		if (isEdit) {
+			handleUpdatePresale(presaleData);
+		} else {
+			handleCreatePresale(presaleData);
+		}
+	};
+
+
 
 	const renderTabContent = () => {
 		return (
