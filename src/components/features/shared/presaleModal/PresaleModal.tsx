@@ -103,11 +103,6 @@ const PresaleModal: React.FC<PresaleModalProps> = ({
 	}, [editingPresale]);
 
 	// Select options
-	const productOptions = products.map((product) => ({
-		value: product.id,
-		label: product.name,
-	}));
-
 	const paymentMethodOptions = paymentMethods.map((method) => ({
 		value: method.id,
 		label: method.description,
@@ -288,16 +283,6 @@ const PresaleModal: React.FC<PresaleModalProps> = ({
 
 	const removeItemFromForm = (index: number) => {
 		setFormItems((prev) => prev.filter((_, i) => i !== index));
-	};
-
-	const updateFormItem = (
-		index: number,
-		field: keyof Omit<PreSaleItem, 'id' | 'totalPrice'>,
-		value: any,
-	) => {
-		setFormItems((prev) =>
-			prev.map((item, i) => (i === index ? { ...item, [field]: value } : item)),
-		);
 	};
 
 	const calculateItemTotal = (quantity: number, unitPrice: number) => {
