@@ -103,11 +103,6 @@ const PresaleModal: React.FC<PresaleModalProps> = ({
 	}, [editingPresale]);
 
 	// Select options
-	const productOptions = products.map((product) => ({
-		value: product.id,
-		label: product.name,
-	}));
-
 	const paymentMethodOptions = paymentMethods.map((method) => ({
 		value: method.id,
 		label: method.description,
@@ -288,16 +283,6 @@ const PresaleModal: React.FC<PresaleModalProps> = ({
 
 	const removeItemFromForm = (index: number) => {
 		setFormItems((prev) => prev.filter((_, i) => i !== index));
-	};
-
-	const updateFormItem = (
-		index: number,
-		field: keyof Omit<PreSaleItem, 'id' | 'totalPrice'>,
-		value: any,
-	) => {
-		setFormItems((prev) =>
-			prev.map((item, i) => (i === index ? { ...item, [field]: value } : item)),
-		);
 	};
 
 	const calculateItemTotal = (quantity: number, unitPrice: number) => {
@@ -608,26 +593,14 @@ const PresaleModal: React.FC<PresaleModalProps> = ({
 								className="bg-white border border-gray-200 rounded-lg mb-2"
 							>
 								<div className="grid grid-cols-12 gap-2 px-3 py-2 items-center">
-									{/* Product Name */}
+									{/* Product Name - Disabled after adding */}
 									<div className="col-span-4">
-										<Select
-											value={item.product.id}
-											onChange={(value) => {
-												const product = products.find(
-													(p) => p.id === value,
-												);
-												if (product) {
-													updateFormItem(index, 'product', product);
-													updateFormItem(
-														index,
-														'unitPrice',
-														product.salePrice,
-													);
-												}
-											}}
-											options={productOptions}
-											size="sm"
-										/>
+										<div className="text-sm text-gray-900 font-medium bg-gray-100 px-3 py-2 rounded border border-gray-200">
+											<div>
+												<div className="font-semibold">{item.product.name}</div>
+												<div className="text-xs text-gray-600">Cód: {item.product.code}</div>
+											</div>
+										</div>
 									</div>
 
 									{/* Value Display */}
@@ -638,39 +611,29 @@ const PresaleModal: React.FC<PresaleModalProps> = ({
 										).toFixed(2)}
 									</div>
 
-									{/* Quantity Input */}
+									{/* Quantity Input - Disabled after adding */}
 									<div className="col-span-2">
 										<input
 											type="number"
 											step="0.01"
 											min="0.01"
 											value={item.quantity}
-											onChange={(e) =>
-												updateFormItem(
-													index,
-													'quantity',
-													Number(e.target.value),
-												)
-											}
-											className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-right"
+											readOnly={true}
+											className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-right bg-gray-100 cursor-not-allowed opacity-60"
+											title="Campo bloqueado após adição do item"
 										/>
 									</div>
 
-									{/* Unit Price Input */}
+									{/* Unit Price Input - Disabled after adding */}
 									<div className="col-span-2">
 										<input
 											type="number"
 											step="0.01"
 											min="0"
 											value={item.unitPrice}
-											onChange={(e) =>
-												updateFormItem(
-													index,
-													'unitPrice',
-													Number(e.target.value),
-												)
-											}
-											className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-right"
+											readOnly={true}
+											className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-right bg-gray-100 cursor-not-allowed opacity-60"
+											title="Campo bloqueado após adição do item"
 										/>
 									</div>
 
