@@ -57,6 +57,7 @@ export interface PreSale extends BaseEntity {
 	discount?: number;
 	discountType?: 'percentage' | 'fixed';
 	salesperson?: string;
+	salespersonId?: string;
 	paymentMethodId?: string;
 }
 
@@ -133,12 +134,75 @@ export interface SortConfig {
 	direction: 'asc' | 'desc';
 }
 
-// User and authentication types
-export interface User {
-	id: string;
+// User and authentication types - Expanded for access control system
+
+// User permissions interface for granular access control
+export interface UserPermissions {
+	modules: {
+		products: boolean;
+		customers: boolean;
+		reports: boolean;
+		paymentMethods: boolean; // Apenas para admins
+		userManagement: boolean; // Apenas para admins
+	};
+	presales: {
+		canCreate: boolean;
+		canViewOwn: boolean;
+		canViewAll: boolean; // Apenas para admins
+	};
+}
+
+// Expanded User interface with access control
+export interface User extends BaseEntity {
 	name: string;
 	email: string;
-	role: string;
+	password: string; // Hash da senha
+	userType: 'admin' | 'employee';
+	permissions: UserPermissions;
+	isActive: boolean;
+	lastLoginAt?: Date;
+	createdBy?: string; // ID do administrador que criou
+	avatar?: string;
+}
+
+// User session interface for tracking active sessions
+export interface UserSession {
+	userId: string;
+	userType: 'admin' | 'employee';
+	permissions: UserPermissions;
+	loginTime: Date;
+	lastActivity: Date;
+}
+
+// Audit log interface for tracking user actions
+export interface AuditLog extends BaseEntity {
+	userId: string;
+	userName: string;
+	action: 'login' | 'logout' | 'create' | 'update' | 'delete' | 'view';
+	resource: string; // 'user', 'product', 'customer', etc.
+	resourceId?: string;
+	details?: string;
+	ipAddress?: string;
+	userAgent?: string;
+}
+
+// Request types for user management operations
+export interface CreateUserRequest {
+	name: string;
+	email: string;
+	password: string;
+	userType: 'admin' | 'employee';
+	permissions?: Partial<UserPermissions>;
+	avatar?: string;
+}
+
+export interface UpdateUserRequest {
+	name?: string;
+	email?: string;
+	password?: string;
+	userType?: 'admin' | 'employee';
+	permissions?: UserPermissions;
+	isActive?: boolean;
 	avatar?: string;
 }
 
@@ -153,13 +217,19 @@ export interface AuthUser extends User {
 	lastLoginAt?: Date;
 }
 
-// Authentication error type
+// Authentication error type - expanded with more error codes
 export interface AuthError {
 	message: string;
-	code?: 'INVALID_CREDENTIALS' | 'NETWORK_ERROR' | 'UNKNOWN_ERROR';
+	code?: 'INVALID_CREDENTIALS' | 'NETWORK_ERROR' | 'PERMISSION_DENIED' | 'USER_INACTIVE' | 'UNKNOWN_ERROR';
 }
 
-// Authentication context type
+// User management error type
+export interface UserManagementError extends Error {
+	code: 'PERMISSION_DENIED' | 'USER_NOT_FOUND' | 'EMAIL_EXISTS' | 'INVALID_DATA';
+	details?: string;
+}
+
+// Expanded authentication context type with permissions
 export interface AuthContextType {
 	user: AuthUser | null;
 	isAuthenticated: boolean;
@@ -168,10 +238,97 @@ export interface AuthContextType {
 	login: (credentials: UserCredentials) => Promise<void>;
 	logout: () => void;
 	clearError: () => void;
+	// New permission-related properties
+	permissions: UserPermissions;
+	hasPermission: (permission: string) => boolean;
+	isAdmin: boolean;
+	isEmployee: boolean;
 }
 
 export interface AuthState {
 	user?: User;
 	isAuthenticated: boolean;
 	isLoading: boolean;
+	permissions?: UserPermissions;
+}
+
+// Audit log filters for querying logs
+export interface AuditLogFilters {
+	userId?: string;
+	action?: AuditLog['action'];
+	resource?: string;
+	startDate?: Date;
+	endDate?: Date;
+	limit?: number;
+	offset?: number;
+}
+// Permission-related utility types
+export type UserType = 'admin' | 'employee';
+export type ModulePermission = keyof UserPermissions['modules'];
+export type PresalePermission = keyof UserPermissions['presales'];
+export type AuditAction = AuditLog['action'];
+
+// Default permissions by user type
+export interface DefaultPermissions {
+	admin: UserPermissions;
+	employee: UserPermissions;
+}
+
+// Protected route props
+export interface ProtectedRouteProps {
+	children: React.ReactNode;
+	requiredPermission?: string;
+	requiredUserType?: UserType;
+	fallback?: React.ReactNode;
+	redirectTo?: string;
+}
+
+// User management service interface
+export interface UserManagementService {
+	getAllUsers(): Promise<User[]>;
+	createUser(userData: CreateUserRequest): Promise<User>;
+	updateUser(userId: string, userData: UpdateUserRequest): Promise<User>;
+	deleteUser(userId: string): Promise<void>;
+	updateUserPermissions(userId: string, permissions: UserPermissions): Promise<void>;
+	getAuditLogs(filters?: AuditLogFilters): Promise<AuditLog[]>;
+}
+
+// Auth service interface - expanded
+export interface AuthService {
+	// Existing methods
+	login(credentials: UserCredentials): Promise<AuthUser>;
+	logout(): void;
+	getStoredUser(): AuthUser | null;
+	isAuthenticated(): boolean;
+
+	// New permission methods
+	hasPermission(permission: string): boolean;
+	getUserPermissions(): UserPermissions | null;
+	logActivity(action: string, resource: string, details?: string): void;
+	isAdmin(): boolean;
+	isEmployee(): boolean;
+	canAccessModule(module: string): boolean;
+}
+
+// Permissions hook interface
+export interface UsePermissions {
+	// Core permission methods
+	hasPermission: (permission: string) => boolean;
+	canAccessModule: (module: string) => boolean;
+	isAdmin: () => boolean;
+	isEmployee: () => boolean;
+	permissions: UserPermissions;
+
+	// Convenience methods for common permission checks
+	canPerformPresaleAction: (action: 'create' | 'viewOwn' | 'viewAll', presaleUserId?: string) => boolean;
+	canCreatePresales: () => boolean;
+	canViewOwnPresales: () => boolean;
+	canViewAllPresales: () => boolean;
+	canViewPresale: (presaleUserId: string) => boolean;
+	canAccessProducts: () => boolean;
+	canAccessCustomers: () => boolean;
+	canAccessReports: () => boolean;
+	canAccessPaymentMethods: () => boolean;
+	canAccessUserManagement: () => boolean;
+	getAccessibleNavigationItems: () => string[];
 }

@@ -1,6 +1,7 @@
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import type { User } from '../../../types';
+import SessionWarning from '../../common/SessionWarning';
 import Header from '../Header';
 import Sidebar from '../Sidebar';
 
@@ -57,6 +58,9 @@ const Layout: React.FC<LayoutProps> = ({
 
 	return (
 		<div className={`min-h-screen bg-gray-50 ${className}`}>
+			{/* Session Warning */}
+			<SessionWarning />
+
 			{/* Mobile overlay */}
 			{isMobile && isMobileSidebarOpen && (
 				<div

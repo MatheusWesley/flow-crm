@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useId, useMemo, useState } from 'react';
+import { useAuth } from '../../../context/AuthContext';
 import { mockPaymentMethodService } from '../../../data/mockPaymentMethodService';
 import toastService, { TOAST_MESSAGES } from '../../../services/ToastService';
 import type {
@@ -29,6 +30,7 @@ import PreSaleItemsDisplay from './PreSaleItemsDisplay';
 
 const PresalesPage: React.FC = () => {
 	const editFormId = useId();
+	const { isAdmin, isEmployee, user, hasPermission } = useAuth();
 	const [searchTerm, setSearchTerm] = useState('');
 	const [selectedPreSale, setSelectedPreSale] = useState<PreSale | null>(null);
 	const [showViewModal, setShowViewModal] = useState(false);
@@ -104,7 +106,7 @@ const PresalesPage: React.FC = () => {
 		},
 	]);
 
-	// Mock data for pre-sales
+	// Mock data for pre-sales - includes different salespersons for permission testing
 	const [preSales, setPreSales] = useState<PreSale[]>([
 		{
 			id: '1',
@@ -128,7 +130,8 @@ const PresalesPage: React.FC = () => {
 			total: 128.23,
 			status: 'pending',
 			notes: 'Entrega urgente solicitada',
-			salesperson: 'Vendedor A',
+			salesperson: user?.name || 'Usuário Atual',
+			salespersonId: user?.id || '1',
 			createdAt: new Date('2024-01-15'),
 			updatedAt: new Date('2024-01-15'),
 		},
@@ -146,7 +149,8 @@ const PresalesPage: React.FC = () => {
 			],
 			total: 149.95,
 			status: 'approved',
-			salesperson: 'Vendedor B',
+			salesperson: 'Outro Funcionário',
+			salespersonId: 'other-user',
 			createdAt: new Date('2024-01-10'),
 			updatedAt: new Date('2024-01-12'),
 		},
@@ -163,10 +167,11 @@ const PresalesPage: React.FC = () => {
 				},
 			],
 			total: 136.5,
-			status: 'draft',
-			salesperson: 'Vendedor A',
-			createdAt: new Date('2024-02-20'),
-			updatedAt: new Date('2024-02-20'),
+			status: 'converted',
+			salesperson: user?.name || 'Usuário Atual',
+			salespersonId: user?.id || '1',
+			createdAt: new Date('2024-01-08'),
+			updatedAt: new Date('2024-01-09'),
 		},
 		{
 			id: '4',
@@ -181,125 +186,11 @@ const PresalesPage: React.FC = () => {
 				},
 			],
 			total: 29.99,
-			status: 'converted',
-			salesperson: 'Vendedor C',
-			createdAt: new Date('2024-03-05'),
-			updatedAt: new Date('2024-03-07'),
-		},
-		{
-			id: '5',
-			customer: customers[0],
-			items: [
-				{
-					id: '6',
-					product: products[1],
-					quantity: 2.5,
-					unitPrice: 45.5,
-					totalPrice: 113.75,
-				},
-			],
-			total: 113.75,
-			status: 'cancelled',
-			salesperson: 'Vendedor B',
-			createdAt: new Date('2024-12-01'),
-			updatedAt: new Date('2024-12-02'),
-		},
-		{
-			id: '6',
-			customer: customers[1],
-			items: [
-				{
-					id: '7',
-					product: products[0],
-					quantity: 10,
-					unitPrice: 29.99,
-					totalPrice: 299.9,
-				},
-			],
-			total: 299.9,
-			status: 'approved',
-			salesperson: 'Vendedor A',
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		},
-		// Mais pré-vendas para hoje (07/10/2025) para teste
-		{
-			id: '7',
-			customer: customers[0],
-			items: [
-				{
-					id: '8',
-					product: products[1],
-					quantity: 2,
-					unitPrice: 45.5,
-					totalPrice: 91.0,
-				},
-			],
-			total: 91.0,
-			status: 'pending',
-			notes: 'Pré-venda de hoje',
-			salesperson: 'Vendedor B',
-			createdAt: new Date(2025, 9, 7, 10, 30), // October 7, 2025, 10:30 (month is 0-indexed)
-			updatedAt: new Date(2025, 9, 7, 10, 30),
-		},
-		{
-			id: '8',
-			customer: customers[1],
-			items: [
-				{
-					id: '9',
-					product: products[0],
-					quantity: 3,
-					unitPrice: 29.99,
-					totalPrice: 89.97,
-				},
-			],
-			total: 89.97,
 			status: 'draft',
-			notes: 'Outra pré-venda de hoje',
-			salesperson: 'Vendedor C',
-			createdAt: new Date(2025, 9, 7, 14, 15), // October 7, 2025, 14:15 (month is 0-indexed)
-			updatedAt: new Date(2025, 9, 7, 14, 15),
-		},
-		// Pré-vendas de ontem (06/10/2025)
-		{
-			id: '9',
-			customer: customers[0],
-			items: [
-				{
-					id: '10',
-					product: products[0],
-					quantity: 1,
-					unitPrice: 29.99,
-					totalPrice: 29.99,
-				},
-			],
-			total: 29.99,
-			status: 'approved',
-			notes: 'Pré-venda de ontem',
-			salesperson: 'Vendedor A',
-			createdAt: new Date(2025, 9, 6, 16, 45), // October 6, 2025, 16:45 (month is 0-indexed)
-			updatedAt: new Date(2025, 9, 6, 16, 45),
-		},
-		// Mais pré-vendas explicitamente para hoje (07/10/2025)
-		{
-			id: '10',
-			customer: customers[1],
-			items: [
-				{
-					id: '11',
-					product: products[1],
-					quantity: 1,
-					unitPrice: 45.5,
-					totalPrice: 45.5,
-				},
-			],
-			total: 45.5,
-			status: 'pending',
-			notes: 'Teste filtro - hoje 07/10',
-			salesperson: 'Vendedor D',
-			createdAt: new Date(2025, 9, 7, 9, 0), // October 7, 2025, 09:00
-			updatedAt: new Date(2025, 9, 7, 9, 0),
+			salesperson: 'Terceiro Funcionário',
+			salespersonId: 'third-user',
+			createdAt: new Date('2024-01-12'),
+			updatedAt: new Date('2024-01-12'),
 		},
 	]);
 
@@ -407,17 +298,6 @@ const PresalesPage: React.FC = () => {
 			const presaleDate = new Date(preSale.createdAt);
 			const presaleDateString = getLocalDateString(presaleDate);
 
-			// Debug temporário
-			if (preSale.id === '7' || preSale.id === '8' || preSale.id === '10') {
-				console.log(`[DEBUG] Pré-venda #${preSale.id}:`, {
-					originalDate: preSale.createdAt,
-					presaleDateString,
-					startDate,
-					endDate,
-					comparison: presaleDateString >= startDate && presaleDateString <= endDate
-				});
-			}
-
 			if (startDate) {
 				matchesDateRange = matchesDateRange && presaleDateString >= startDate;
 			}
@@ -427,7 +307,22 @@ const PresalesPage: React.FC = () => {
 			}
 		}
 
-		return matchesSearch && matchesStatus && matchesDateRange;
+		// Permission-based filtering
+		let hasPermissionToView = true;
+
+		if (isEmployee) {
+			// Employees can only see their own presales unless they have canViewAll permission
+			if (hasPermission('presales.canViewAll')) {
+				hasPermissionToView = true; // Can see all presales
+			} else if (hasPermission('presales.canViewOwn')) {
+				hasPermissionToView = preSale.salespersonId === user?.id; // Only own presales
+			} else {
+				hasPermissionToView = false; // No permission to view presales
+			}
+		}
+		// Admins can see all presales by default
+
+		return matchesSearch && matchesStatus && matchesDateRange && hasPermissionToView;
 	});
 
 	// Filter customers for search
@@ -699,10 +594,14 @@ const PresalesPage: React.FC = () => {
 		return itemsTotal - discountAmount;
 	};
 
-	const handleCreatePresale = (presaleData: Omit<PreSale, 'id' | 'createdAt' | 'updatedAt'>) => {
+	const handleCreatePresale = (
+		presaleData: Omit<PreSale, 'id' | 'createdAt' | 'updatedAt'>,
+	) => {
 		const newPresale: PreSale = {
 			...presaleData,
 			id: Date.now().toString(),
+			salesperson: user?.name || 'Usuário Atual',
+			salespersonId: user?.id || '1',
 			createdAt: new Date(),
 			updatedAt: new Date(),
 		};
@@ -711,7 +610,9 @@ const PresalesPage: React.FC = () => {
 		toastService.success(TOAST_MESSAGES.presale.created);
 	};
 
-	const handleUpdatePresale = (presaleData: Omit<PreSale, 'id' | 'createdAt' | 'updatedAt'>) => {
+	const handleUpdatePresale = (
+		presaleData: Omit<PreSale, 'id' | 'createdAt' | 'updatedAt'>,
+	) => {
 		if (!selectedPreSale) return;
 
 		const updatedPresale: PreSale = {
@@ -768,7 +669,10 @@ const PresalesPage: React.FC = () => {
 			discount: Number(formData.discount) || undefined,
 			discountType: formData.discountType,
 			paymentMethodId: formData.paymentMethodId,
-			salesperson: isEdit && selectedPreSale ? selectedPreSale.salesperson : 'Current User',
+			salesperson:
+				isEdit && selectedPreSale
+					? selectedPreSale.salesperson
+					: 'Current User',
 		};
 
 		if (isEdit) {
@@ -777,8 +681,6 @@ const PresalesPage: React.FC = () => {
 			handleCreatePresale(presaleData);
 		}
 	};
-
-
 
 	const renderTabContent = () => {
 		return (
@@ -952,6 +854,7 @@ const PresalesPage: React.FC = () => {
 										)}
 									</div>
 									<div className="flex space-x-1">
+										{/* View button - always available if user can see the presale */}
 										<button
 											type="button"
 											onClick={() => handleViewPreSale(preSale)}
@@ -960,35 +863,48 @@ const PresalesPage: React.FC = () => {
 										>
 											<Eye className="h-4 w-4" />
 										</button>
+
+										{/* Edit button - only for own presales (employees) or all presales (admins) */}
 										{(preSale.status === 'draft' ||
-											preSale.status === 'pending') && (
+											preSale.status === 'pending') &&
+											(isAdmin ||
+												(isEmployee && preSale.salespersonId === user?.id)) && (
+												<button
+													type="button"
+													onClick={() => handleEditPreSale(preSale)}
+													className="p-1 text-green-600 hover:text-green-800 hover:bg-green-100 rounded"
+													title="Editar"
+												>
+													<Edit className="h-4 w-4" />
+												</button>
+											)}
+
+										{/* Status change button - only for admins or own presales */}
+										{(isAdmin ||
+											(isEmployee && preSale.salespersonId === user?.id)) && (
 											<button
 												type="button"
-												onClick={() => handleEditPreSale(preSale)}
-												className="p-1 text-green-600 hover:text-green-800 hover:bg-green-100 rounded"
-												title="Editar"
+												onClick={() => handleStatusChange(preSale)}
+												className="p-1 text-purple-600 hover:text-purple-800 hover:bg-purple-100 rounded transition-colors"
+												title="Alterar Status"
 											>
-												<Edit className="h-4 w-4" />
+												<RotateCcw className="h-4 w-4" />
 											</button>
 										)}
-										<button
-											type="button"
-											onClick={() => handleStatusChange(preSale)}
-											className="p-1 text-purple-600 hover:text-purple-800 hover:bg-purple-100 rounded transition-colors"
-											title="Alterar Status"
-										>
-											<RotateCcw className="h-4 w-4" />
-										</button>
-										{preSale.status !== 'converted' && (
-											<button
-												type="button"
-												onClick={() => handleDeletePreSale(preSale.id)}
-												className="p-1 text-red-600 hover:text-red-800 hover:bg-red-100 rounded"
-												title="Excluir"
-											>
-												<Trash2 className="h-4 w-4" />
-											</button>
-										)}
+
+										{/* Delete button - only for admins or own presales (and not converted) */}
+										{preSale.status !== 'converted' &&
+											(isAdmin ||
+												(isEmployee && preSale.salespersonId === user?.id)) && (
+												<button
+													type="button"
+													onClick={() => handleDeletePreSale(preSale.id)}
+													className="p-1 text-red-600 hover:text-red-800 hover:bg-red-100 rounded"
+													title="Excluir"
+												>
+													<Trash2 className="h-4 w-4" />
+												</button>
+											)}
 									</div>
 								</div>
 							</div>
@@ -1001,17 +917,38 @@ const PresalesPage: React.FC = () => {
 							<p className="text-gray-500 text-lg">
 								{searchTerm
 									? 'Nenhuma pré-venda encontrada'
-									: 'Nenhuma pré-venda cadastrada ainda.'}
+									: isEmployee &&
+											!hasPermission('presales.canViewOwn') &&
+											!hasPermission('presales.canViewAll')
+										? 'Você não tem permissão para visualizar pré-vendas'
+										: isEmployee &&
+												hasPermission('presales.canViewOwn') &&
+												!hasPermission('presales.canViewAll')
+											? 'Você ainda não criou nenhuma pré-venda'
+											: 'Nenhuma pré-venda cadastrada ainda.'}
 							</p>
-							{!searchTerm && (
-								<Button
-									variant="primary"
-									onClick={() => setShowCreateModal(true)}
-									className="mt-4"
-								>
-									Criar primeira pré-venda
-								</Button>
-							)}
+							{!searchTerm &&
+								(isAdmin || hasPermission('presales.canCreate')) && (
+									<Button
+										variant="primary"
+										onClick={() => setShowCreateModal(true)}
+										className="mt-4"
+									>
+										{isEmployee &&
+										hasPermission('presales.canViewOwn') &&
+										!hasPermission('presales.canViewAll')
+											? 'Criar sua primeira pré-venda'
+											: 'Criar primeira pré-venda'}
+									</Button>
+								)}
+							{isEmployee &&
+								!hasPermission('presales.canViewOwn') &&
+								!hasPermission('presales.canViewAll') && (
+									<p className="text-sm text-gray-400 mt-4">
+										Entre em contato com o administrador para solicitar
+										permissões de acesso.
+									</p>
+								)}
 						</div>
 					)}
 				</div>
@@ -1021,7 +958,26 @@ const PresalesPage: React.FC = () => {
 
 	return (
 		<div className="p-6">
-			<h1 className="text-2xl font-bold text-gray-900 mb-6">Pré-vendas</h1>
+			<div className="mb-6">
+				<h1 className="text-2xl font-bold text-gray-900">Pré-vendas</h1>
+				<p className="text-gray-600 mt-1">
+					{isAdmin
+						? 'Gerencie todas as pré-vendas do sistema'
+						: isEmployee && hasPermission('presales.canViewAll')
+							? 'Visualize todas as pré-vendas da empresa'
+							: isEmployee && hasPermission('presales.canViewOwn')
+								? `Suas pré-vendas - ${user?.name}`
+								: 'Acesso limitado às pré-vendas'}
+				</p>
+				{isEmployee && !hasPermission('presales.canViewAll') && (
+					<p className="text-sm text-blue-600 mt-1">
+						Funcionário •{' '}
+						{hasPermission('presales.canViewOwn')
+							? 'Visualizando apenas suas pré-vendas'
+							: 'Sem permissão para visualizar pré-vendas'}
+					</p>
+				)}
+			</div>
 
 			{/* Tab Content */}
 			<div className="mt-6">{renderTabContent()}</div>
@@ -1388,8 +1344,12 @@ const PresalesPage: React.FC = () => {
 											<div className="col-span-4">
 												<div className="text-sm text-gray-900 font-medium bg-gray-100 px-3 py-2 rounded border border-gray-200">
 													<div>
-														<div className="font-semibold">{item.product.name}</div>
-														<div className="text-xs text-gray-600">Cód: {item.product.code}</div>
+														<div className="font-semibold">
+															{item.product.name}
+														</div>
+														<div className="text-xs text-gray-600">
+															Cód: {item.product.code}
+														</div>
 													</div>
 												</div>
 											</div>

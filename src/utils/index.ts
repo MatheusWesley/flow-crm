@@ -60,5 +60,10 @@ export const generateProductCode = (): string => {
 
 // Export new services
 export { default as AutoCodeService } from './autoCodeService';
+// Export error handling utilities
+export * from './errorHandling';
 export type { PriceCalculationConfig } from './priceCalculationService';
 export { default as PriceCalculationService } from './priceCalculationService';
+
+// Export validation utilities
+export * from './validationUtils';

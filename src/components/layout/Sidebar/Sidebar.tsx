@@ -14,6 +14,7 @@ import {
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { usePermissions } from '../../../hooks/usePermissions';
 import type { MenuItem } from '../../../types';
 
 interface SidebarProps {
@@ -29,6 +30,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
 	const navigate = useNavigate();
 	const location = useLocation();
+	const permissions = usePermissions();
 	const [expandedItems, setExpandedItems] = useState<string[]>([]);
 	const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 	const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -69,6 +71,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 		if (path === '/products') return 'products';
 		if (path === '/customers') return 'customers';
 		if (path === '/payment-methods') return 'payment-methods';
+		if (path === '/users') return 'users';
 		if (path === '/inventory') return 'inventory';
 		if (path === '/settings') return 'settings';
 		return 'dashboard';
@@ -91,63 +94,112 @@ const Sidebar: React.FC<SidebarProps> = ({
 		) {
 			setExpandedItems((prev) => [...prev, 'cadastros']);
 		}
+		if (path.startsWith('/users') && !expandedItems.includes('cadastros')) {
+			setExpandedItems((prev) => [...prev, 'cadastros']);
+		}
 		if (path.startsWith('/reports') && !expandedItems.includes('reports')) {
 			setExpandedItems((prev) => [...prev, 'reports']);
 		}
 	}, [location.pathname, expandedItems]);
 
-	// Menu items configuration
-	const menuItems: MenuItem[] = [
-		{
-			id: 'dashboard',
-			label: 'Dashboard',
-			icon: 'Home',
-			path: '/dashboard',
-		},
-		{
-			id: 'cadastros',
-			label: 'Cadastros',
-			icon: 'FileText',
-			children: [
-				{
-					id: 'products',
-					label: 'Produtos',
-					icon: 'Package',
-					path: '/products',
-				},
-				{
-					id: 'customers',
-					label: 'Clientes',
-					icon: 'Users',
-					path: '/customers',
-				},
-				{
-					id: 'payment-methods',
-					label: 'Formas de Pagamento',
-					icon: 'CreditCard',
-					path: '/payment-methods',
-				},
-			],
-		},
-		{
-			id: 'presales',
-			label: 'Pré-Vendas',
-			icon: 'ShoppingCart',
-			path: '/presales',
-		},
-		{
+	// Filter menu items based on user permissions
+	const getFilteredMenuItems = (): MenuItem[] => {
+		const baseMenuItems: MenuItem[] = [
+			{
+				id: 'dashboard',
+				label: 'Dashboard',
+				icon: 'Home',
+				path: '/dashboard',
+			},
+		];
+
+		// Build Cadastros submenu based on permissions
+		const cadastrosChildren: MenuItem[] = [];
+
+		if (permissions.canAccessProducts()) {
+			cadastrosChildren.push({
+				id: 'products',
+				label: 'Produtos',
+				icon: 'Package',
+				path: '/products',
+			});
+		}
+
+		if (permissions.canAccessCustomers()) {
+			cadastrosChildren.push({
+				id: 'customers',
+				label: 'Clientes',
+				icon: 'Users',
+				path: '/customers',
+			});
+		}
+
+		if (permissions.canAccessPaymentMethods()) {
+			cadastrosChildren.push({
+				id: 'payment-methods',
+				label: 'Formas de Pagamento',
+				icon: 'CreditCard',
+				path: '/payment-methods',
+			});
+		}
+
+		if (permissions.canAccessUserManagement()) {
+			cadastrosChildren.push({
+				id: 'users',
+				label: 'Usuários',
+				icon: 'Users',
+				path: '/users',
+			});
+		}
+
+		// Only add Cadastros menu if user has access to at least one submenu
+		if (cadastrosChildren.length > 0) {
+			baseMenuItems.push({
+				id: 'cadastros',
+				label: 'Cadastros',
+				icon: 'FileText',
+				children: cadastrosChildren,
+			});
+		}
+
+		// Add Pré-Vendas if user can access presales
+		if (
+			permissions.canCreatePresales() ||
+			permissions.canViewOwnPresales() ||
+			permissions.canViewAllPresales()
+		) {
+			baseMenuItems.push({
+				id: 'presales',
+				label: 'Pré-Vendas',
+				icon: 'ShoppingCart',
+				path: '/presales',
+			});
+		}
+
+		// Add Estoque - for now, we'll show it to all authenticated users
+		// This can be refined later with specific inventory permissions
+		baseMenuItems.push({
 			id: 'inventory',
 			label: 'Estoque',
 			icon: 'BarChart3',
 			path: '/inventory',
-		},
-		{
-			id: 'reports',
-			label: 'Relatórios',
-			icon: 'FileText',
-			path: '/reports',
-		},
-	];
+		});
+
+		// Add Relatórios if user has reports permission
+		if (permissions.canAccessReports()) {
+			baseMenuItems.push({
+				id: 'reports',
+				label: 'Relatórios',
+				icon: 'FileText',
+				path: '/reports',
+			});
+		}
+
+		return baseMenuItems;
+	};
+
+	// Menu items configuration with permission filtering
+	const menuItems: MenuItem[] = getFilteredMenuItems();
 
 	// Bottom menu items
 	const bottomMenuItems: MenuItem[] = [

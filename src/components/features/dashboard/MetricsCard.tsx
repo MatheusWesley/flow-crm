@@ -10,7 +10,7 @@ interface MetricsCardProps {
 		isPositive: boolean;
 		period?: string;
 	};
-	color: 'blue' | 'green' | 'yellow' | 'red' | 'purple';
+	color: 'blue' | 'green' | 'yellow' | 'red' | 'purple' | 'indigo';
 	loading?: boolean;
 	error?: string;
 	subtitle?: string;
@@ -32,6 +32,7 @@ const MetricsCard: React.FC<MetricsCardProps> = ({
 		yellow: 'bg-yellow-50 text-yellow-600 border-yellow-200',
 		red: 'bg-red-50 text-red-600 border-red-200',
 		purple: 'bg-purple-50 text-purple-600 border-purple-200',
+		indigo: 'bg-indigo-50 text-indigo-600 border-indigo-200',
 	};
 
 	const trendColorClasses = {

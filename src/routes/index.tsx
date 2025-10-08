@@ -1,4 +1,5 @@
 import { createHashRouter, Navigate } from 'react-router-dom';
+import AccessDenied from '../components/common/AccessDenied';
 import { LoginPage } from '../components/features/auth';
 import { Customers } from '../components/features/customers';
 import Dashboard from '../components/features/dashboard';
@@ -6,6 +7,7 @@ import InventoryPage from '../components/features/inventory/InventoryPage';
 import { PaymentMethodsPage } from '../components/features/paymentMethods';
 import { Presales } from '../components/features/presales';
 import ProductsPage from '../components/features/products/ProductsPage';
+import UsersPage from '../components/features/users/UsersPage';
 import Layout from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
 import ProtectedRoute from './ProtectedRoute';
@@ -59,7 +61,7 @@ export const router = createHashRouter([
 	{
 		path: '/presales',
 		element: (
-			<ProtectedRoute>
+			<ProtectedRoute requiredPermission="presales.canCreate">
 				<LayoutWrapper title="Pré-vendas">
 					<Presales />
 				</LayoutWrapper>
@@ -69,7 +71,7 @@ export const router = createHashRouter([
 	{
 		path: '/products',
 		element: (
-			<ProtectedRoute>
+			<ProtectedRoute requiredPermission="modules.products">
 				<LayoutWrapper title="Produtos">
 					<ProductsPage />
 				</LayoutWrapper>
@@ -79,7 +81,7 @@ export const router = createHashRouter([
 	{
 		path: '/customers',
 		element: (
-			<ProtectedRoute>
+			<ProtectedRoute requiredPermission="modules.customers">
 				<LayoutWrapper title="Clientes">
 					<Customers />
 				</LayoutWrapper>
@@ -89,7 +91,7 @@ export const router = createHashRouter([
 	{
 		path: '/payment-methods',
 		element: (
-			<ProtectedRoute>
+			<ProtectedRoute requiredPermission="modules.paymentMethods">
 				<LayoutWrapper title="Formas de Pagamento">
 					<PaymentMethodsPage />
 				</LayoutWrapper>
@@ -102,6 +104,19 @@ export const router = createHashRouter([
 			<ProtectedRoute>
 				<LayoutWrapper title="Estoque">
 					<InventoryPage />
+				</LayoutWrapper>
+			</ProtectedRoute>
+		),
+	},
+	{
+		path: '/users',
+		element: (
+			<ProtectedRoute
+				requiredUserType="admin"
+				requiredPermission="modules.userManagement"
+			>
+				<LayoutWrapper title="Gestão de Usuários">
+					<UsersPage />
 				</LayoutWrapper>
 			</ProtectedRoute>
 		),
@@ -122,6 +137,14 @@ export const router = createHashRouter([
 						</div>
 					</div>
 				</LayoutWrapper>
+			</ProtectedRoute>
+		),
+	},
+	{
+		path: '/access-denied',
+		element: (
+			<ProtectedRoute>
+				<AccessDenied />
 			</ProtectedRoute>
 		),
 	},

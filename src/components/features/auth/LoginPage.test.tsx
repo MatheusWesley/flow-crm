@@ -183,7 +183,25 @@ describe('LoginPage', () => {
 			id: '1',
 			name: 'Administrador',
 			email: 'admin@flowcrm.com',
-			role: 'admin',
+			password: 'admin123',
+			userType: 'admin',
+			permissions: {
+				modules: {
+					products: true,
+					customers: true,
+					reports: true,
+					paymentMethods: true,
+					userManagement: true,
+				},
+				presales: {
+					canCreate: true,
+					canViewOwn: true,
+					canViewAll: true,
+				},
+			},
+			isActive: true,
+			createdAt: new Date(),
+			updatedAt: new Date(),
 			lastLoginAt: new Date(),
 		});
 
@@ -260,7 +278,25 @@ describe('LoginPage', () => {
 			id: '1',
 			name: 'Administrador',
 			email: 'admin@flowcrm.com',
-			role: 'admin',
+			password: 'admin123',
+			userType: 'admin',
+			permissions: {
+				modules: {
+					products: true,
+					customers: true,
+					reports: true,
+					paymentMethods: true,
+					userManagement: true,
+				},
+				presales: {
+					canCreate: true,
+					canViewOwn: true,
+					canViewAll: true,
+				},
+			},
+			isActive: true,
+			createdAt: new Date(),
+			updatedAt: new Date(),
 			lastLoginAt: new Date(),
 		});
 
@@ -309,7 +345,25 @@ describe('LoginPage', () => {
 								id: '1',
 								name: 'Administrador',
 								email: 'admin@flowcrm.com',
-								role: 'admin',
+								password: 'admin123',
+								userType: 'admin',
+								permissions: {
+									modules: {
+										products: true,
+										customers: true,
+										reports: true,
+										paymentMethods: true,
+										userManagement: true,
+									},
+									presales: {
+										canCreate: true,
+										canViewOwn: true,
+										canViewAll: true,
+									},
+								},
+								isActive: true,
+								createdAt: new Date(),
+								updatedAt: new Date(),
 								lastLoginAt: new Date(),
 							}),
 						1000,

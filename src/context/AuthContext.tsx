@@ -12,6 +12,7 @@ import type {
 	AuthError,
 	AuthUser,
 	UserCredentials,
+	UserPermissions,
 } from '../types';
 
 // Auth state interface for reducer
@@ -20,17 +21,29 @@ interface AuthState {
 	isLoading: boolean;
 	error: AuthError | null;
 	isInitialized: boolean;
+	permissions: UserPermissions | null;
+	lastActivity: Date | null;
+	sessionTimeout: number; // in minutes
 }
 
 // Auth actions for reducer
 type AuthAction =
 	| { type: 'INIT_START' }
-	| { type: 'INIT_SUCCESS'; payload: AuthUser | null }
+	| {
+			type: 'INIT_SUCCESS';
+			payload: { user: AuthUser | null; permissions: UserPermissions | null };
+	  }
 	| { type: 'LOGIN_START' }
-	| { type: 'LOGIN_SUCCESS'; payload: AuthUser }
+	| {
+			type: 'LOGIN_SUCCESS';
+			payload: { user: AuthUser; permissions: UserPermissions };
+	  }
 	| { type: 'LOGIN_ERROR'; payload: AuthError }
 	| { type: 'LOGOUT' }
-	| { type: 'CLEAR_ERROR' };
+	| { type: 'CLEAR_ERROR' }
+	| { type: 'UPDATE_PERMISSIONS'; payload: UserPermissions }
+	| { type: 'UPDATE_ACTIVITY' }
+	| { type: 'SESSION_EXPIRED' };
 
 // Initial auth state
 const initialState: AuthState = {
@@ -38,6 +51,9 @@ const initialState: AuthState = {
 	isLoading: true,
 	error: null,
 	isInitialized: false,
+	permissions: null,
+	lastActivity: null,
+	sessionTimeout: 30, // 30 minutes default
 };
 
 // Auth reducer for state management
@@ -53,7 +69,8 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
 		case 'INIT_SUCCESS':
 			return {
 				...state,
-				user: action.payload,
+				user: action.payload.user,
+				permissions: action.payload.permissions,
 				isLoading: false,
 				isInitialized: true,
 				error: null,
@@ -69,15 +86,18 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
 		case 'LOGIN_SUCCESS':
 			return {
 				...state,
-				user: action.payload,
+				user: action.payload.user,
+				permissions: action.payload.permissions,
 				isLoading: false,
 				error: null,
+				lastActivity: new Date(),
 			};
 
 		case 'LOGIN_ERROR':
 			return {
 				...state,
 				user: null,
+				permissions: null,
 				isLoading: false,
 				error: action.payload,
 			};
@@ -86,14 +106,41 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
 			return {
 				...state,
 				user: null,
+				permissions: null,
 				isLoading: false,
 				error: null,
+				lastActivity: null,
+			};
+
+		case 'UPDATE_ACTIVITY':
+			return {
+				...state,
+				lastActivity: new Date(),
+			};
+
+		case 'SESSION_EXPIRED':
+			return {
+				...state,
+				user: null,
+				permissions: null,
+				isLoading: false,
+				error: {
+					message: 'Sua sessão expirou. Faça login novamente.',
+					code: 'SESSION_EXPIRED',
+				},
+				lastActivity: null,
 			};
 
 		case 'CLEAR_ERROR':
 			return {
 				...state,
 				error: null,
+			};
+
+		case 'UPDATE_PERMISSIONS':
+			return {
+				...state,
+				permissions: action.payload,
 			};
 
 		default:
@@ -132,10 +179,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 				await new Promise((resolve) => setTimeout(resolve, 300));
 
 				const storedUser = mockAuthService.getStoredUser();
-				dispatch({ type: 'INIT_SUCCESS', payload: storedUser });
+				const permissions = storedUser ? storedUser.permissions : null;
+
+				// Check if session is still valid
+				if (storedUser) {
+					const lastActivity = localStorage.getItem('flowcrm_last_activity');
+					if (lastActivity) {
+						const lastActivityDate = new Date(lastActivity);
+						const now = new Date();
+						const timeDiff = (now.getTime() - lastActivityDate.getTime()) / (1000 * 60); // minutes
+
+						// If more than 30 minutes of inactivity, expire session
+						if (timeDiff > 30) {
+							mockAuthService.logout();
+							dispatch({ type: 'SESSION_EXPIRED' });
+							return;
+						}
+					}
+				}
+
+				dispatch({
+					type: 'INIT_SUCCESS',
+					payload: { user: storedUser, permissions },
+				});
 			} catch (error) {
 				console.error('Failed to initialize authentication:', error);
-				dispatch({ type: 'INIT_SUCCESS', payload: null });
+				dispatch({
+					type: 'INIT_SUCCESS',
+					payload: { user: null, permissions: null },
+				});
 			}
 		};
 
@@ -148,7 +220,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
 		try {
 			const user = await mockAuthService.login(credentials);
-			dispatch({ type: 'LOGIN_SUCCESS', payload: user });
+			const permissions = user.permissions;
+
+			dispatch({
+				type: 'LOGIN_SUCCESS',
+				payload: { user, permissions },
+			});
 		} catch (error) {
 			const authError: AuthError = error as AuthError;
 			dispatch({ type: 'LOGIN_ERROR', payload: authError });
@@ -167,8 +244,110 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		dispatch({ type: 'CLEAR_ERROR' });
 	}, []);
 
+	// Update activity function
+	const updateActivity = useCallback(() => {
+		if (state.user) {
+			dispatch({ type: 'UPDATE_ACTIVITY' });
+			localStorage.setItem('flowcrm_last_activity', new Date().toISOString());
+		}
+	}, [state.user]);
+
+	// Session timeout monitoring
+	useEffect(() => {
+		if (!state.user || !state.isInitialized) return;
+
+		const checkSessionTimeout = () => {
+			const lastActivity = localStorage.getItem('flowcrm_last_activity');
+			if (lastActivity) {
+				const lastActivityDate = new Date(lastActivity);
+				const now = new Date();
+				const timeDiff = (now.getTime() - lastActivityDate.getTime()) / (1000 * 60); // minutes
+
+				if (timeDiff > state.sessionTimeout) {
+					mockAuthService.logout();
+					dispatch({ type: 'SESSION_EXPIRED' });
+				}
+			}
+		};
+
+		// Check session timeout every minute
+		const interval = setInterval(checkSessionTimeout, 60000);
+
+		return () => clearInterval(interval);
+	}, [state.user, state.isInitialized, state.sessionTimeout]);
+
+	// Track user activity
+	useEffect(() => {
+		if (!state.user) return;
+
+		const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+		
+		const handleActivity = () => {
+			updateActivity();
+		};
+
+		// Add event listeners for user activity
+		activityEvents.forEach(event => {
+			document.addEventListener(event, handleActivity, true);
+		});
+
+		return () => {
+			// Remove event listeners
+			activityEvents.forEach(event => {
+				document.removeEventListener(event, handleActivity, true);
+			});
+		};
+	}, [state.user, updateActivity]);
+
 	// Computed values
 	const isAuthenticated = state.user !== null;
+
+	// Permission helper functions
+	const hasPermission = useCallback(
+		(permission: string): boolean => {
+			if (!state.permissions || !state.user) return false;
+
+			const [module, action] = permission.split('.');
+
+			if (module === 'modules') {
+				return (
+					state.permissions.modules[
+						action as keyof typeof state.permissions.modules
+					] || false
+				);
+			}
+
+			if (module === 'presales') {
+				return (
+					state.permissions.presales[
+						action as keyof typeof state.permissions.presales
+					] || false
+				);
+			}
+
+			return false;
+		},
+		[state.permissions, state.user],
+	);
+
+	const isAdmin = state.user?.userType === 'admin';
+	const isEmployee = state.user?.userType === 'employee';
+
+	// Default empty permissions for when user is not authenticated
+	const defaultPermissions: UserPermissions = {
+		modules: {
+			products: false,
+			customers: false,
+			reports: false,
+			paymentMethods: false,
+			userManagement: false,
+		},
+		presales: {
+			canCreate: false,
+			canViewOwn: false,
+			canViewAll: false,
+		},
+	};
 
 	// Context value
 	const contextValue: AuthContextType = {
@@ -179,6 +358,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		login,
 		logout,
 		clearError,
+		permissions: state.permissions || defaultPermissions,
+		hasPermission,
+		isAdmin,
+		isEmployee,
 	};
 
 	// Show loading screen during initialization

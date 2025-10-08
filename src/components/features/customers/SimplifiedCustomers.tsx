@@ -1,15 +1,15 @@
 import { SquarePen, Trash2 } from 'lucide-react';
 import type React from 'react';
 import { useState } from 'react';
+import { useAuth } from '../../../context/AuthContext';
 import toastService, { TOAST_MESSAGES } from '../../../services/ToastService';
+import type { Customer } from '../../../types';
 import { formatCPF, validateCPF } from '../../../utils';
 import Button from '../../common/Button';
 import Input from '../../common/Input';
-import { type Customer } from '../../../types';
 
 type TabType = 'list' | 'register';
 // All fields are now consolidated into a single form - no subtabs needed
-
 
 // Functions for customer operations
 const handleEditCustomer = (customer: Customer) => {
@@ -25,6 +25,7 @@ const handleDeleteCustomer = (customer: Customer) => {
 };
 
 const SimplifiedCustomers: React.FC = () => {
+	const { isAdmin, isEmployee, hasPermission, user } = useAuth();
 	const [activeTab, setActiveTab] = useState<TabType>('list');
 	const [customers] = useState<Customer[]>([
 		{
@@ -36,8 +37,8 @@ const SimplifiedCustomers: React.FC = () => {
 			address: 'Rua Teste, 123',
 			createdAt: new Date(),
 			updatedAt: new Date(),
-		  },
-		  {
+		},
+		{
 			id: '2',
 			name: 'Maria Oliveira',
 			email: 'maria.oliveira@email.com',
@@ -46,8 +47,8 @@ const SimplifiedCustomers: React.FC = () => {
 			address: 'Avenida Central, 456',
 			createdAt: new Date(),
 			updatedAt: new Date(),
-		  },
-		  {
+		},
+		{
 			id: '3',
 			name: 'Carlos Souza',
 			email: 'carlos.souza@email.com',
@@ -56,8 +57,8 @@ const SimplifiedCustomers: React.FC = () => {
 			address: 'Rua das Flores, 789',
 			createdAt: new Date(),
 			updatedAt: new Date(),
-		  },
-		  {
+		},
+		{
 			id: '4',
 			name: 'Ana Costa',
 			email: 'ana.costa@email.com',
@@ -66,8 +67,8 @@ const SimplifiedCustomers: React.FC = () => {
 			address: 'Avenida Paulista, 1000',
 			createdAt: new Date(),
 			updatedAt: new Date(),
-		  },
-		  {
+		},
+		{
 			id: '5',
 			name: 'Pedro Santos',
 			email: 'pedro.santos@email.com',
@@ -76,8 +77,8 @@ const SimplifiedCustomers: React.FC = () => {
 			address: 'Rua do Sol, 250',
 			createdAt: new Date(),
 			updatedAt: new Date(),
-		  },
-		  {
+		},
+		{
 			id: '6',
 			name: 'Juliana Lima',
 			email: 'juliana.lima@email.com',
@@ -86,8 +87,8 @@ const SimplifiedCustomers: React.FC = () => {
 			address: 'Travessa das Árvores, 78',
 			createdAt: new Date(),
 			updatedAt: new Date(),
-		  },
-		  {
+		},
+		{
 			id: '7',
 			name: 'Ricardo Almeida',
 			email: 'ricardo.almeida@email.com',
@@ -96,8 +97,8 @@ const SimplifiedCustomers: React.FC = () => {
 			address: 'Praça das Nações, 12',
 			createdAt: new Date(),
 			updatedAt: new Date(),
-		  },
-		  {
+		},
+		{
 			id: '8',
 			name: 'Fernanda Ribeiro',
 			email: 'fernanda.ribeiro@email.com',
@@ -106,8 +107,8 @@ const SimplifiedCustomers: React.FC = () => {
 			address: 'Rua Verde, 900',
 			createdAt: new Date(),
 			updatedAt: new Date(),
-		  },
-		  {
+		},
+		{
 			id: '9',
 			name: 'Lucas Barbosa',
 			email: 'lucas.barbosa@email.com',
@@ -116,8 +117,8 @@ const SimplifiedCustomers: React.FC = () => {
 			address: 'Rua Azul, 45',
 			createdAt: new Date(),
 			updatedAt: new Date(),
-		  },
-		  {
+		},
+		{
 			id: '10',
 			name: 'Patrícia Gomes',
 			email: 'patricia.gomes@email.com',
@@ -126,7 +127,7 @@ const SimplifiedCustomers: React.FC = () => {
 			address: 'Avenida Nova, 300',
 			createdAt: new Date(),
 			updatedAt: new Date(),
-		  },
+		},
 	]);
 
 	const [formData, setFormData] = useState({
@@ -252,22 +253,26 @@ const SimplifiedCustomers: React.FC = () => {
 									<span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
 										Ativo
 									</span>
-									<div className="flex space-x-2">
-										<button
-											type="button"
-											className="text-blue-600 hover:text-blue-800 text-sm"
-											onClick={() => handleEditCustomer(customer)}
-										>
-											<SquarePen size={16} />
-										</button>
-										<button
-											type="button"
-											className="text-red-600 hover:text-red-800 text-sm"
-											onClick={() => handleDeleteCustomer(customer)}
-										>
-											<Trash2 size={16} />
-										</button>
-									</div>
+									{(isAdmin || hasPermission('modules.customers')) && (
+										<div className="flex space-x-2">
+											<button
+												type="button"
+												className="text-blue-600 hover:text-blue-800 text-sm"
+												onClick={() => handleEditCustomer(customer)}
+												title="Editar cliente"
+											>
+												<SquarePen size={16} />
+											</button>
+											<button
+												type="button"
+												className="text-red-600 hover:text-red-800 text-sm"
+												onClick={() => handleDeleteCustomer(customer)}
+												title="Excluir cliente"
+											>
+												<Trash2 size={16} />
+											</button>
+										</div>
+									)}
 								</div>
 							</div>
 						))}
@@ -375,40 +380,67 @@ const SimplifiedCustomers: React.FC = () => {
 
 	return (
 		<div className="p-6">
-			<h1 className="text-2xl font-bold text-gray-900 mb-6">Clientes</h1>
-
-			{/* Tabs */}
 			<div className="mb-6">
-				<div className="border-b border-gray-200">
-					<nav className="-mb-px flex space-x-8" aria-label="Tabs">
-						<button
-							type="button"
-							onClick={() => setActiveTab('list')}
-							className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
-								activeTab === 'list'
-									? 'border-blue-500 text-blue-600'
-									: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-							}`}
-						>
-							Listagem
-						</button>
-						<button
-							type="button"
-							onClick={() => setActiveTab('register')}
-							className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
-								activeTab === 'register'
-									? 'border-blue-500 text-blue-600'
-									: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-							}`}
-						>
-							Cadastro
-						</button>
-					</nav>
-				</div>
+				<h1 className="text-2xl font-bold text-gray-900">Clientes</h1>
+				<p className="text-gray-600 mt-1">
+					{isAdmin
+						? 'Gerencie todos os clientes do sistema'
+						: hasPermission('modules.customers')
+							? `Cadastre e edite clientes - ${user?.name}`
+							: 'Acesso limitado aos clientes'}
+				</p>
+				{isEmployee && !hasPermission('modules.customers') && (
+					<p className="text-sm text-red-600 mt-1">
+						Você não tem permissão para acessar o módulo de clientes
+					</p>
+				)}
 			</div>
 
+			{/* Tabs */}
+			{isAdmin || hasPermission('modules.customers') ? (
+				<div className="mb-6">
+					<div className="border-b border-gray-200">
+						<nav className="-mb-px flex space-x-8" aria-label="Tabs">
+							<button
+								type="button"
+								onClick={() => setActiveTab('list')}
+								className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
+									activeTab === 'list'
+										? 'border-blue-500 text-blue-600'
+										: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+								}`}
+							>
+								Listagem
+							</button>
+							<button
+								type="button"
+								onClick={() => setActiveTab('register')}
+								className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
+									activeTab === 'register'
+										? 'border-blue-500 text-blue-600'
+										: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+								}`}
+							>
+								Cadastro
+							</button>
+						</nav>
+					</div>
+				</div>
+			) : (
+				<div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+					<p className="text-red-700 text-center">
+						Você não tem permissão para acessar o módulo de clientes.
+					</p>
+					<p className="text-red-600 text-sm text-center mt-1">
+						Entre em contato com o administrador para solicitar acesso.
+					</p>
+				</div>
+			)}
+
 			{/* Tab Content */}
-			<div className="mt-6">{renderTabContent()}</div>
+			{(isAdmin || hasPermission('modules.customers')) && (
+				<div className="mt-6">{renderTabContent()}</div>
+			)}
 		</div>
 	);
 };

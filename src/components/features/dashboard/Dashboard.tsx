@@ -8,6 +8,7 @@ import {
 import type React from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../context/AuthContext';
 import {
 	type DashboardMetrics,
 	dashboardService,
@@ -26,6 +27,7 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
 	const navigate = useNavigate();
+	const { isAdmin, isEmployee, hasPermission, user } = useAuth();
 	const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
 	const [salesData, setSalesData] = useState<SalesData[]>([]);
 	const [showPresaleModal, setShowPresaleModal] = useState(false);
@@ -140,24 +142,82 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
 	}, [loadDashboardData]);
 
 	const metricsCards = metrics
-		? [
-				{
-					title: 'Vendas Hoje',
-					value: MockDashboardService.formatCurrency(metrics.salesToday.value),
-					icon: <ShoppingCart className="w-6 h-6" />,
-					trend: metrics.salesToday.trend,
-					color: 'green' as const,
-				},
-				{
-					title: 'Receita Mensal',
-					value: MockDashboardService.formatCurrency(
-						metrics.monthlyRevenue.value,
-					),
-					icon: <DollarSign className="w-6 h-6" />,
-					trend: metrics.monthlyRevenue.trend,
-					color: 'blue' as const,
-				},
-			]
+		? (() => {
+				const baseCards = [
+					{
+						title: 'Vendas Hoje',
+						value: MockDashboardService.formatCurrency(
+							metrics.salesToday.value,
+						),
+						icon: <ShoppingCart className="w-6 h-6" />,
+						trend: metrics.salesToday.trend,
+						color: 'green' as const,
+					},
+				];
+
+				// Administrators see all metrics
+				if (isAdmin) {
+					return [
+						...baseCards,
+						{
+							title: 'Receita Mensal',
+							value: MockDashboardService.formatCurrency(
+								metrics.monthlyRevenue.value,
+							),
+							icon: <DollarSign className="w-6 h-6" />,
+							trend: metrics.monthlyRevenue.trend,
+							color: 'blue' as const,
+						},
+						{
+							title: 'Total de Produtos',
+							value: MockDashboardService.formatNumber(
+								metrics.totalProducts.value,
+							),
+							icon: <Package className="w-6 h-6" />,
+							trend: metrics.totalProducts.trend,
+							color: 'purple' as const,
+						},
+						{
+							title: 'Clientes Ativos',
+							value: MockDashboardService.formatNumber(
+								metrics.activeCustomers.value,
+							),
+							icon: <Users className="w-6 h-6" />,
+							trend: metrics.activeCustomers.trend,
+							color: 'indigo' as const,
+						},
+					];
+				}
+
+				// Employees see limited metrics based on permissions
+				const employeeCards = [...baseCards];
+
+				if (hasPermission('modules.products')) {
+					employeeCards.push({
+						title: 'Total de Produtos',
+						value: MockDashboardService.formatNumber(
+							metrics.totalProducts.value,
+						),
+						icon: <Package className="w-6 h-6" />,
+						trend: metrics.totalProducts.trend,
+						color: 'purple' as const,
+					});
+				}
+
+				if (hasPermission('modules.customers')) {
+					employeeCards.push({
+						title: 'Clientes Ativos',
+						value: MockDashboardService.formatNumber(
+							metrics.activeCustomers.value,
+						),
+						icon: <Users className="w-6 h-6" />,
+						trend: metrics.activeCustomers.trend,
+						color: 'indigo' as const,
+					});
+				}
+
+				return employeeCards;
+			})()
 		: [];
 
 	const handleNewSale = () => {
@@ -172,11 +232,13 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
 		navigate('/customers');
 	};
 
-	const handlePresaleSubmit = (presaleData: Omit<PreSale, 'id' | 'createdAt' | 'updatedAt'>) => {
+	const handlePresaleSubmit = (
+		presaleData: Omit<PreSale, 'id' | 'createdAt' | 'updatedAt'>,
+	) => {
 		// In a real app, this would save to the backend
 		console.log('Nova pré-venda criada:', presaleData);
 		toastService.success(TOAST_MESSAGES.presale.created);
-		
+
 		// Optionally redirect to presales page to see the created presale
 		navigate('/presales');
 	};
@@ -187,7 +249,16 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
 			<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
 				<div>
 					<h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-					<p className="text-gray-600 mt-1">Visão geral do sistema de vendas</p>
+					<p className="text-gray-600 mt-1">
+						{isAdmin
+							? 'Visão geral completa do sistema de vendas'
+							: `Painel de vendas - ${user?.name}`}
+					</p>
+					{isEmployee && (
+						<p className="text-sm text-blue-600 mt-1">
+							Funcionário • Acesso limitado baseado em permissões
+						</p>
+					)}
 				</div>
 				<div className="mt-4 sm:mt-0 flex items-center space-x-4">
 					<button
@@ -241,8 +312,14 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
 							<h2 className="text-lg font-semibold text-gray-900">
 								Ações Rápidas
 							</h2>
+							{isEmployee && (
+								<p className="text-sm text-gray-500 mt-1">
+									Ações disponíveis para {user?.name}
+								</p>
+							)}
 						</div>
 						<div className="p-6 space-y-3">
+							{/* Nova Venda - Available for all authenticated users */}
 							<button
 								type="button"
 								onClick={handleNewSale}
@@ -251,22 +328,45 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
 								<ShoppingCart className="w-4 h-4 mr-2" />
 								Nova Venda
 							</button>
-							<button
-								type="button"
-								onClick={handleRegisterProduct}
-								className="w-full flex items-center cursor-pointer justify-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-							>
-								<Package className="w-4 h-4 mr-2" />
-								Cadastrar Produto
-							</button>
-							<button
-								type="button"
-								onClick={handleRegisterCustomer}
-								className="w-full flex items-center cursor-pointer justify-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-							>
-								<Users className="w-4 h-4 mr-2" />
-								Cadastrar Cliente
-							</button>
+
+							{/* Cadastrar Produto - Only if user has products permission */}
+							{(isAdmin || hasPermission('modules.products')) && (
+								<button
+									type="button"
+									onClick={handleRegisterProduct}
+									className="w-full flex items-center cursor-pointer justify-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+								>
+									<Package className="w-4 h-4 mr-2" />
+									Cadastrar Produto
+								</button>
+							)}
+
+							{/* Cadastrar Cliente - Only if user has customers permission */}
+							{(isAdmin || hasPermission('modules.customers')) && (
+								<button
+									type="button"
+									onClick={handleRegisterCustomer}
+									className="w-full flex items-center cursor-pointer justify-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+								>
+									<Users className="w-4 h-4 mr-2" />
+									Cadastrar Cliente
+								</button>
+							)}
+
+							{/* Show message if employee has no additional permissions */}
+							{isEmployee &&
+								!hasPermission('modules.products') &&
+								!hasPermission('modules.customers') && (
+									<div className="text-center py-4">
+										<p className="text-sm text-gray-500">
+											Suas permissões atuais permitem apenas criar vendas.
+										</p>
+										<p className="text-xs text-gray-400 mt-1">
+											Entre em contato com o administrador para solicitar acesso
+											adicional.
+										</p>
+									</div>
+								)}
 						</div>
 					</div>
 				</div>

@@ -33,7 +33,25 @@ describe('Layout', () => {
 		id: '1',
 		name: 'John Doe',
 		email: 'john@example.com',
-		role: 'admin',
+		password: 'admin123',
+		userType: 'admin',
+		permissions: {
+			modules: {
+				products: true,
+				customers: true,
+				reports: true,
+				paymentMethods: true,
+				userManagement: true,
+			},
+			presales: {
+				canCreate: true,
+				canViewOwn: true,
+				canViewAll: true,
+			},
+		},
+		isActive: true,
+		createdAt: new Date(),
+		updatedAt: new Date(),
 	};
 
 	const defaultProps = {

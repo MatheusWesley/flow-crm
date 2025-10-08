@@ -1,6 +1,7 @@
 import { SquarePen, Trash2 } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useState } from 'react';
+import { useAuth } from '../../../context/AuthContext';
 import toastService, { TOAST_MESSAGES } from '../../../services/ToastService';
 import type { Product } from '../../../types';
 import { AutoCodeService } from '../../../utils';
@@ -16,6 +17,7 @@ type TabType = 'list' | 'register';
 type SubTabType = 'basic' | 'pricesStock';
 
 const ProductsPage: React.FC = () => {
+	const { isAdmin, isEmployee, hasPermission, user } = useAuth();
 	const [activeTab, setActiveTab] = useState<TabType>('list');
 	const [activeSubTab, setActiveSubTab] = useState<SubTabType>('basic');
 
@@ -310,22 +312,26 @@ const ProductsPage: React.FC = () => {
 											<span className="font-semibold">{product.stock}</span>
 										</span>
 									)}
-									<div className="flex space-x-2">
-										<button
-											type="button"
-											className="text-blue-600 hover:text-blue-800 text-sm"
-											onClick={() => handleEditProduct(product)}
-										>
-											<SquarePen size={16} />
-										</button>
-										<button
-											type="button"
-											className="text-red-600 hover:text-red-800 text-sm"
-											onClick={() => handleDeleteProduct(product)}
-										>
-											<Trash2 size={16} />
-										</button>
-									</div>
+									{(isAdmin || hasPermission('modules.products')) && (
+										<div className="flex space-x-2">
+											<button
+												type="button"
+												className="text-blue-600 hover:text-blue-800 text-sm"
+												onClick={() => handleEditProduct(product)}
+												title="Editar produto"
+											>
+												<SquarePen size={16} />
+											</button>
+											<button
+												type="button"
+												className="text-red-600 hover:text-red-800 text-sm"
+												onClick={() => handleDeleteProduct(product)}
+												title="Excluir produto"
+											>
+												<Trash2 size={16} />
+											</button>
+										</div>
+									)}
 								</div>
 							</div>
 						))}
@@ -601,37 +607,62 @@ const ProductsPage: React.FC = () => {
 
 	return (
 		<div className="p-6">
-			<h1 className="text-2xl font-bold text-gray-900 mb-6">Produtos</h1>
+			<div className="mb-6">
+				<h1 className="text-2xl font-bold text-gray-900">Produtos</h1>
+				<p className="text-gray-600 mt-1">
+					{isAdmin
+						? 'Gerencie todos os produtos do sistema'
+						: hasPermission('modules.products')
+							? `Cadastre e edite produtos - ${user?.name}`
+							: 'Acesso limitado aos produtos'}
+				</p>
+				{isEmployee && !hasPermission('modules.products') && (
+					<p className="text-sm text-red-600 mt-1">
+						Você não tem permissão para acessar o módulo de produtos
+					</p>
+				)}
+			</div>
 
 			{/* Tabs */}
-			<div className="mb-6">
-				<div className="border-b border-gray-200">
-					<nav className="-mb-px flex space-x-8" aria-label="Tabs">
-						<button
-							type="button"
-							onClick={() => handleTabChange('list')}
-							className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
-								activeTab === 'list'
-									? 'border-blue-500 text-blue-600'
-									: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-							}`}
-						>
-							Listagem
-						</button>
-						<button
-							type="button"
-							onClick={() => handleTabChange('register')}
-							className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
-								activeTab === 'register'
-									? 'border-blue-500 text-blue-600'
-									: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-							}`}
-						>
-							Cadastro
-						</button>
-					</nav>
+			{isAdmin || hasPermission('modules.products') ? (
+				<div className="mb-6">
+					<div className="border-b border-gray-200">
+						<nav className="-mb-px flex space-x-8" aria-label="Tabs">
+							<button
+								type="button"
+								onClick={() => handleTabChange('list')}
+								className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
+									activeTab === 'list'
+										? 'border-blue-500 text-blue-600'
+										: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+								}`}
+							>
+								Listagem
+							</button>
+							<button
+								type="button"
+								onClick={() => handleTabChange('register')}
+								className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
+									activeTab === 'register'
+										? 'border-blue-500 text-blue-600'
+										: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+								}`}
+							>
+								Cadastro
+							</button>
+						</nav>
+					</div>
 				</div>
-			</div>
+			) : (
+				<div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+					<p className="text-red-700 text-center">
+						Você não tem permissão para acessar o módulo de produtos.
+					</p>
+					<p className="text-red-600 text-sm text-center mt-1">
+						Entre em contato com o administrador para solicitar acesso.
+					</p>
+				</div>
+			)}
 
 			{/* Tab Content */}
 			<div className="mt-6">{renderTabContent()}</div>
