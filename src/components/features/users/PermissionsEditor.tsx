@@ -127,7 +127,7 @@ const PermissionsEditor: React.FC<PermissionsEditorProps> = ({
 		const newPermissions = JSON.parse(
 			JSON.stringify(permissions),
 		) as UserPermissions;
-		let current: Record<string, unknown> = newPermissions as Record<
+		let current: Record<string, unknown> = newPermissions as unknown as Record<
 			string,
 			unknown
 		>;
