@@ -220,7 +220,7 @@ export interface AuthUser extends User {
 // Authentication error type - expanded with more error codes
 export interface AuthError {
 	message: string;
-	code?: 'INVALID_CREDENTIALS' | 'NETWORK_ERROR' | 'PERMISSION_DENIED' | 'USER_INACTIVE' | 'UNKNOWN_ERROR';
+	code?: 'INVALID_CREDENTIALS' | 'NETWORK_ERROR' | 'PERMISSION_DENIED' | 'USER_INACTIVE' | 'UNKNOWN_ERROR' | 'SESSION_EXPIRED' | 'ACCOUNT_LOCKED';
 }
 
 // User management error type

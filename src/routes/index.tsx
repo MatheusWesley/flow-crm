@@ -1,16 +1,51 @@
+import { lazy, Suspense } from 'react';
 import { createHashRouter, Navigate } from 'react-router-dom';
-import AccessDenied from '../components/common/AccessDenied';
-import { LoginPage } from '../components/features/auth';
-import { Customers } from '../components/features/customers';
-import Dashboard from '../components/features/dashboard';
-import InventoryPage from '../components/features/inventory/InventoryPage';
-import { PaymentMethodsPage } from '../components/features/paymentMethods';
-import { Presales } from '../components/features/presales';
-import ProductsPage from '../components/features/products/ProductsPage';
-import UsersPage from '../components/features/users/UsersPage';
 import Layout from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
 import ProtectedRoute from './ProtectedRoute';
+
+// Lazy load components
+const AccessDenied = lazy(() => import('../components/common/AccessDenied'));
+const LoginPage = lazy(() =>
+	import('../components/features/auth').then((module) => ({
+		default: module.LoginPage,
+	})),
+);
+const Customers = lazy(() =>
+	import('../components/features/customers').then((module) => ({
+		default: module.Customers,
+	})),
+);
+const Dashboard = lazy(() => import('../components/features/dashboard'));
+const InventoryPage = lazy(
+	() => import('../components/features/inventory/InventoryPage'),
+);
+const PaymentMethodsPage = lazy(() =>
+	import('../components/features/paymentMethods').then((module) => ({
+		default: module.PaymentMethodsPage,
+	})),
+);
+const Presales = lazy(() =>
+	import('../components/features/presales').then((module) => ({
+		default: module.Presales,
+	})),
+);
+const ProductsPage = lazy(
+	() => import('../components/features/products/ProductsPage'),
+);
+const UsersPage = lazy(() => import('../components/features/users/UsersPage'));
+
+// Loading component
+const LoadingSpinner = () => (
+	<div className="flex items-center justify-center min-h-screen">
+		<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+	</div>
+);
+
+// Wrapper for lazy components
+const LazyWrapper = ({ children }: { children: React.ReactNode }) => (
+	<Suspense fallback={<LoadingSpinner />}>{children}</Suspense>
+);
 
 // Layout wrapper component that uses the authenticated user
 const LayoutWrapper = ({
@@ -46,14 +81,20 @@ export const router = createHashRouter([
 	},
 	{
 		path: '/login',
-		element: <LoginPage />,
+		element: (
+			<LazyWrapper>
+				<LoginPage />
+			</LazyWrapper>
+		),
 	},
 	{
 		path: '/dashboard',
 		element: (
 			<ProtectedRoute>
 				<LayoutWrapper title="Dashboard">
-					<Dashboard />
+					<LazyWrapper>
+						<Dashboard />
+					</LazyWrapper>
 				</LayoutWrapper>
 			</ProtectedRoute>
 		),
@@ -63,7 +104,9 @@ export const router = createHashRouter([
 		element: (
 			<ProtectedRoute requiredPermission="presales.canCreate">
 				<LayoutWrapper title="Pré-vendas">
-					<Presales />
+					<LazyWrapper>
+						<Presales />
+					</LazyWrapper>
 				</LayoutWrapper>
 			</ProtectedRoute>
 		),
@@ -73,7 +116,9 @@ export const router = createHashRouter([
 		element: (
 			<ProtectedRoute requiredPermission="modules.products">
 				<LayoutWrapper title="Produtos">
-					<ProductsPage />
+					<LazyWrapper>
+						<ProductsPage />
+					</LazyWrapper>
 				</LayoutWrapper>
 			</ProtectedRoute>
 		),
@@ -83,7 +128,9 @@ export const router = createHashRouter([
 		element: (
 			<ProtectedRoute requiredPermission="modules.customers">
 				<LayoutWrapper title="Clientes">
-					<Customers />
+					<LazyWrapper>
+						<Customers />
+					</LazyWrapper>
 				</LayoutWrapper>
 			</ProtectedRoute>
 		),
@@ -93,7 +140,9 @@ export const router = createHashRouter([
 		element: (
 			<ProtectedRoute requiredPermission="modules.paymentMethods">
 				<LayoutWrapper title="Formas de Pagamento">
-					<PaymentMethodsPage />
+					<LazyWrapper>
+						<PaymentMethodsPage />
+					</LazyWrapper>
 				</LayoutWrapper>
 			</ProtectedRoute>
 		),
@@ -103,7 +152,9 @@ export const router = createHashRouter([
 		element: (
 			<ProtectedRoute>
 				<LayoutWrapper title="Estoque">
-					<InventoryPage />
+					<LazyWrapper>
+						<InventoryPage />
+					</LazyWrapper>
 				</LayoutWrapper>
 			</ProtectedRoute>
 		),
@@ -116,7 +167,9 @@ export const router = createHashRouter([
 				requiredPermission="modules.userManagement"
 			>
 				<LayoutWrapper title="Gestão de Usuários">
-					<UsersPage />
+					<LazyWrapper>
+						<UsersPage />
+					</LazyWrapper>
 				</LayoutWrapper>
 			</ProtectedRoute>
 		),
@@ -144,7 +197,9 @@ export const router = createHashRouter([
 		path: '/access-denied',
 		element: (
 			<ProtectedRoute>
-				<AccessDenied />
+				<LazyWrapper>
+					<AccessDenied />
+				</LazyWrapper>
 			</ProtectedRoute>
 		),
 	},

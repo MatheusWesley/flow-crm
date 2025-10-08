@@ -122,7 +122,11 @@ const PermissionsEditor: React.FC<PermissionsEditorProps> = ({
 	// Helper function to set permission value by path
 	const setPermissionValue = (path: string, value: boolean) => {
 		const keys = path.split('.');
-		const newPermissions = { ...permissions };
+
+		// Create a deep copy of permissions to avoid mutation
+		const newPermissions = JSON.parse(
+			JSON.stringify(permissions),
+		) as UserPermissions;
 		let current: Record<string, unknown> = newPermissions as Record<
 			string,
 			unknown
@@ -130,6 +134,9 @@ const PermissionsEditor: React.FC<PermissionsEditorProps> = ({
 
 		// Navigate to the parent object
 		for (let i = 0; i < keys.length - 1; i++) {
+			if (!current[keys[i]]) {
+				current[keys[i]] = {};
+			}
 			current = current[keys[i]] as Record<string, unknown>;
 		}
 
@@ -239,13 +246,13 @@ const PermissionsEditor: React.FC<PermissionsEditorProps> = ({
 						className="bg-white border border-gray-200 rounded-lg overflow-hidden"
 					>
 						{/* Group Header */}
-						<button
-							type="button"
-							className="w-full px-6 py-4 bg-gray-50 border-b border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors text-left"
-							onClick={() => toggleGroup(group.id)}
-						>
+						<div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
 							<div className="flex items-center justify-between">
-								<div className="flex-1">
+								<button
+									type="button"
+									className="flex-1 text-left cursor-pointer hover:bg-gray-100 transition-colors rounded p-2 -m-2"
+									onClick={() => toggleGroup(group.id)}
+								>
 									<div className="flex items-center space-x-3">
 										<h3 className="text-lg font-medium text-gray-900">
 											{group.title}
@@ -269,57 +276,51 @@ const PermissionsEditor: React.FC<PermissionsEditorProps> = ({
 												</span>
 											)}
 										</div>
+										<div
+											className={`transform transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+										>
+											<svg
+												className="w-5 h-5 text-gray-400"
+												fill="none"
+												stroke="currentColor"
+												viewBox="0 0 24 24"
+												aria-hidden="true"
+											>
+												<path
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													strokeWidth={2}
+													d="M19 9l-7 7-7-7"
+												/>
+											</svg>
+										</div>
 									</div>
 									<p className="text-sm text-gray-600 mt-1">
 										{group.description}
 									</p>
-								</div>
+								</button>
 								<div className="flex items-center space-x-2 ml-4">
 									{!disabled && (
 										<>
 											<button
 												type="button"
-												onClick={(e) => {
-													e.stopPropagation();
-													toggleAllInGroup(group, true);
-												}}
+												onClick={() => toggleAllInGroup(group, true)}
 												className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
 											>
 												Habilitar Todas
 											</button>
 											<button
 												type="button"
-												onClick={(e) => {
-													e.stopPropagation();
-													toggleAllInGroup(group, false);
-												}}
+												onClick={() => toggleAllInGroup(group, false)}
 												className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
 											>
 												Desabilitar Todas
 											</button>
 										</>
 									)}
-									<div
-										className={`transform transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-									>
-										<svg
-											className="w-5 h-5 text-gray-400"
-											fill="none"
-											stroke="currentColor"
-											viewBox="0 0 24 24"
-											aria-hidden="true"
-										>
-											<path
-												strokeLinecap="round"
-												strokeLinejoin="round"
-												strokeWidth={2}
-												d="M19 9l-7 7-7-7"
-											/>
-										</svg>
-									</div>
 								</div>
 							</div>
-						</button>
+						</div>
 
 						{/* Group Content */}
 						{isExpanded && (

@@ -86,7 +86,7 @@ const UserForm: React.FC<UserFormProps> = ({
 				isActive: editingUser.isActive,
 				avatar: editingUser.avatar || '',
 			});
-			setPermissions(editingUser.permissions);
+			setPermissions({ ...editingUser.permissions });
 		} else {
 			// Reset form for new user
 			setFormData({
@@ -145,8 +145,13 @@ const UserForm: React.FC<UserFormProps> = ({
 			typeof value === 'string' &&
 			['name', 'email', 'avatar'].includes(field)
 		) {
-			processedValue =
-				field === 'email' ? formatEmail(value) : sanitizeUserInput(value);
+			if (field === 'email') {
+				processedValue = formatEmail(value);
+			} else if (field === 'avatar') {
+				processedValue = sanitizeUserInput(value, true); // Don't encode URLs
+			} else {
+				processedValue = sanitizeUserInput(value);
+			}
 		}
 
 		setFormData((prev) => ({ ...prev, [field]: processedValue }));

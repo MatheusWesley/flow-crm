@@ -199,10 +199,16 @@ export const detectSecurityThreats = (input: string): string[] => {
 class RateLimiter {
     private attempts: Map<string, number[]> = new Map();
 
+    private maxAttempts: number;
+    private windowMs: number;
+
     constructor(
-        private maxAttempts: number = 10,
-        private windowMs: number = 60000 // 1 minute
-    ) { }
+        maxAttempts: number = 10,
+        windowMs: number = 60000 // 1 minute
+    ) {
+        this.maxAttempts = maxAttempts;
+        this.windowMs = windowMs;
+    }
 
     isAllowed(identifier: string): boolean {
         const now = Date.now();

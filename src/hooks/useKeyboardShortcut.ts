@@ -19,6 +19,9 @@ export const useKeyboardShortcut = ({
 		if (!enabled) return;
 
 		const handleKeyDown = (event: KeyboardEvent) => {
+			// Verificação de segurança para event.key
+			if (!event.key) return;
+
 			const isCtrlPressed = ctrlKey ? event.ctrlKey : !event.ctrlKey;
 			const isMetaPressed = metaKey ? event.metaKey : !event.metaKey;
 			const isCorrectKey = event.key.toLowerCase() === key.toLowerCase();
@@ -43,6 +46,9 @@ export const useSearchShortcut = (callback: () => void, enabled = true) => {
 		if (!enabled) return;
 
 		const handleKeyDown = (event: KeyboardEvent) => {
+			// Verificação de segurança para event.key
+			if (!event.key) return;
+
 			// Verifica se é Ctrl+K (Windows/Linux) ou Cmd+K (Mac)
 			const isSearchShortcut =
 				event.key.toLowerCase() === 'k' &&

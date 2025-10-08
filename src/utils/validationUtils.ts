@@ -2,7 +2,12 @@
  * Validation utilities for user forms and data
  */
 
-import { detectSecurityThreats, isValidEmail as secureIsValidEmail, sanitizeInput, validatePasswordStrength } from './securityUtils';
+import {
+    detectSecurityThreats,
+    sanitizeInput,
+    isValidEmail as secureIsValidEmail,
+    validatePasswordStrength,
+} from './securityUtils';
 
 export interface ValidationResult {
     isValid: boolean;
@@ -47,11 +52,18 @@ export const getPasswordValidation = (password: string) => {
  */
 export const isValidUrl = (url: string): boolean => {
     if (!url.trim()) return true; // Optional field
+
+    // More permissive URL validation for avatars
+    const urlPattern =
+        /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?(\?[;&a-z\d%_.~+=-]*)?(#[-a-z\d_]*)?$/i;
+
     try {
-        new URL(url);
+        // Try to create URL object first
+        new URL(url.startsWith('http') ? url : `https://${url}`);
         return true;
     } catch {
-        return false;
+        // Fallback to regex pattern
+        return urlPattern.test(url);
     }
 };
 
@@ -193,9 +205,20 @@ export const validateField = (
 
 /**
  * Sanitizes user input with security measures
+ * For URLs, we don't apply HTML entity encoding to preserve functionality
  */
-export const sanitizeUserInput = (input: string): string => {
-    return sanitizeInput(input.trim().replace(/\s+/g, ' '));
+export const sanitizeUserInput = (
+    input: string,
+    isUrl: boolean = false,
+): string => {
+    const trimmed = input.trim().replace(/\s+/g, ' ');
+
+    // For URLs, don't apply HTML entity encoding as it breaks the URL
+    if (isUrl) {
+        return trimmed;
+    }
+
+    return sanitizeInput(trimmed);
 };
 
 /**

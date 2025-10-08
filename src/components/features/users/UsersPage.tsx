@@ -9,6 +9,7 @@ type TabType = 'list' | 'register';
 const UsersPage: React.FC = () => {
 	const [activeTab, setActiveTab] = useState<TabType>('list');
 	const [editingUser, setEditingUser] = useState<User | null>(null);
+	const [refreshKey, setRefreshKey] = useState(0);
 
 	const handleTabChange = (tab: TabType) => {
 		setActiveTab(tab);
@@ -22,19 +23,22 @@ const UsersPage: React.FC = () => {
 		setActiveTab('register');
 	};
 
+	const handleUserSaved = () => {
+		setActiveTab('list');
+		setEditingUser(null);
+		setRefreshKey((prev) => prev + 1); // Force refresh of UsersList
+	};
+
 	const renderTabContent = () => {
 		if (activeTab === 'list') {
-			return <UsersList onEditUser={handleEditUser} />;
+			return <UsersList key={refreshKey} onEditUser={handleEditUser} />;
 		}
 
 		// Register tab content
 		return (
 			<UserForm
 				editingUser={editingUser}
-				onUserSaved={() => {
-					setActiveTab('list');
-					setEditingUser(null);
-				}}
+				onUserSaved={handleUserSaved}
 				onCancel={() => {
 					setActiveTab('list');
 					setEditingUser(null);

@@ -18,6 +18,20 @@ import {
 import toastService, { TOAST_MESSAGES } from '../../../services/ToastService';
 import type { Customer, PreSale, Product } from '../../../types';
 import { PresaleModal } from '../shared/presaleModal';
+
+// Type for metrics cards
+interface MetricCardData {
+	title: string;
+	value: string;
+	icon: React.ReactNode;
+	trend: {
+		value: number;
+		isPositive: boolean;
+		period?: string;
+	};
+	color: 'blue' | 'green' | 'yellow' | 'red' | 'purple' | 'indigo';
+}
+
 import MetricsCard from './MetricsCard';
 import SalesChart from './SalesChart';
 
@@ -143,7 +157,7 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
 
 	const metricsCards = metrics
 		? (() => {
-				const baseCards = [
+				const baseCards: MetricCardData[] = [
 					{
 						title: 'Vendas Hoje',
 						value: MockDashboardService.formatCurrency(
@@ -151,7 +165,7 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
 						),
 						icon: <ShoppingCart className="w-6 h-6" />,
 						trend: metrics.salesToday.trend,
-						color: 'green' as const,
+						color: 'green',
 					},
 				];
 
@@ -166,7 +180,7 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
 							),
 							icon: <DollarSign className="w-6 h-6" />,
 							trend: metrics.monthlyRevenue.trend,
-							color: 'blue' as const,
+							color: 'blue',
 						},
 						{
 							title: 'Total de Produtos',
@@ -175,7 +189,7 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
 							),
 							icon: <Package className="w-6 h-6" />,
 							trend: metrics.totalProducts.trend,
-							color: 'purple' as const,
+							color: 'purple',
 						},
 						{
 							title: 'Clientes Ativos',
@@ -184,7 +198,7 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
 							),
 							icon: <Users className="w-6 h-6" />,
 							trend: metrics.activeCustomers.trend,
-							color: 'indigo' as const,
+							color: 'indigo',
 						},
 					];
 				}
@@ -200,7 +214,7 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
 						),
 						icon: <Package className="w-6 h-6" />,
 						trend: metrics.totalProducts.trend,
-						color: 'purple' as const,
+						color: 'purple',
 					});
 				}
 
@@ -212,7 +226,7 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
 						),
 						icon: <Users className="w-6 h-6" />,
 						trend: metrics.activeCustomers.trend,
-						color: 'indigo' as const,
+						color: 'indigo',
 					});
 				}
 
@@ -287,7 +301,15 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
 						value={card.value}
 						icon={card.icon}
 						trend={card.trend}
-						color={card.color}
+						color={
+							card.color as
+								| 'blue'
+								| 'green'
+								| 'yellow'
+								| 'red'
+								| 'purple'
+								| 'indigo'
+						}
 						loading={loadingStates.metrics}
 						error={errors.metrics}
 					/>
