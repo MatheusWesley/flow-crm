@@ -1,5 +1,6 @@
 import {
 	Calculator,
+	Calendar,
 	Download,
 	Edit,
 	Eye,
@@ -37,6 +38,17 @@ const PresalesPage: React.FC = () => {
 	const [statusFilter, setStatusFilter] = useState<PreSale['status'] | 'all'>(
 		'all',
 	);
+	// Initialize date filters to show today's presales by default
+	// Use local date to avoid timezone issues
+	const getLocalDateString = (date: Date) => {
+		const year = date.getFullYear();
+		const month = String(date.getMonth() + 1).padStart(2, '0');
+		const day = String(date.getDate()).padStart(2, '0');
+		return `${year}-${month}-${day}`;
+	};
+	const today = getLocalDateString(new Date());
+	const [startDate, setStartDate] = useState(today);
+	const [endDate, setEndDate] = useState(today);
 
 	// Mock data for customers
 	const [customers] = useState<Customer[]>([
@@ -138,6 +150,157 @@ const PresalesPage: React.FC = () => {
 			createdAt: new Date('2024-01-10'),
 			updatedAt: new Date('2024-01-12'),
 		},
+		{
+			id: '3',
+			customer: customers[0],
+			items: [
+				{
+					id: '4',
+					product: products[1],
+					quantity: 3,
+					unitPrice: 45.5,
+					totalPrice: 136.5,
+				},
+			],
+			total: 136.5,
+			status: 'draft',
+			salesperson: 'Vendedor A',
+			createdAt: new Date('2024-02-20'),
+			updatedAt: new Date('2024-02-20'),
+		},
+		{
+			id: '4',
+			customer: customers[1],
+			items: [
+				{
+					id: '5',
+					product: products[0],
+					quantity: 1,
+					unitPrice: 29.99,
+					totalPrice: 29.99,
+				},
+			],
+			total: 29.99,
+			status: 'converted',
+			salesperson: 'Vendedor C',
+			createdAt: new Date('2024-03-05'),
+			updatedAt: new Date('2024-03-07'),
+		},
+		{
+			id: '5',
+			customer: customers[0],
+			items: [
+				{
+					id: '6',
+					product: products[1],
+					quantity: 2.5,
+					unitPrice: 45.5,
+					totalPrice: 113.75,
+				},
+			],
+			total: 113.75,
+			status: 'cancelled',
+			salesperson: 'Vendedor B',
+			createdAt: new Date('2024-12-01'),
+			updatedAt: new Date('2024-12-02'),
+		},
+		{
+			id: '6',
+			customer: customers[1],
+			items: [
+				{
+					id: '7',
+					product: products[0],
+					quantity: 10,
+					unitPrice: 29.99,
+					totalPrice: 299.9,
+				},
+			],
+			total: 299.9,
+			status: 'approved',
+			salesperson: 'Vendedor A',
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		},
+		// Mais pré-vendas para hoje (07/10/2025) para teste
+		{
+			id: '7',
+			customer: customers[0],
+			items: [
+				{
+					id: '8',
+					product: products[1],
+					quantity: 2,
+					unitPrice: 45.5,
+					totalPrice: 91.0,
+				},
+			],
+			total: 91.0,
+			status: 'pending',
+			notes: 'Pré-venda de hoje',
+			salesperson: 'Vendedor B',
+			createdAt: new Date(2025, 9, 7, 10, 30), // October 7, 2025, 10:30 (month is 0-indexed)
+			updatedAt: new Date(2025, 9, 7, 10, 30),
+		},
+		{
+			id: '8',
+			customer: customers[1],
+			items: [
+				{
+					id: '9',
+					product: products[0],
+					quantity: 3,
+					unitPrice: 29.99,
+					totalPrice: 89.97,
+				},
+			],
+			total: 89.97,
+			status: 'draft',
+			notes: 'Outra pré-venda de hoje',
+			salesperson: 'Vendedor C',
+			createdAt: new Date(2025, 9, 7, 14, 15), // October 7, 2025, 14:15 (month is 0-indexed)
+			updatedAt: new Date(2025, 9, 7, 14, 15),
+		},
+		// Pré-vendas de ontem (06/10/2025)
+		{
+			id: '9',
+			customer: customers[0],
+			items: [
+				{
+					id: '10',
+					product: products[0],
+					quantity: 1,
+					unitPrice: 29.99,
+					totalPrice: 29.99,
+				},
+			],
+			total: 29.99,
+			status: 'approved',
+			notes: 'Pré-venda de ontem',
+			salesperson: 'Vendedor A',
+			createdAt: new Date(2025, 9, 6, 16, 45), // October 6, 2025, 16:45 (month is 0-indexed)
+			updatedAt: new Date(2025, 9, 6, 16, 45),
+		},
+		// Mais pré-vendas explicitamente para hoje (07/10/2025)
+		{
+			id: '10',
+			customer: customers[1],
+			items: [
+				{
+					id: '11',
+					product: products[1],
+					quantity: 1,
+					unitPrice: 45.5,
+					totalPrice: 45.5,
+				},
+			],
+			total: 45.5,
+			status: 'pending',
+			notes: 'Teste filtro - hoje 07/10',
+			salesperson: 'Vendedor D',
+			createdAt: new Date(2025, 9, 7, 9, 0), // October 7, 2025, 09:00
+			updatedAt: new Date(2025, 9, 7, 9, 0),
+		},
 	]);
 
 	// Payment methods from centralized service
@@ -236,7 +399,35 @@ const PresalesPage: React.FC = () => {
 			preSale.id.toLowerCase().includes(searchTerm.toLowerCase());
 		const matchesStatus =
 			statusFilter === 'all' || preSale.status === statusFilter;
-		return matchesSearch && matchesStatus;
+
+		// Date filtering - usando string comparison para evitar problemas de fuso horário
+		let matchesDateRange = true;
+		if (startDate || endDate) {
+			// Converte a data da pré-venda para string no formato YYYY-MM-DD usando timezone local
+			const presaleDate = new Date(preSale.createdAt);
+			const presaleDateString = getLocalDateString(presaleDate);
+
+			// Debug temporário
+			if (preSale.id === '7' || preSale.id === '8' || preSale.id === '10') {
+				console.log(`[DEBUG] Pré-venda #${preSale.id}:`, {
+					originalDate: preSale.createdAt,
+					presaleDateString,
+					startDate,
+					endDate,
+					comparison: presaleDateString >= startDate && presaleDateString <= endDate
+				});
+			}
+
+			if (startDate) {
+				matchesDateRange = matchesDateRange && presaleDateString >= startDate;
+			}
+
+			if (endDate) {
+				matchesDateRange = matchesDateRange && presaleDateString <= endDate;
+			}
+		}
+
+		return matchesSearch && matchesStatus && matchesDateRange;
 	});
 
 	// Filter customers for search
@@ -341,6 +532,19 @@ const PresalesPage: React.FC = () => {
 		setCustomerSearchTerm(customer.name);
 		setFormData((prev) => ({ ...prev, customerId: customer.id }));
 		setShowCustomerDropdown(false);
+	};
+
+	// Clear date filters to show all dates
+	const clearDateFilters = () => {
+		setStartDate('');
+		setEndDate('');
+	};
+
+	// Reset to today's filter
+	const resetToToday = () => {
+		const todayDate = getLocalDateString(new Date());
+		setStartDate(todayDate);
+		setEndDate(todayDate);
 	};
 
 	// Generate PDF function
@@ -580,36 +784,112 @@ const PresalesPage: React.FC = () => {
 		return (
 			<div className="space-y-6">
 				{/* Search Bar and Filters */}
-				<div className="flex items-center justify-between gap-4">
-					<div className="flex items-center gap-4 flex-1">
-						<div className="relative flex-1 max-w-md">
-							<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-							<input
-								type="text"
-								placeholder="Buscar por cliente ou ID..."
-								value={searchTerm}
-								onChange={(e) => setSearchTerm(e.target.value)}
-								className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+				<div className="space-y-4">
+					{/* First row - Search and Status */}
+					<div className="flex items-center justify-between gap-4">
+						<div className="flex items-center gap-4 flex-1">
+							<div className="relative flex-1 max-w-md">
+								<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+								<input
+									type="text"
+									placeholder="Buscar por cliente ou ID..."
+									value={searchTerm}
+									onChange={(e) => setSearchTerm(e.target.value)}
+									className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+								/>
+							</div>
+							<Select
+								value={statusFilter}
+								onChange={(value) =>
+									setStatusFilter(value as PreSale['status'] | 'all')
+								}
+								options={statusOptions}
+								size="sm"
+								className="w-48"
 							/>
 						</div>
-						<Select
-							value={statusFilter}
-							onChange={(value) =>
-								setStatusFilter(value as PreSale['status'] | 'all')
-							}
-							options={statusOptions}
-							size="sm"
-							className="w-48"
-						/>
+						<Button
+							variant="primary"
+							onClick={() => setShowCreateModal(true)}
+							className="flex items-center space-x-2"
+						>
+							<Plus className="h-4 w-4" />
+							<span>Nova Pré-venda</span>
+						</Button>
 					</div>
-					<Button
-						variant="primary"
-						onClick={() => setShowCreateModal(true)}
-						className="flex items-center space-x-2"
-					>
-						<Plus className="h-4 w-4" />
-						<span>Nova Pré-venda</span>
-					</Button>
+
+					{/* Second row - Date filters */}
+					<div className="bg-gray-50 rounded-lg p-4 space-y-3">
+						<div className="flex items-center justify-between">
+							<div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+								<Calendar className="h-4 w-4" />
+								<span>Filtros por Data de Abertura</span>
+							</div>
+							{/* Quick filter buttons */}
+							<div className="flex items-center gap-2">
+								<button
+									type="button"
+									onClick={resetToToday}
+									className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${
+										startDate === today && endDate === today
+											? 'bg-blue-600 text-white'
+											: 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-300'
+									}`}
+								>
+									Hoje
+								</button>
+								<button
+									type="button"
+									onClick={clearDateFilters}
+									className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${
+										!startDate && !endDate
+											? 'bg-blue-600 text-white'
+											: 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-300'
+									}`}
+								>
+									Todas as Datas
+								</button>
+							</div>
+						</div>
+						
+						{/* Date range inputs */}
+						<div className="flex items-center gap-4">
+							<div className="flex items-center gap-2">
+								<label htmlFor="startDate" className="text-sm text-gray-600 min-w-[2rem]">
+									De:
+								</label>
+								<input
+									id="startDate"
+									type="date"
+									value={startDate}
+									onChange={(e) => setStartDate(e.target.value)}
+									className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white"
+								/>
+							</div>
+							<div className="flex items-center gap-2">
+								<label htmlFor="endDate" className="text-sm text-gray-600 min-w-[2.5rem]">
+									Até:
+								</label>
+								<input
+									id="endDate"
+									type="date"
+									value={endDate}
+									onChange={(e) => setEndDate(e.target.value)}
+									className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white"
+								/>
+							</div>
+							
+							{/* Current filter status */}
+							<div className="text-xs text-gray-500 ml-auto">
+								{!startDate && !endDate && 'Mostrando todas as datas'}
+								{startDate && endDate && startDate === endDate && startDate === today && 'Mostrando apenas hoje'}
+								{startDate && endDate && startDate === endDate && startDate !== today && `Mostrando apenas ${new Date(startDate).toLocaleDateString('pt-BR')}`}
+								{startDate && endDate && startDate !== endDate && `Período: ${new Date(startDate).toLocaleDateString('pt-BR')} até ${new Date(endDate).toLocaleDateString('pt-BR')}`}
+								{startDate && !endDate && `A partir de ${new Date(startDate).toLocaleDateString('pt-BR')}`}
+								{!startDate && endDate && `Até ${new Date(endDate).toLocaleDateString('pt-BR')}`}
+							</div>
+						</div>
+					</div>
 				</div>
 
 				{/* Pre-sales List */}
