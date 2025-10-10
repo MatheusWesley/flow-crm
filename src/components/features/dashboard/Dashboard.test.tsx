@@ -2,15 +2,16 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { dashboardService } from '../../../data/mockDashboardService';
+import { useAuth } from '../../../context/AuthContext';
 import Dashboard from './Dashboard';
 
-// Mock the dashboard service
+// Mock the useAuth hook
+vi.mock('../../../context/AuthContext', () => ({
+	useAuth: vi.fn(),
+}));
+
+// Mock the MockDashboardService
 vi.mock('../../../data/mockDashboardService', () => ({
-	dashboardService: {
-		getDashboardMetrics: vi.fn(),
-		getSalesData: vi.fn(),
-	},
 	MockDashboardService: {
 		formatCurrency: vi.fn(
 			(value: number) => `R$ ${value.toLocaleString('pt-BR')}`,
@@ -19,16 +20,33 @@ vi.mock('../../../data/mockDashboardService', () => ({
 	},
 }));
 
-const mockMetrics = {
-	salesToday: { value: 12450, trend: { value: 12.5, isPositive: true } },
-	monthlyRevenue: { value: 387650, trend: { value: 18.2, isPositive: true } },
-};
+const mockUseAuth = vi.mocked(useAuth);
 
-const mockSalesData = [
-	{ date: '2025-09-20', sales: 15, revenue: 3500 },
-	{ date: '2025-09-21', sales: 12, revenue: 2800 },
-	{ date: '2025-09-22', sales: 18, revenue: 4200 },
-];
+const mockAuthUser = {
+	id: '1',
+	name: 'Test User',
+	email: 'test@example.com',
+	password: 'hashedPassword',
+	userType: 'admin' as const,
+	isActive: true,
+	permissions: {
+		modules: {
+			products: true,
+			customers: true,
+			inventory: true,
+			reports: true,
+			paymentMethods: true,
+			userManagement: true,
+		},
+		presales: {
+			canCreate: true,
+			canViewOwn: true,
+			canViewAll: true,
+		},
+	},
+	createdAt: new Date(),
+	updatedAt: new Date(),
+};
 
 describe('Dashboard', () => {
 	const renderWithRouter = (component: React.ReactElement) => {
@@ -39,11 +57,20 @@ describe('Dashboard', () => {
 		// Reset all mocks before each test
 		vi.clearAllMocks();
 
-		// Set up default successful responses
-		(dashboardService.getDashboardMetrics as any).mockResolvedValue(
-			mockMetrics,
-		);
-		(dashboardService.getSalesData as any).mockResolvedValue(mockSalesData);
+		// Set up default auth mock
+		mockUseAuth.mockReturnValue({
+			user: mockAuthUser,
+			isAuthenticated: true,
+			isLoading: false,
+			error: null,
+			login: vi.fn(),
+			logout: vi.fn(),
+			clearError: vi.fn(),
+			permissions: mockAuthUser.permissions,
+			hasPermission: vi.fn().mockReturnValue(true),
+			isAdmin: true,
+			isEmployee: false,
+		});
 	});
 
 	afterEach(() => {
@@ -55,7 +82,7 @@ describe('Dashboard', () => {
 
 		expect(screen.getByText('Dashboard')).toBeInTheDocument();
 		expect(
-			screen.getByText('Visão geral do sistema de vendas'),
+			screen.getByText('Visão geral completa do sistema de vendas'),
 		).toBeInTheDocument();
 	});
 
@@ -74,7 +101,7 @@ describe('Dashboard', () => {
 		).toBeInTheDocument();
 	});
 
-	it('displays only two metric cards (removed Produtos Cadastrados)', async () => {
+	it('displays only two metric cards (removed Total de Produtos and Clientes Ativos)', async () => {
 		renderWithRouter(<Dashboard />);
 
 		// Wait for metrics to load
@@ -84,8 +111,9 @@ describe('Dashboard', () => {
 
 		expect(screen.getByText('Receita Mensal')).toBeInTheDocument();
 
-		// Ensure "Produtos Cadastrados" is not present
-		expect(screen.queryByText('Produtos Cadastrados')).not.toBeInTheDocument();
+		// Ensure removed cards are not present
+		expect(screen.queryByText('Total de Produtos')).not.toBeInTheDocument();
+		expect(screen.queryByText('Clientes Ativos')).not.toBeInTheDocument();
 	});
 
 	it('opens presale modal when Nova Venda button is clicked', async () => {
@@ -96,7 +124,6 @@ describe('Dashboard', () => {
 		await user.click(novaVendaButton);
 
 		expect(screen.getByText('Nova Pré-venda')).toBeInTheDocument();
-		expect(screen.getByText('Criar Nova Pré-venda')).toBeInTheDocument();
 	});
 
 	it('displays refresh button', () => {

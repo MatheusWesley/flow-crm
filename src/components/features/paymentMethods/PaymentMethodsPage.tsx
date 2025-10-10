@@ -6,6 +6,7 @@ import type { PaymentMethod } from '../../../types';
 import { AutoCodeService } from '../../../utils';
 import Button from '../../common/Button';
 import Input from '../../common/Input';
+import Switch from '../../common/Switch';
 
 type TabType = 'list' | 'register';
 
@@ -38,6 +39,7 @@ const PaymentMethodsPage: React.FC = () => {
 	const [formData, setFormData] = useState({
 		code: '',
 		description: '',
+		isActive: true,
 	});
 
 	const handleInputChange = (field: string) => (value: string) => {
@@ -66,6 +68,7 @@ const PaymentMethodsPage: React.FC = () => {
 			const newPaymentMethod = await mockPaymentMethodService.create({
 				code: formData.code,
 				description: formData.description.trim(),
+				isActive: formData.isActive,
 			});
 
 			// Update local state
@@ -75,6 +78,7 @@ const PaymentMethodsPage: React.FC = () => {
 			setFormData({
 				code: '',
 				description: '',
+				isActive: true,
 			});
 
 			// Switch to list tab to show the newly created item
@@ -118,13 +122,16 @@ const PaymentMethodsPage: React.FC = () => {
 										</p>
 									</div>
 									<div className="text-right flex-shrink-0">
-										<p className="text-sm font-medium text-blue-600">Ativo</p>
+										<span
+											className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+												paymentMethod.isActive
+													? 'bg-green-100 text-green-800'
+													: 'bg-red-100 text-red-800'
+											}`}
+										>
+											{paymentMethod.isActive ? 'Ativo' : 'Inativo'}
+										</span>
 									</div>
-								</div>
-								<div className="text-gray-700 text-sm mb-3">
-									<p className="italic text-gray-400 min-h-[3.5rem]">
-										Forma de pagamento disponível para vendas
-									</p>
 								</div>
 								<div className="flex justify-between items-center pt-3 border-t border-gray-100 mt-auto">
 									<span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
@@ -184,6 +191,17 @@ const PaymentMethodsPage: React.FC = () => {
 								required
 							/>
 						</div>
+
+						<div className="pt-4 border-t border-gray-200">
+							<Switch
+								checked={formData.isActive}
+								onChange={(checked) =>
+									setFormData((prev) => ({ ...prev, isActive: checked }))
+								}
+								label="Forma de pagamento ativa"
+								description="Quando ativa, esta forma de pagamento estará disponível para uso nas vendas"
+							/>
+						</div>
 					</div>
 				</div>
 
@@ -196,6 +214,7 @@ const PaymentMethodsPage: React.FC = () => {
 							setFormData({
 								code: '',
 								description: '',
+								isActive: true,
 							});
 						}}
 					>

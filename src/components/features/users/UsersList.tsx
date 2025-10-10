@@ -1,6 +1,8 @@
 import { Filter, Search, SquarePen, Trash2 } from 'lucide-react';
 import type React from 'react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import type { SelectOption } from '../../../components/common/Select';
+import Select from '../../../components/common/Select';
 import { mockUserManagementService } from '../../../data/mockUserManagementService';
 import toastService from '../../../services/ToastService';
 import type { User } from '../../../types';
@@ -9,6 +11,23 @@ import Input from '../../common/Input';
 interface UsersListProps {
 	onEditUser?: (user: User) => void;
 }
+
+// Options for user type filter
+const userTypeOptions: SelectOption[] = [
+	{ value: 'all', label: 'Todos' },
+	{ value: 'admin', label: 'Administrador' },
+	{ value: 'employee', label: 'Funcionário' },
+];
+
+// Options for sort filter
+const sortOptions: SelectOption[] = [
+	{ value: 'name-asc', label: 'Nome (A-Z)' },
+	{ value: 'name-desc', label: 'Nome (Z-A)' },
+	{ value: 'email-asc', label: 'Email (A-Z)' },
+	{ value: 'email-desc', label: 'Email (Z-A)' },
+	{ value: 'createdAt-desc', label: 'Mais recentes' },
+	{ value: 'createdAt-asc', label: 'Mais antigos' },
+];
 
 const UsersList: React.FC<UsersListProps> = ({ onEditUser }) => {
 	const [users, setUsers] = useState<User[]>([]);
@@ -21,13 +40,9 @@ const UsersList: React.FC<UsersListProps> = ({ onEditUser }) => {
 		'name',
 	);
 	const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+	const [sortValue, setSortValue] = useState('name-asc');
 
-	// Load users on component mount
-	useEffect(() => {
-		loadUsers();
-	}, []);
-
-	const loadUsers = async () => {
+	const loadUsers = useCallback(async () => {
 		try {
 			setLoading(true);
 			const usersData = await mockUserManagementService.getAllUsers();
@@ -38,7 +53,12 @@ const UsersList: React.FC<UsersListProps> = ({ onEditUser }) => {
 		} finally {
 			setLoading(false);
 		}
-	};
+	}, []);
+
+	// Load users on component mount
+	useEffect(() => {
+		loadUsers();
+	}, [loadUsers]);
 
 	const handleDeleteUser = async (user: User) => {
 		if (user.id === '1') {
@@ -172,40 +192,31 @@ const UsersList: React.FC<UsersListProps> = ({ onEditUser }) => {
 					{/* Filter by type */}
 					<div className="relative">
 						<Filter
-							className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+							className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 z-10"
 							size={16}
 						/>
-						<select
+						<Select
 							value={filterType}
-							onChange={(e) =>
-								setFilterType(e.target.value as 'all' | 'admin' | 'employee')
+							onChange={(value) =>
+								setFilterType(value as 'all' | 'admin' | 'employee')
 							}
-							className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-						>
-							<option value="all">Todos os tipos</option>
-							<option value="admin">Administradores</option>
-							<option value="employee">Funcionários</option>
-						</select>
+							options={userTypeOptions}
+							className="pl-10"
+						/>
 					</div>
 
 					{/* Sort */}
 					<div>
-						<select
-							value={`${sortField}-${sortDirection}`}
-							onChange={(e) => {
-								const [field, direction] = e.target.value.split('-');
+						<Select
+							value={sortValue}
+							onChange={(value) => {
+								const [field, direction] = value.split('-');
 								setSortField(field as 'name' | 'email' | 'createdAt');
 								setSortDirection(direction as 'asc' | 'desc');
+								setSortValue(value);
 							}}
-							className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-						>
-							<option value="name-asc">Nome (A-Z)</option>
-							<option value="name-desc">Nome (Z-A)</option>
-							<option value="email-asc">Email (A-Z)</option>
-							<option value="email-desc">Email (Z-A)</option>
-							<option value="createdAt-desc">Mais recentes</option>
-							<option value="createdAt-asc">Mais antigos</option>
-						</select>
+							options={sortOptions}
+						/>
 					</div>
 				</div>
 			</div>

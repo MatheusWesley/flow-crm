@@ -214,10 +214,12 @@ const PresalesPage: React.FC = () => {
 
 	// Select options
 
-	const paymentMethodOptions = paymentMethods.map((method) => ({
-		value: method.id,
-		label: method.description,
-	}));
+	const paymentMethodOptions = paymentMethods
+		.filter((method) => method.isActive)
+		.map((method) => ({
+			value: method.id,
+			label: method.description,
+		}));
 
 	const statusOptions = [
 		{ value: 'all', label: 'Todos os Status' },
@@ -322,7 +324,9 @@ const PresalesPage: React.FC = () => {
 		}
 		// Admins can see all presales by default
 
-		return matchesSearch && matchesStatus && matchesDateRange && hasPermissionToView;
+		return (
+			matchesSearch && matchesStatus && matchesDateRange && hasPermissionToView
+		);
 	});
 
 	// Filter customers for search
@@ -753,11 +757,14 @@ const PresalesPage: React.FC = () => {
 								</button>
 							</div>
 						</div>
-						
+
 						{/* Date range inputs */}
 						<div className="flex items-center gap-4">
 							<div className="flex items-center gap-2">
-								<label htmlFor="startDate" className="text-sm text-gray-600 min-w-[2rem]">
+								<label
+									htmlFor="startDate"
+									className="text-sm text-gray-600 min-w-[2rem]"
+								>
 									De:
 								</label>
 								<input
@@ -769,7 +776,10 @@ const PresalesPage: React.FC = () => {
 								/>
 							</div>
 							<div className="flex items-center gap-2">
-								<label htmlFor="endDate" className="text-sm text-gray-600 min-w-[2.5rem]">
+								<label
+									htmlFor="endDate"
+									className="text-sm text-gray-600 min-w-[2.5rem]"
+								>
 									Até:
 								</label>
 								<input
@@ -780,15 +790,30 @@ const PresalesPage: React.FC = () => {
 									className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white"
 								/>
 							</div>
-							
+
 							{/* Current filter status */}
 							<div className="text-xs text-gray-500 ml-auto">
 								{!startDate && !endDate && 'Mostrando todas as datas'}
-								{startDate && endDate && startDate === endDate && startDate === today && 'Mostrando apenas hoje'}
-								{startDate && endDate && startDate === endDate && startDate !== today && `Mostrando apenas ${new Date(startDate).toLocaleDateString('pt-BR')}`}
-								{startDate && endDate && startDate !== endDate && `Período: ${new Date(startDate).toLocaleDateString('pt-BR')} até ${new Date(endDate).toLocaleDateString('pt-BR')}`}
-								{startDate && !endDate && `A partir de ${new Date(startDate).toLocaleDateString('pt-BR')}`}
-								{!startDate && endDate && `Até ${new Date(endDate).toLocaleDateString('pt-BR')}`}
+								{startDate &&
+									endDate &&
+									startDate === endDate &&
+									startDate === today &&
+									'Mostrando apenas hoje'}
+								{startDate &&
+									endDate &&
+									startDate === endDate &&
+									startDate !== today &&
+									`Mostrando apenas ${new Date(startDate).toLocaleDateString('pt-BR')}`}
+								{startDate &&
+									endDate &&
+									startDate !== endDate &&
+									`Período: ${new Date(startDate).toLocaleDateString('pt-BR')} até ${new Date(endDate).toLocaleDateString('pt-BR')}`}
+								{startDate &&
+									!endDate &&
+									`A partir de ${new Date(startDate).toLocaleDateString('pt-BR')}`}
+								{!startDate &&
+									endDate &&
+									`Até ${new Date(endDate).toLocaleDateString('pt-BR')}`}
 							</div>
 						</div>
 					</div>

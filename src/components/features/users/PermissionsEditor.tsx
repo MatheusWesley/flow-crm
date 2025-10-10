@@ -1,6 +1,6 @@
 import { Check, Info, X } from 'lucide-react';
 import type React from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { UserPermissions } from '../../../types';
 
 interface PermissionsEditorProps {
@@ -35,6 +35,11 @@ const PermissionsEditor: React.FC<PermissionsEditorProps> = ({
 		'modules',
 		'presales',
 	]);
+
+	// Debug: Log when permissions prop changes
+	useEffect(() => {
+		console.log('PermissionsEditor: permissions prop changed:', permissions);
+	}, [permissions]);
 
 	// Define permission groups and items
 	const permissionGroups: PermissionGroup[] = [
@@ -110,39 +115,56 @@ const PermissionsEditor: React.FC<PermissionsEditorProps> = ({
 	// Helper function to get permission value by path
 	const getPermissionValue = (path: string): boolean => {
 		const keys = path.split('.');
-		let value: unknown = permissions;
 
-		for (const key of keys) {
-			value = (value as Record<string, unknown>)?.[key];
+		if (keys.length === 2) {
+			const [section, permission] = keys;
+
+			if (section === 'modules' && permission in permissions.modules) {
+				return permissions.modules[
+					permission as keyof typeof permissions.modules
+				];
+			} else if (section === 'presales' && permission in permissions.presales) {
+				return permissions.presales[
+					permission as keyof typeof permissions.presales
+				];
+			}
 		}
 
-		return Boolean(value);
+		return false;
 	};
 
 	// Helper function to set permission value by path
 	const setPermissionValue = (path: string, value: boolean) => {
-		const keys = path.split('.');
+		console.log('setPermissionValue called:', {
+			path,
+			value,
+			currentPermissions: permissions,
+		});
 
-		// Create a deep copy of permissions to avoid mutation
+		// Force a re-render by creating a completely new object structure
 		const newPermissions = JSON.parse(
 			JSON.stringify(permissions),
 		) as UserPermissions;
-		let current: Record<string, unknown> = newPermissions as unknown as Record<
-			string,
-			unknown
-		>;
 
-		// Navigate to the parent object
-		for (let i = 0; i < keys.length - 1; i++) {
-			if (!current[keys[i]]) {
-				current[keys[i]] = {};
+		const keys = path.split('.');
+		if (keys.length === 2) {
+			const [section, permission] = keys;
+
+			if (section === 'modules' && permission in newPermissions.modules) {
+				newPermissions.modules[
+					permission as keyof typeof newPermissions.modules
+				] = value;
+			} else if (
+				section === 'presales' &&
+				permission in newPermissions.presales
+			) {
+				newPermissions.presales[
+					permission as keyof typeof newPermissions.presales
+				] = value;
 			}
-			current = current[keys[i]] as Record<string, unknown>;
 		}
 
-		// Set the final value
-		current[keys[keys.length - 1]] = value;
-
+		console.log('Calling onChange with:', newPermissions);
 		onChange(newPermissions);
 	};
 
@@ -159,9 +181,63 @@ const PermissionsEditor: React.FC<PermissionsEditorProps> = ({
 			(perm) => !perm.adminOnly || userType === 'admin',
 		);
 
+		// Create a completely new permissions object with explicit property assignment
+		const newPermissions: UserPermissions = {
+			modules: {
+				products: permissions.modules.products,
+				customers: permissions.modules.customers,
+				reports: permissions.modules.reports,
+				paymentMethods: permissions.modules.paymentMethods,
+				userManagement: permissions.modules.userManagement,
+			},
+			presales: {
+				canCreate: permissions.presales.canCreate,
+				canViewOwn: permissions.presales.canViewOwn,
+				canViewAll: permissions.presales.canViewAll,
+			},
+		};
+
+		// Update each available permission
 		availablePermissions.forEach((permission) => {
-			setPermissionValue(permission.path, enable);
+			const keys = permission.path.split('.');
+			if (keys.length === 2) {
+				const [section, permissionKey] = keys;
+
+				if (section === 'modules') {
+					switch (permissionKey) {
+						case 'products':
+							newPermissions.modules.products = enable;
+							break;
+						case 'customers':
+							newPermissions.modules.customers = enable;
+							break;
+						case 'reports':
+							newPermissions.modules.reports = enable;
+							break;
+						case 'paymentMethods':
+							newPermissions.modules.paymentMethods = enable;
+							break;
+						case 'userManagement':
+							newPermissions.modules.userManagement = enable;
+							break;
+					}
+				} else if (section === 'presales') {
+					switch (permissionKey) {
+						case 'canCreate':
+							newPermissions.presales.canCreate = enable;
+							break;
+						case 'canViewOwn':
+							newPermissions.presales.canViewOwn = enable;
+							break;
+						case 'canViewAll':
+							newPermissions.presales.canViewAll = enable;
+							break;
+					}
+				}
+			}
 		});
+
+		onChange(newPermissions);
 	};
 
 	const getGroupStatus = (group: PermissionGroup): 'all' | 'some' | 'none' => {
@@ -329,6 +405,15 @@ const PermissionsEditor: React.FC<PermissionsEditorProps> = ({
 									{availablePermissions.map((permission) => {
 										const isEnabled = getPermissionValue(permission.path);
 
+										const handleCheckboxChange = (checked: boolean) => {
+											console.log(
+												'handleCheckboxChange called:',
+												permission.path,
+												checked,
+											);
+											setPermissionValue(permission.path, checked);
+										};
+
 										return (
 											<div
 												key={permission.id}
@@ -338,17 +423,19 @@ const PermissionsEditor: React.FC<PermissionsEditorProps> = ({
 														: 'bg-gray-50 border-gray-200'
 												}`}
 											>
-												<div className="flex items-center h-5">
+												<div className="flex items-center h-5 pt-0.5">
 													<input
 														type="checkbox"
 														id={`${group.id}-${permission.id}`}
 														checked={isEnabled}
-														onChange={(e) =>
-															setPermissionValue(
+														onChange={(e) => {
+															console.log(
+																'Checkbox onChange event:',
 																permission.path,
 																e.target.checked,
-															)
-														}
+															);
+															handleCheckboxChange(e.target.checked);
+														}}
 														disabled={disabled}
 														className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
 													/>
@@ -375,7 +462,7 @@ const PermissionsEditor: React.FC<PermissionsEditorProps> = ({
 														{permission.description}
 													</p>
 												</div>
-												<div className="flex-shrink-0">
+												<div className="flex-shrink-0 pt-0.5">
 													{isEnabled ? (
 														<Check className="w-5 h-5 text-green-600" />
 													) : (

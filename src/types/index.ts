@@ -46,6 +46,7 @@ export interface Customer extends BaseEntity {
 export interface PaymentMethod extends BaseEntity {
 	code: string;
 	description: string;
+	isActive: boolean;
 }
 
 export interface PreSale extends BaseEntity {

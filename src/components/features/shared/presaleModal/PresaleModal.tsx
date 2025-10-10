@@ -17,7 +17,9 @@ import Select from '../../../common/Select';
 interface PresaleModalProps {
 	isOpen: boolean;
 	onClose: () => void;
-	onSubmit: (presaleData: Omit<PreSale, 'id' | 'createdAt' | 'updatedAt'>) => void;
+	onSubmit: (
+		presaleData: Omit<PreSale, 'id' | 'createdAt' | 'updatedAt'>,
+	) => void;
 	customers: Customer[];
 	products: Product[];
 	editingPresale?: PreSale | null;
@@ -102,11 +104,13 @@ const PresaleModal: React.FC<PresaleModalProps> = ({
 		}
 	}, [editingPresale]);
 
-	// Select options
-	const paymentMethodOptions = paymentMethods.map((method) => ({
-		value: method.id,
-		label: method.description,
-	}));
+	// Select options - only show active payment methods
+	const paymentMethodOptions = paymentMethods
+		.filter((method) => method.isActive)
+		.map((method) => ({
+			value: method.id,
+			label: method.description,
+		}));
 
 	const discountTypeOptions = [
 		{ value: 'percentage', label: 'Percentual (%)' },
@@ -374,11 +378,7 @@ const PresaleModal: React.FC<PresaleModalProps> = ({
 	if (!isOpen) return null;
 
 	return (
-		<InPageModal
-			isOpen={isOpen}
-			onClose={handleClose}
-			title={title}
-		>
+		<InPageModal isOpen={isOpen} onClose={handleClose} title={title}>
 			<div className="px-6 py-6">
 				<form onSubmit={handleSubmitForm} className="space-y-6">
 					{/* Customer Search Field - Full width at the top */}
@@ -469,32 +469,30 @@ const PresaleModal: React.FC<PresaleModalProps> = ({
 								{showProductDropdown && (
 									<div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
 										{filteredProductsForDropdown.length > 0 ? (
-											filteredProductsForDropdown
-												.slice(0, 8)
-												.map((product) => (
-													<div
-														key={product.id}
-														onMouseDown={() => handleProductSelect(product)}
-														className="p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0 flex justify-between items-center"
-													>
-														<div>
-															<p className="font-medium text-gray-900 text-sm">
-																{product.name}
-															</p>
-															<p className="text-xs text-gray-600">
-																Código: {product.code}
-															</p>
-														</div>
-														<div className="text-right">
-															<p className="font-medium text-green-600 text-sm">
-																R$ {product.salePrice.toFixed(2)}
-															</p>
-															<p className="text-xs text-gray-500">
-																Estoque: {product.stock}
-															</p>
-														</div>
+											filteredProductsForDropdown.slice(0, 8).map((product) => (
+												<div
+													key={product.id}
+													onMouseDown={() => handleProductSelect(product)}
+													className="p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0 flex justify-between items-center"
+												>
+													<div>
+														<p className="font-medium text-gray-900 text-sm">
+															{product.name}
+														</p>
+														<p className="text-xs text-gray-600">
+															Código: {product.code}
+														</p>
 													</div>
-												))
+													<div className="text-right">
+														<p className="font-medium text-green-600 text-sm">
+															R$ {product.salePrice.toFixed(2)}
+														</p>
+														<p className="text-xs text-gray-500">
+															Estoque: {product.stock}
+														</p>
+													</div>
+												</div>
+											))
 										) : (
 											<div className="p-3 text-sm text-gray-500 text-center">
 												{newItemForm.productDescription
@@ -598,17 +596,18 @@ const PresaleModal: React.FC<PresaleModalProps> = ({
 										<div className="text-sm text-gray-900 font-medium bg-gray-100 px-3 py-2 rounded border border-gray-200">
 											<div>
 												<div className="font-semibold">{item.product.name}</div>
-												<div className="text-xs text-gray-600">Cód: {item.product.code}</div>
+												<div className="text-xs text-gray-600">
+													Cód: {item.product.code}
+												</div>
 											</div>
 										</div>
 									</div>
 
 									{/* Value Display */}
 									<div className="col-span-2 text-right text-sm font-medium">
-										{calculateItemTotal(
-											item.quantity,
-											item.unitPrice,
-										).toFixed(2)}
+										{calculateItemTotal(item.quantity, item.unitPrice).toFixed(
+											2,
+										)}
 									</div>
 
 									{/* Quantity Input - Disabled after adding */}
@@ -639,10 +638,9 @@ const PresaleModal: React.FC<PresaleModalProps> = ({
 
 									{/* Total Display */}
 									<div className="col-span-1 text-right text-sm font-semibold">
-										{calculateItemTotal(
-											item.quantity,
-											item.unitPrice,
-										).toFixed(2)}
+										{calculateItemTotal(item.quantity, item.unitPrice).toFixed(
+											2,
+										)}
 									</div>
 
 									{/* Delete Button */}
@@ -708,9 +706,7 @@ const PresaleModal: React.FC<PresaleModalProps> = ({
 							<Select
 								label="Tipo de Desconto"
 								value={formData.discountType}
-								onChange={(value) =>
-									handleInputChange('discountType')(value)
-								}
+								onChange={(value) => handleInputChange('discountType')(value)}
 								options={discountTypeOptions}
 							/>
 						</div>
@@ -744,11 +740,7 @@ const PresaleModal: React.FC<PresaleModalProps> = ({
 
 					{/* Actions */}
 					<div className="flex justify-end space-x-3 pt-4">
-						<Button
-							type="button"
-							variant="secondary"
-							onClick={handleClose}
-						>
+						<Button type="button" variant="secondary" onClick={handleClose}>
 							Cancelar
 						</Button>
 						<Button

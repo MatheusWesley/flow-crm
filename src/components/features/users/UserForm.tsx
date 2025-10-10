@@ -45,14 +45,33 @@ const UserForm: React.FC<UserFormProps> = ({
 		avatar: '',
 	});
 
-	const [permissions, setPermissions] = useState<UserPermissions>(
-		getDefaultPermissions('employee'),
-	);
+	const [permissions, setPermissions] = useState<UserPermissions>(() => {
+		const defaultPerms = getDefaultPermissions('employee');
+		return {
+			modules: { ...defaultPerms.modules },
+			presales: { ...defaultPerms.presales },
+		};
+	});
 	const [errors, setErrors] = useState<Record<string, string>>({});
 	const [loading, setLoading] = useState(false);
 	const [existingUsers, setExistingUsers] = useState<User[]>([]);
 	const [emailCheckLoading, setEmailCheckLoading] = useState(false);
 	const { handleAsyncOperation } = useErrorHandler();
+
+	// Stable onChange function for permissions
+	const handlePermissionsChange = useCallback(
+		(newPermissions: UserPermissions) => {
+			console.log(
+				'UserForm: handlePermissionsChange called with:',
+				newPermissions,
+			);
+			setPermissions({
+				modules: { ...newPermissions.modules },
+				presales: { ...newPermissions.presales },
+			});
+		},
+		[],
+	);
 
 	// User type options
 	const userTypeOptions: SelectOption[] = [
@@ -86,7 +105,10 @@ const UserForm: React.FC<UserFormProps> = ({
 				isActive: editingUser.isActive,
 				avatar: editingUser.avatar || '',
 			});
-			setPermissions({ ...editingUser.permissions });
+			setPermissions({
+				modules: { ...editingUser.permissions.modules },
+				presales: { ...editingUser.permissions.presales },
+			});
 		} else {
 			// Reset form for new user
 			setFormData({
@@ -98,7 +120,11 @@ const UserForm: React.FC<UserFormProps> = ({
 				isActive: true,
 				avatar: '',
 			});
-			setPermissions(getDefaultPermissions('employee'));
+			const defaultPerms = getDefaultPermissions('employee');
+			setPermissions({
+				modules: { ...defaultPerms.modules },
+				presales: { ...defaultPerms.presales },
+			});
 		}
 		setErrors({});
 	}, [editingUser]);
@@ -106,7 +132,11 @@ const UserForm: React.FC<UserFormProps> = ({
 	// Update permissions when user type changes
 	useEffect(() => {
 		if (!editingUser) {
-			setPermissions(getDefaultPermissions(formData.userType));
+			const defaultPerms = getDefaultPermissions(formData.userType);
+			setPermissions({
+				modules: { ...defaultPerms.modules },
+				presales: { ...defaultPerms.presales },
+			});
 		}
 	}, [formData.userType, editingUser]);
 
@@ -251,7 +281,11 @@ const UserForm: React.FC<UserFormProps> = ({
 				isActive: true,
 				avatar: '',
 			});
-			setPermissions(getDefaultPermissions('employee'));
+			const defaultPerms = getDefaultPermissions('employee');
+			setPermissions({
+				modules: { ...defaultPerms.modules },
+				presales: { ...defaultPerms.presales },
+			});
 			setErrors({});
 
 			// Notify parent component
@@ -274,7 +308,11 @@ const UserForm: React.FC<UserFormProps> = ({
 			isActive: true,
 			avatar: '',
 		});
-		setPermissions(getDefaultPermissions('employee'));
+		const defaultPerms = getDefaultPermissions('employee');
+		setPermissions({
+			modules: { ...defaultPerms.modules },
+			presales: { ...defaultPerms.presales },
+		});
 		setErrors({});
 
 		if (onCancel) {
@@ -409,7 +447,7 @@ const UserForm: React.FC<UserFormProps> = ({
 
 				<PermissionsEditor
 					permissions={permissions}
-					onChange={setPermissions}
+					onChange={handlePermissionsChange}
 					userType={formData.userType}
 					disabled={loading}
 				/>
