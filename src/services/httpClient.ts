@@ -12,7 +12,7 @@ class HttpClient {
     constructor() {
         this.axiosInstance = axios.create({
             baseURL: config.apiBaseUrl,
-            timeout: 30000,
+            timeout: 15000, // Reduced timeout for better UX - reports should load quickly
             headers: {
                 'Content-Type': 'application/json',
             },

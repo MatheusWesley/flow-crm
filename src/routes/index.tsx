@@ -181,7 +181,7 @@ export const router = createHashRouter([
 		path: '/reports',
 		element: (
 			<ProtectedRoute requiredPermission="modules.reports">
-				<LayoutWrapper title="Relatórios">
+				<LayoutWrapper title="Relatório de Formas de Pagamento">
 					<LazyWrapper>
 						<ReportsPage />
 					</LazyWrapper>

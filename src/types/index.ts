@@ -312,7 +312,7 @@ export interface ReportSummary {
 
 export interface ReportError {
 	message: string;
-	code: 'NETWORK_ERROR' | 'DATA_PROCESSING_ERROR' | 'INVALID_FILTERS' | 'NO_DATA_FOUND';
+	code: 'NETWORK_ERROR' | 'DATA_PROCESSING_ERROR' | 'INVALID_FILTERS' | 'NO_DATA_FOUND' | 'VALIDATION_ERROR' | 'SERVER_ERROR' | 'TIMEOUT_ERROR';
 	details?: string;
 }
 

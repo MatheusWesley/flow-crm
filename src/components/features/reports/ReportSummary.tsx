@@ -48,6 +48,11 @@ const ReportSummary: React.FC<ReportSummaryProps> = React.memo(
 		// Memoized calculations
 		const { formattedPeriod, periodDuration } = useMemo(() => {
 			const formatPeriod = (startDate: Date, endDate: Date): string => {
+				// Validate dates before formatting
+				if (!startDate || !endDate || isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+					return 'Período inválido';
+				}
+
 				const start = formatDate(startDate);
 				const end = formatDate(endDate);
 
@@ -60,13 +65,22 @@ const ReportSummary: React.FC<ReportSummaryProps> = React.memo(
 			};
 
 			const getPeriodDuration = (startDate: Date, endDate: Date): number => {
+				// Validate dates before calculating duration
+				if (!startDate || !endDate || isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+					return 1; // Default to 1 day if dates are invalid
+				}
+
 				const timeDiff = endDate.getTime() - startDate.getTime();
 				return Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1; // +1 to include both start and end dates
 			};
 
+			// Ensure period dates are valid Date objects
+			const startDate = period.startDate instanceof Date ? period.startDate : new Date(period.startDate);
+			const endDate = period.endDate instanceof Date ? period.endDate : new Date(period.endDate);
+
 			return {
-				formattedPeriod: formatPeriod(period.startDate, period.endDate),
-				periodDuration: getPeriodDuration(period.startDate, period.endDate),
+				formattedPeriod: formatPeriod(startDate, endDate),
+				periodDuration: getPeriodDuration(startDate, endDate),
 			};
 		}, [period.startDate, period.endDate, formatDate]);
 

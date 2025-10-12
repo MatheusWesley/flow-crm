@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { mockPaymentMethodService } from '../../../data/mockPaymentMethodService';
+import { paymentMethodService } from '../../../services/paymentMethodService';
 import type {
 	PaymentMethod,
 	ReportFilters as ReportFiltersType,
@@ -64,7 +64,7 @@ const ReportFilters: React.FC<ReportFiltersProps> = React.memo(
 			const loadPaymentMethods = async () => {
 				try {
 					setState((prev) => ({ ...prev, isLoadingPaymentMethods: true }));
-					const paymentMethods = await mockPaymentMethodService.getAll();
+					const paymentMethods = await paymentMethodService.getAll();
 					// Filter only active payment methods
 					const activePaymentMethods = paymentMethods.filter(
 						(pm) => pm.isActive,

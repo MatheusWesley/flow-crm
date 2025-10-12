@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { reportsService } from '../../../services/reportsService';
+import { usePermissions } from '../../../hooks/usePermissions';
+import { reportsService, ReportsServiceError } from '../../../services/reportsService';
+import toastService from '../../../services/ToastService';
 import type {
 	PaymentMethodReportData,
 	ReportError,
@@ -12,6 +14,7 @@ import Button from '../../common/Button';
 import Table from '../../common/Table';
 import ReportFilters from './ReportFilters';
 import ReportSummary from './ReportSummary';
+import ReportsPermissionCheck from './ReportsPermissionCheck';
 
 interface PaymentMethodsReportProps {
 	className?: string;
@@ -32,6 +35,16 @@ interface PaymentMethodsReportState {
  */
 const PaymentMethodsReport: React.FC<PaymentMethodsReportProps> = React.memo(
 	({ className = '' }) => {
+		const permissions = usePermissions();
+
+		// Check if user has permission to access reports
+		const canAccessReports = permissions.canAccessReports();
+
+		// If user doesn't have permission, show permission check component
+		if (!canAccessReports) {
+			return <ReportsPermissionCheck />;
+		}
+
 		const [state, setState] = useState<PaymentMethodsReportState>({
 			reportData: [],
 			summary: null,
@@ -82,13 +95,18 @@ const PaymentMethodsReport: React.FC<PaymentMethodsReportProps> = React.memo(
 					filters: filters || null,
 					lastUpdated: new Date(),
 				}));
+
+				// Show success toast for data loading (only if not initial load)
+				if (filters) {
+					toastService.success('Relatório atualizado com sucesso!');
+				}
 			} catch (error) {
 				console.error('Error fetching report data:', error);
 
 				let reportError: ReportError;
 
+				// Handle validation errors from local validation
 				if (error instanceof Error) {
-					// Check for specific error types
 					if (
 						error.message.includes('Data inicial') ||
 						error.message.includes('datas não podem')
@@ -97,11 +115,19 @@ const PaymentMethodsReport: React.FC<PaymentMethodsReportProps> = React.memo(
 							message: error.message,
 							code: 'INVALID_FILTERS',
 						};
-					} else {
+					} else if (error instanceof ReportsServiceError) {
+						// Handle enhanced service errors
 						reportError = {
 							message: error.message,
+							code: error.code,
+							details: error.originalError?.message,
+						};
+					} else {
+						// Generic error fallback
+						reportError = {
+							message: 'Erro inesperado ao carregar relatório. Tente novamente.',
 							code: 'NETWORK_ERROR',
-							details: error.stack,
+							details: error.message,
 						};
 					}
 				} else {
@@ -116,6 +142,17 @@ const PaymentMethodsReport: React.FC<PaymentMethodsReportProps> = React.memo(
 					isLoading: false,
 					error: reportError,
 				}));
+
+				// Show toast notification for errors (except validation errors)
+				if (reportError.code !== 'INVALID_FILTERS' && reportError.code !== 'VALIDATION_ERROR') {
+					if (reportError.code === 'NETWORK_ERROR' || reportError.code === 'TIMEOUT_ERROR') {
+						toastService.error('Erro de conexão. Verifique sua internet.');
+					} else if (reportError.code === 'SERVER_ERROR') {
+						toastService.error('Erro no servidor. Tente novamente em alguns minutos.');
+					} else {
+						toastService.error('Erro ao carregar relatório.');
+					}
+				}
 			}
 		}, []);
 
@@ -173,6 +210,7 @@ const PaymentMethodsReport: React.FC<PaymentMethodsReportProps> = React.memo(
 
 		// Handle retry on error
 		const handleRetry = useCallback(() => {
+			toastService.info('Tentando carregar relatório novamente...');
 			fetchReportData(state.filters || undefined);
 		}, [fetchReportData, state.filters]);
 
@@ -261,10 +299,13 @@ const PaymentMethodsReport: React.FC<PaymentMethodsReportProps> = React.memo(
 					link.click();
 					document.body.removeChild(link);
 					URL.revokeObjectURL(url);
+
+					// Show success toast
+					toastService.success('Relatório exportado com sucesso!');
 				}
 			} catch (error) {
 				console.error('Error exporting CSV:', error);
-				// You could show a toast notification here
+				toastService.error('Erro ao exportar relatório. Tente novamente.');
 			}
 			// eslint-disable-next-line react-hooks/exhaustive-deps
 			// eslint-disable-next-line react-hooks/exhaustive-deps
@@ -277,11 +318,12 @@ const PaymentMethodsReport: React.FC<PaymentMethodsReportProps> = React.memo(
 		// Export data to PDF
 		const handleExportPDF = useCallback(() => {
 			if (state.reportData.length === 0) {
+				toastService.warning('Não há dados para exportar.');
 				return;
 			}
 
 			// Temporarily disabled - PDF export functionality
-			alert('Funcionalidade de exportação PDF temporariamente desabilitada');
+			toastService.info('Funcionalidade de exportação PDF temporariamente desabilitada');
 			return;
 
 			/*
@@ -583,40 +625,117 @@ const PaymentMethodsReport: React.FC<PaymentMethodsReportProps> = React.memo(
 			[formatCurrency, state.summary?.totalAmount],
 		);
 
-		// Render error state
+		// Render error state with enhanced error handling
 		if (state.error) {
+			const isNetworkError = state.error.code === 'NETWORK_ERROR' || state.error.code === 'TIMEOUT_ERROR';
+			const isValidationError = state.error.code === 'INVALID_FILTERS' || state.error.code === 'VALIDATION_ERROR';
+			const isServerError = state.error.code === 'SERVER_ERROR';
+
 			return (
 				<div
-					className={`bg-white rounded-lg border border-red-200 ${className}`}
+					className={`bg-white rounded-lg border ${isValidationError ? 'border-yellow-200' : 'border-red-200'
+						} ${className}`}
 				>
 					<div className="p-6 text-center">
-						<div className="text-red-400 mb-4">
-							<svg
-								className="mx-auto h-12 w-12"
-								fill="none"
-								viewBox="0 0 24 24"
-								stroke="currentColor"
-								aria-label="Ícone de erro"
-							>
-								<title>Ícone de erro</title>
-								<path
-									strokeLinecap="round"
-									strokeLinejoin="round"
-									strokeWidth={1}
-									d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-								/>
-							</svg>
+						<div className={`mb-4 ${isValidationError ? 'text-yellow-400' : 'text-red-400'
+							}`}>
+							{isValidationError ? (
+								<svg
+									className="mx-auto h-12 w-12"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+									aria-label="Ícone de aviso"
+								>
+									<title>Ícone de aviso</title>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										strokeWidth={1}
+										d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+									/>
+								</svg>
+							) : isNetworkError ? (
+								<svg
+									className="mx-auto h-12 w-12"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+									aria-label="Ícone de conexão"
+								>
+									<title>Ícone de conexão</title>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										strokeWidth={1}
+										d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"
+									/>
+								</svg>
+							) : (
+								<svg
+									className="mx-auto h-12 w-12"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+									aria-label="Ícone de erro do servidor"
+								>
+									<title>Ícone de erro do servidor</title>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										strokeWidth={1}
+										d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+									/>
+								</svg>
+							)}
 						</div>
 						<h3 className="text-lg font-medium text-gray-900 mb-2">
-							Erro ao carregar relatório
+							{isValidationError
+								? 'Problema com os filtros'
+								: isNetworkError
+									? 'Problema de conexão'
+									: isServerError
+										? 'Erro no servidor'
+										: 'Erro ao carregar relatório'
+							}
 						</h3>
 						<p className="text-gray-600 mb-4">{state.error.message}</p>
+
+						{/* Additional help text based on error type */}
+						{isNetworkError && (
+							<div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+								<p className="text-sm text-blue-800">
+									<strong>Dicas:</strong> Verifique sua conexão com a internet e tente novamente.
+									Se o problema persistir, aguarde alguns minutos.
+								</p>
+							</div>
+						)}
+
+						{isValidationError && (
+							<div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+								<p className="text-sm text-yellow-800">
+									<strong>Dica:</strong> Verifique se as datas estão corretas e dentro do período permitido.
+								</p>
+							</div>
+						)}
+
+						{isServerError && (
+							<div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+								<p className="text-sm text-red-800">
+									<strong>Problema temporário:</strong> Nossos servidores estão com dificuldades.
+									Tente novamente em alguns minutos.
+								</p>
+							</div>
+						)}
+
 						<div className="flex items-center justify-center space-x-3">
-							<Button variant="primary" onClick={handleRetry}>
-								Tentar Novamente
-							</Button>
+							{!isValidationError && (
+								<Button variant="primary" onClick={handleRetry}>
+									{isNetworkError ? 'Tentar Novamente' : 'Recarregar'}
+								</Button>
+							)}
 							<Button variant="secondary" onClick={handleClearError}>
-								Fechar
+								{isValidationError ? 'Ajustar Filtros' : 'Fechar'}
 							</Button>
 						</div>
 					</div>

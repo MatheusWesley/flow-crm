@@ -32,14 +32,14 @@ interface AuthState {
 type AuthAction =
 	| { type: 'INIT_START' }
 	| {
-			type: 'INIT_SUCCESS';
-			payload: { user: AuthUser | null; permissions: UserPermissions | null };
-	  }
+		type: 'INIT_SUCCESS';
+		payload: { user: AuthUser | null; permissions: UserPermissions | null };
+	}
 	| { type: 'LOGIN_START' }
 	| {
-			type: 'LOGIN_SUCCESS';
-			payload: { user: AuthUser; permissions: UserPermissions };
-	  }
+		type: 'LOGIN_SUCCESS';
+		payload: { user: AuthUser; permissions: UserPermissions };
+	}
 	| { type: 'LOGIN_ERROR'; payload: AuthError }
 	| { type: 'LOGOUT' }
 	| { type: 'CLEAR_ERROR' }
@@ -169,43 +169,61 @@ interface AuthProviderProps {
 
 // Helper function to extract permissions from API User
 const extractPermissionsFromUser = (user: User): UserPermissions => {
+	let permissions: UserPermissions;
+
 	// Use permissions from database if available, otherwise use defaults based on role
 	if (user.permissions) {
-		return user.permissions as UserPermissions;
-	}
-	
-	// Fallback to default permissions based on role
-	if (user.role === 'admin') {
-		return {
-			modules: {
-				products: true,
-				customers: true,
-				reports: true,
-				paymentMethods: true,
-				userManagement: true,
-			},
-			presales: {
-				canCreate: true,
-				canViewOwn: true,
-				canViewAll: true,
-			},
-		};
+		permissions = user.permissions as UserPermissions;
 	} else {
-		return {
-			modules: {
-				products: true,
-				customers: true,
-				reports: false,
-				paymentMethods: false,
-				userManagement: false,
-			},
-			presales: {
-				canCreate: true,
-				canViewOwn: true,
-				canViewAll: false,
-			},
-		};
+		// Fallback to default permissions based on role
+		if (user.role === 'admin') {
+			permissions = {
+				modules: {
+					products: true,
+					customers: true,
+					reports: true,
+					paymentMethods: true,
+					userManagement: true,
+				},
+				presales: {
+					canCreate: true,
+					canViewOwn: true,
+					canViewAll: true,
+				},
+			};
+		} else {
+			permissions = {
+				modules: {
+					products: true,
+					customers: true,
+					reports: false,
+					paymentMethods: false,
+					userManagement: false,
+				},
+				presales: {
+					canCreate: true,
+					canViewOwn: true,
+					canViewAll: false,
+				},
+			};
+		}
 	}
+
+	// Check for temporary permissions (for testing purposes)
+	if (process.env.NODE_ENV === 'development') {
+		const tempReportsPermission = localStorage.getItem('temp_reports_permission');
+		if (tempReportsPermission === 'true') {
+			permissions = {
+				...permissions,
+				modules: {
+					...permissions.modules,
+					reports: true,
+				},
+			};
+		}
+	}
+
+	return permissions;
 };
 
 // Helper function to convert API User to AuthUser
@@ -417,7 +435,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 			if (module === 'modules') {
 				return (
 					state.permissions.modules[
-						action as keyof typeof state.permissions.modules
+					action as keyof typeof state.permissions.modules
 					] || false
 				);
 			}
@@ -425,7 +443,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 			if (module === 'presales') {
 				return (
 					state.permissions.presales[
-						action as keyof typeof state.permissions.presales
+					action as keyof typeof state.permissions.presales
 					] || false
 				);
 			}

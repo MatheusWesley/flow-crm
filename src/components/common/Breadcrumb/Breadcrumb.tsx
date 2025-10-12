@@ -32,7 +32,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ items, className = '' }) => {
 		// Map path segments to readable labels
 		const pathLabels: Record<string, string> = {
 			dashboard: 'Dashboard',
-			reports: 'Relatórios',
+			reports: 'Relatório de Formas de Pagamento',
 			products: 'Produtos',
 			customers: 'Clientes',
 			presales: 'Pré-Vendas',
@@ -84,9 +84,8 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ items, className = '' }) => {
 
 						{item.isActive || !item.path ? (
 							<span
-								className={`font-medium ${
-									item.isActive ? 'text-slate-900' : 'text-slate-600'
-								}`}
+								className={`font-medium ${item.isActive ? 'text-slate-900' : 'text-slate-600'
+									}`}
 								aria-current={item.isActive ? 'page' : undefined}
 							>
 								{index === 0 && (
