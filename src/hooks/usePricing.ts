@@ -33,7 +33,7 @@ export interface UsePricingReturn {
  * Hook for pricing calculations and utilities
  */
 export const usePricing = (): UsePricingReturn => {
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [priceSuggestions, setPriceSuggestions] = useState<PricingStrategies | null>(null);
     const [isCalculating, setIsCalculating] = useState(false);

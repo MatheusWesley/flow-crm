@@ -228,7 +228,7 @@ class ProductService {
                     budget: number;
                 }>
             >(url);
-        return response.data;
+        return response;
     }
 
     /**

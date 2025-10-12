@@ -110,8 +110,7 @@ const UserForm: React.FC<UserFormProps> = ({
 				password: '',
 				confirmPassword: '',
 				userType: 'employee',
-				isActive: true,
-				avatar: '',
+				isActive: true
 			});
 			const defaultPerms = getDefaultPermissions('employee');
 			setPermissions({
@@ -268,7 +267,6 @@ const UserForm: React.FC<UserFormProps> = ({
 				confirmPassword: '',
 				userType: 'employee',
 				isActive: true,
-				avatar: '',
 			});
 			const defaultPerms = getDefaultPermissions('employee');
 			setPermissions({
@@ -295,7 +293,6 @@ const UserForm: React.FC<UserFormProps> = ({
 			confirmPassword: '',
 			userType: 'employee',
 			isActive: true,
-			avatar: '',
 		});
 		const defaultPerms = getDefaultPermissions('employee');
 		setPermissions({

@@ -1,5 +1,4 @@
 import type {
-    ApiResponse,
     CreateCustomerRequest,
     Customer,
     CustomerQueryParams,
