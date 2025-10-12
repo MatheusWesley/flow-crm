@@ -64,7 +64,8 @@ const Header: React.FC<HeaderProps> = ({
 	};
 
 	// Função para gerar iniciais do usuário
-	const getUserInitials = (name: string): string => {
+	const getUserInitials = (name: string | undefined): string => {
+		if (!name) return 'U';
 		return name
 			.split(' ')
 			.map((word) => word.charAt(0).toUpperCase())
@@ -127,20 +128,12 @@ const Header: React.FC<HeaderProps> = ({
 									className="flex items-center space-x-2 p-2 text-slate-300 hover:text-white rounded-xl hover:bg-slate-800/50 transition-all duration-300 hover:scale-105"
 									aria-label="User menu"
 								>
-									{user.avatar ? (
-										<img
-											src={user.avatar}
-											alt={user.name}
-											className="h-7 w-7 rounded-full object-cover"
-										/>
-									) : (
-										<div className="h-7 w-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold">
-											{getUserInitials(user.name)}
-										</div>
-									)}
+									<div className="h-7 w-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold">
+										{getUserInitials(user.name)}
+									</div>
 									<div className="hidden sm:block text-left">
 										<div className="text-sm font-medium text-white">
-											{user.name}
+											{user.name || 'Usuário'}
 										</div>
 									</div>
 									<ChevronDown className="h-4 w-4 text-slate-400" />
@@ -175,21 +168,13 @@ const Header: React.FC<HeaderProps> = ({
 												</button>
 
 												<div className="flex flex-col items-center space-y-2">
-													{user.avatar ? (
-														<img
-															src={user.avatar}
-															alt={user.name}
-															className="h-16 w-16 rounded-full object-cover border-3 border-white dark:border-slate-700 shadow-md"
-														/>
-													) : (
-														<div className="h-16 w-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xl font-bold border-3 border-white dark:border-slate-700 shadow-md">
-															{getUserInitials(user.name)}
-														</div>
-													)}
+													<div className="h-16 w-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xl font-bold border-3 border-white dark:border-slate-700 shadow-md">
+														{getUserInitials(user.name)}
+													</div>
 
 													<div>
 														<h3 className="text-base font-semibold text-slate-900 dark:text-white">
-															Olá, {user.name.split(' ')[0]}!
+															Olá, {user.name?.split(' ')[0] || 'Usuário'}!
 														</h3>
 														<p className="text-xs text-slate-600 dark:text-slate-400">
 															{user.email}

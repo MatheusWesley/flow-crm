@@ -1,11 +1,13 @@
-import { SquarePen, Trash2 } from 'lucide-react';
+import { RefreshCw, Search, SquarePen, Trash2 } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../../context/AuthContext';
-import toastService, { TOAST_MESSAGES } from '../../../services/ToastService';
+import { usePricing } from '../../../hooks/usePricing';
+import { useProducts } from '../../../hooks/useProducts';
+import { TOAST_MESSAGES } from '../../../services/ToastService';
 import type { Product } from '../../../types';
+import type { CreateProductRequest } from '../../../types/api';
 import { AutoCodeService } from '../../../utils';
-import PriceCalculationService from '../../../utils/priceCalculationService';
 import Button from '../../common/Button';
 import type { CheckboxOption } from '../../common/CheckboxGroup';
 import CheckboxGroup from '../../common/CheckboxGroup';
@@ -20,152 +22,33 @@ const ProductsPage: React.FC = () => {
 	const { isAdmin, isEmployee, hasPermission, user } = useAuth();
 	const [activeTab, setActiveTab] = useState<TabType>('list');
 	const [activeSubTab, setActiveSubTab] = useState<SubTabType>('basic');
+	const [searchQuery, setSearchQuery] = useState('');
+	const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+	const [currentFilters] = useState({});
 
-	// Initialize price calculation service
-	const priceCalculationService = new PriceCalculationService();
+	// Use the products hook for API integration
+	const {
+		products,
+		isLoading,
+		error,
+		pagination,
+		fetchProducts,
+		createProduct,
+		updateProduct,
+		deleteProduct,
+		searchProducts,
+		refreshProducts,
+		clearError,
+	} = useProducts();
 
-	const [products] = useState<Product[]>([
-		{
-			id: '1',
-			code: 'PROD0000001',
-			name: 'Pilhas Alcalinas AA de Longa Duração (Pacote Econômico com 4 Unidades)',
-			description:
-				'Pacote com 4 unidades de pilhas alcalinas AA - Compra de emergência para controles, relógios e pequenos brinquedos. Longa duração garantida para não deixar seus dispositivos na mão nos momentos mais importantes do dia a dia.',
-			unit: 'pc',
-			stock: 50,
-			saleType: 'unit' as const,
-			purchasePrice: 12.0,
-			salePrice: 18.0,
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		},
-		{
-			id: '2',
-			code: 'PROD0000002',
-			name: 'Pão de Alho Congelado Tradicional (4un)',
-			description: '',
-			unit: 'un',
-			stock: 35,
-			saleType: 'unit' as const,
-			purchasePrice: 8.5,
-			salePrice: 12.9,
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		},
-		{
-			id: '3',
-			code: 'PROD0000003',
-			name: 'Saco de Gelo Purificado (33kg)',
-			description:
-				'Gelo em cubos, saco de 3 kg, ideal para festas, bebidas geladas e resfriamento rápido. Gelo de água potável, pronto para uso imediato em grandes quantidades.',
-			unit: 'pc',
-			stock: 0,
-			saleType: 'unit' as const,
-			purchasePrice: 5.0,
-			salePrice: 8.0,
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		},
-		{
-			id: '4',
-			code: 'PROD0000004',
-			name: 'Molho de Tomate Extrato Concentrado (Lata 340g)',
-			description:
-				'Extrato de tomate lata 340g - Item básico de reposição rápida. Concentrado e essencial para o preparo de massas, molhos e refogados com sabor intenso e cor vibrante.',
-			unit: 'un',
-			stock: 120,
-			saleType: 'unit' as const,
-			purchasePrice: 2.5,
-			salePrice: 3.99,
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		},
-		{
-			id: '5',
-			code: 'PROD0000005',
-			name: 'Lâmpada LED Econômica 9W Bivolt',
-			description: '',
-			unit: 'un',
-			stock: 0,
-			saleType: 'unit' as const,
-			purchasePrice: 10.0,
-			salePrice: 14.5,
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		},
-		{
-			id: '6',
-			code: 'PROD0000006',
-			name: 'Salgadinho Crocante de Queijo Cheddar (Pacote 100g)',
-			description:
-				'Pacote de salgadinho sabor queijo 100g. Este snack crocante é perfeito para aquele momento de conveniência, seja assistindo a um filme, fazendo uma pausa no trabalho ou complementando a lancheira. Possui um sabor intenso e irresistível de queijo temperado, sendo um dos itens de maior giro no ponto de venda por ser uma compra por impulso. Sua embalagem metalizada garante frescor e crocância por mais tempo, tornando-o a escolha ideal para satisfazer aquela vontade súbita de petiscar.',
-			unit: 'un',
-			stock: 80,
-			saleType: 'unit' as const,
-			purchasePrice: 4.0,
-			salePrice: 6.5,
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		},
-		{
-			id: '7',
-			code: 'PROD0000007',
-			name: 'Touca de Banho Descartável de Plástico',
-			description:
-				'Touca de banho de plástico (unidade) - Ideal para clientes de hotel ou para quem esqueceu a sua. Garante a proteção total dos cabelos durante o banho ou em procedimentos de beleza.',
-			unit: 'un',
-			stock: 0,
-			saleType: 'unit' as const,
-			purchasePrice: 1.0,
-			salePrice: 2.5,
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		},
-		{
-			id: '8',
-			code: 'PROD0000008',
-			name: 'Salsicha Congelada Tipo Viena (Pacote 1kg)',
-			description: '',
-			unit: 'kg',
-			stock: 15,
-			saleType: 'unit' as const,
-			purchasePrice: 11.0,
-			salePrice: 17.9,
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		},
-		{
-			id: '9',
-			code: 'PROD0000009',
-			name: 'Goma de Mascar Menta Refrescante Sem Açúcar (Caixa Display com 10 Unidades)',
-			description:
-				'Caixa c/ 10 unidades de chiclete sem açúcar - Próximo ao caixa. Sabor refrescante de menta que ajuda a manter o hálito fresco.',
-			unit: 'cx',
-			stock: 15,
-			saleType: 'unit' as const,
-			purchasePrice: 8.0,
-			salePrice: 13.9,
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		},
-		{
-			id: '10',
-			code: 'PROD0000010',
-			name: 'Bateria de Lítio CR2032 Pequena',
-			description: '',
-			unit: 'un',
-			stock: 60,
-			saleType: 'unit' as const,
-			purchasePrice: 3.0,
-			salePrice: 5.0,
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		},
-	]);
+	// Use the pricing hook for price calculations
+	const { priceSuggestions, getPriceSuggestions, isCalculating } = usePricing();
 
 	// Initialize auto code service with existing product codes
 	useEffect(() => {
-		const existingCodes = products.map((p) => p.code);
+		const existingCodes = products
+			.map((p) => p.code)
+			.filter((code) => code && typeof code === 'string');
 		AutoCodeService.initializeFromExisting('product', existingCodes);
 	}, [products]);
 
@@ -223,36 +106,105 @@ const ProductsPage: React.FC = () => {
 		}
 	};
 
-	const handleSubmit = (e: React.FormEvent) => {
+	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		console.log('Dados do produto:', formData);
-		// Show success toast
-		toastService.success(TOAST_MESSAGES.product.created);
-		// Aqui implementaria a lógica de salvamento
-		// Reset form after submit
-		setFormData({
-			code: '',
-			name: '',
-			description: '',
-			unit: 'pc',
-			stock: '',
-			saleType: 'unit' as 'unit' | 'fractional',
-			purchasePrice: '',
-			markup: '',
-			salePrice: '',
-		});
+
+		try {
+			// Prepare product data for API
+			const productData: CreateProductRequest = {
+				code: formData.code || undefined, // Let backend generate if empty
+				name: formData.name,
+				unit: formData.unit,
+				description: formData.description || undefined,
+				stock: formData.stock ? parseInt(formData.stock) : 0,
+				purchasePrice: formData.purchasePrice,
+				salePrice: formData.salePrice,
+				saleType: formData.saleType,
+			};
+
+			let success = false;
+
+			if (editingProduct) {
+				// Update existing product - remove code field as it's immutable
+				const { code, ...updateData } = productData;
+				const result = await updateProduct(editingProduct.id, updateData);
+				success = result !== null;
+				setEditingProduct(null);
+			} else {
+				// Create new product
+				const result = await createProduct(productData);
+				success = result !== null;
+			}
+
+			// Only proceed with UI updates if the operation was successful
+			if (success) {
+				// Reset form after successful submit
+				setFormData({
+					code: '',
+					name: '',
+					description: '',
+					unit: 'un',
+					stock: '',
+					saleType: 'unit' as 'unit' | 'fractional',
+					purchasePrice: '',
+					markup: '',
+					salePrice: '',
+				});
+
+				// Always refresh the list to ensure consistency
+				// This handles cases where the operation succeeded on the backend
+				// but there was an issue with local state synchronization
+				await refreshProducts();
+
+				// Switch back to list tab
+				setActiveTab('list');
+				setActiveSubTab('basic');
+			} else {
+				// If the operation failed, still refresh to ensure consistency
+				await refreshProducts();
+			}
+		} catch (error) {
+			// Error handling is done in the hook, but let's refresh the list anyway
+			// in case the operation succeeded on the backend
+			console.error('Error submitting product:', error);
+			await refreshProducts();
+		}
 	};
 
 	// Functions for product operations
 	const handleEditProduct = (product: Product) => {
-		toastService.info(`Editando produto: ${product.name}`);
-		// TODO: Implement edit functionality
+		setEditingProduct(product);
+		setFormData({
+			code: product.code,
+			name: product.name,
+			description: product.description || '',
+			unit: product.unit,
+			stock: product.stock.toString(),
+			saleType: product.saleType,
+			purchasePrice: product.purchasePrice.toString(),
+			markup: '',
+			salePrice: product.salePrice.toString(),
+		});
+		setActiveTab('register');
+		setActiveSubTab('basic');
 	};
 
-	const handleDeleteProduct = (product: Product) => {
+	const handleDeleteProduct = async (product: Product) => {
 		if (confirm(TOAST_MESSAGES.product.deleteConfirm)) {
-			toastService.success(`Produto ${product.name} excluído com sucesso!`);
-			// TODO: Implement delete functionality
+			const success = await deleteProduct(product.id);
+			if (success) {
+				// Refresh the products list after successful deletion
+				await refreshProducts();
+			}
+		}
+	};
+
+	// Search functionality
+	const handleSearch = async () => {
+		if (searchQuery.trim()) {
+			await searchProducts(searchQuery);
+		} else {
+			await refreshProducts();
 		}
 	};
 
@@ -264,82 +216,188 @@ const ProductsPage: React.FC = () => {
 						<h2 className="text-xl font-semibold text-gray-800">
 							Produtos Cadastrados
 						</h2>
-						<span className="text-sm text-gray-500">
-							{products.length} produtos
-						</span>
-					</div>
-
-					<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-						{products.map((product) => (
-							<div
-								key={product.id}
-								className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow flex flex-col h-full" // Adicionado flex flex-col h-full
+						<div className="flex items-center space-x-4">
+							<span className="text-sm text-gray-500">
+								{pagination
+									? `${pagination.total} produtos`
+									: `${products.length} produtos`}
+							</span>
+							<button
+								type="button"
+								onClick={refreshProducts}
+								disabled={isLoading}
+								className="p-2 text-gray-500 hover:text-gray-700 disabled:opacity-50"
+								title="Atualizar lista"
 							>
-								<div className="flex justify-between items-start mb-2">
-									<div className="flex-grow pr-2">
-										<h3 className="font-semibold text-gray-900 line-clamp-1">
-											{product.name}
-										</h3>
-										<p className="text-xs text-gray-600">
-											Código Interno: {product.code}
-										</p>
-									</div>
-									<div className="text-right flex-shrink-0">
-										<p className="text-lg font-bold text-green-600 whitespace-nowrap">
-											R$ {product.salePrice.toFixed(2)}
-										</p>
-										<p className="text-sm text-gray-500">{product.unit}</p>
-									</div>
-								</div>
-								<div className="text-gray-700 text-sm mb-3">
-									{product.description ? (
-										<p className="line-clamp-2">{product.description}</p>
-									) : (
-										<p className="italic text-gray-400 min-h-[3.5rem]">
-											Sem Descrição
-										</p>
-									)}
-								</div>
-								<div className="flex justify-between items-center pt-3 border-t border-gray-100 mt-auto">
-									{product.stock > 0 ? (
-										<span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-											Estoque:{' '}
-											<span className="font-semibold">{product.stock}</span>
-										</span>
-									) : (
-										<span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">
-											Estoque:{' '}
-											<span className="font-semibold">{product.stock}</span>
-										</span>
-									)}
-									{(isAdmin || hasPermission('modules.products')) && (
-										<div className="flex space-x-2">
-											<button
-												type="button"
-												className="text-blue-600 hover:text-blue-800 text-sm"
-												onClick={() => handleEditProduct(product)}
-												title="Editar produto"
-											>
-												<SquarePen size={16} />
-											</button>
-											<button
-												type="button"
-												className="text-red-600 hover:text-red-800 text-sm"
-												onClick={() => handleDeleteProduct(product)}
-												title="Excluir produto"
-											>
-												<Trash2 size={16} />
-											</button>
-										</div>
-									)}
-								</div>
-							</div>
-						))}
+								<RefreshCw
+									size={16}
+									className={isLoading ? 'animate-spin' : ''}
+								/>
+							</button>
+						</div>
 					</div>
 
-					{products.length === 0 && (
+					{/* Search Bar */}
+					<div className="flex items-center space-x-2">
+						<div className="flex-1 relative">
+							<Search
+								className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+								size={16}
+							/>
+							<input
+								type="text"
+								placeholder="Buscar produtos por nome ou código..."
+								value={searchQuery}
+								onChange={(e) => setSearchQuery(e.target.value)}
+								onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+								className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+							/>
+						</div>
+						<Button
+							onClick={handleSearch}
+							disabled={isLoading}
+							variant="secondary"
+						>
+							Buscar
+						</Button>
+					</div>
+
+					{/* Error Display */}
+					{error && (
+						<div className="bg-red-50 border border-red-200 rounded-lg p-4">
+							<div className="flex items-center justify-between">
+								<p className="text-red-700">{error}</p>
+								<button
+									type="button"
+									onClick={clearError}
+									className="text-red-500 hover:text-red-700"
+								>
+									×
+								</button>
+							</div>
+						</div>
+					)}
+
+					{/* Loading State */}
+					{isLoading && (
+						<div className="flex justify-center items-center py-8">
+							<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+							<span className="ml-2 text-gray-600">Carregando produtos...</span>
+						</div>
+					)}
+
+					{!isLoading && (
+						<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+							{products.map((product) => (
+								<div
+									key={product.id}
+									className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow flex flex-col h-full" // Adicionado flex flex-col h-full
+								>
+									<div className="flex justify-between items-start mb-2">
+										<div className="flex-grow pr-2">
+											<h3 className="font-semibold text-gray-900 line-clamp-1">
+												{product.name}
+											</h3>
+											<p className="text-xs text-gray-600">
+												Código Interno: {product.code}
+											</p>
+										</div>
+										<div className="text-right flex-shrink-0">
+											<p className="text-lg font-bold text-green-600 whitespace-nowrap">
+												R$ {product.salePrice ? product.salePrice.toFixed(2) : '0.00'}
+											</p>
+											<p className="text-sm text-gray-500">{product.unit}</p>
+										</div>
+									</div>
+									<div className="text-gray-700 text-sm mb-3">
+										{product.description ? (
+											<p className="line-clamp-2">{product.description}</p>
+										) : (
+											<p className="italic text-gray-400 min-h-[3.5rem]">
+												Sem Descrição
+											</p>
+										)}
+									</div>
+									<div className="flex justify-between items-center pt-3 border-t border-gray-100 mt-auto">
+										{product.stock > 0 ? (
+											<span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+												Estoque:{' '}
+												<span className="font-semibold">{product.stock}</span>
+											</span>
+										) : (
+											<span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">
+												Estoque:{' '}
+												<span className="font-semibold">{product.stock}</span>
+											</span>
+										)}
+										{(isAdmin || hasPermission('modules.products')) && (
+											<div className="flex space-x-2">
+												<button
+													type="button"
+													className="text-blue-600 hover:text-blue-800 text-sm"
+													onClick={() => handleEditProduct(product)}
+													title="Editar produto"
+												>
+													<SquarePen size={16} />
+												</button>
+												<button
+													type="button"
+													className="text-red-600 hover:text-red-800 text-sm"
+													onClick={() => handleDeleteProduct(product)}
+													title="Excluir produto"
+												>
+													<Trash2 size={16} />
+												</button>
+											</div>
+										)}
+									</div>
+								</div>
+							))}
+						</div>
+					)}
+
+					{!isLoading && products.length === 0 && (
 						<div className="text-center py-8">
-							<p className="text-gray-500">Nenhum produto cadastrado ainda.</p>
+							<p className="text-gray-500">
+								{searchQuery
+									? 'Nenhum produto encontrado para a busca.'
+									: 'Nenhum produto cadastrado ainda.'}
+							</p>
+						</div>
+					)}
+
+					{/* Pagination */}
+					{pagination && pagination.totalPages > 1 && (
+						<div className="flex justify-center items-center space-x-2 mt-6">
+							<Button
+								onClick={() =>
+									fetchProducts({
+										...currentFilters,
+										page: pagination.page - 1,
+									})
+								}
+								disabled={!pagination.hasPrev || isLoading}
+								variant="secondary"
+								size="sm"
+							>
+								Anterior
+							</Button>
+							<span className="text-sm text-gray-600">
+								Página {pagination.page} de {pagination.totalPages}
+							</span>
+							<Button
+								onClick={() =>
+									fetchProducts({
+										...currentFilters,
+										page: pagination.page + 1,
+									})
+								}
+								disabled={!pagination.hasNext || isLoading}
+								variant="secondary"
+								size="sm"
+							>
+								Próxima
+							</Button>
 						</div>
 					)}
 				</div>
@@ -412,11 +470,10 @@ const ProductsPage: React.FC = () => {
 
 							<div className="flex justify-end mt-1">
 								<span
-									className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-										formData.description.length >= 140
-											? 'bg-red-100 text-red-800'
-											: 'bg-green-100 text-green-800'
-									}`}
+									className={`text-xs font-semibold px-2 py-0.5 rounded-full ${formData.description.length >= 140
+										? 'bg-red-100 text-red-800'
+										: 'bg-green-100 text-green-800'
+										}`}
 								>
 									{formData.description.length} / 150
 								</span>
@@ -429,9 +486,7 @@ const ProductsPage: React.FC = () => {
 			if (activeSubTab === 'pricesStock') {
 				// Calculate suggested price based on purchase price and markup
 				const calculateSuggestedPrice = () => {
-					const purchasePrice = priceCalculationService.parsePrice(
-						formData.purchasePrice || '0',
-					);
+					const purchasePrice = parseFloat(formData.purchasePrice || '0');
 					const markupPercent = parseFloat(formData.markup || '0');
 
 					if (purchasePrice > 0) {
@@ -439,10 +494,8 @@ const ProductsPage: React.FC = () => {
 							// Use custom markup
 							return purchasePrice * (1 + markupPercent / 100);
 						} else {
-							// Use default suggestion from service
-							return priceCalculationService.calculateSuggestedPrice(
-								purchasePrice,
-							);
+							// Use a simple default calculation (50% markup)
+							return purchasePrice * 1.5;
 						}
 					}
 					return 0;
@@ -456,6 +509,16 @@ const ProductsPage: React.FC = () => {
 							...prev,
 							salePrice: suggestedPrice.toFixed(2),
 						}));
+					}
+				};
+
+				// Get API-based price suggestions if we have a product ID
+				const getApiPriceSuggestions = async () => {
+					if (editingProduct && formData.purchasePrice) {
+						const purchasePrice = parseFloat(formData.purchasePrice);
+						if (!isNaN(purchasePrice)) {
+							getPriceSuggestions(purchasePrice);
+						}
 					}
 				};
 
@@ -508,6 +571,82 @@ const ProductsPage: React.FC = () => {
 											</button>
 										</div>
 									)}
+
+									{/* API Price Suggestions */}
+									{editingProduct && (
+										<div className="mt-2">
+											<button
+												type="button"
+												onClick={getApiPriceSuggestions}
+												disabled={isCalculating || !formData.purchasePrice}
+												className="text-xs text-blue-600 hover:text-blue-800 disabled:opacity-50"
+											>
+												{isCalculating
+													? 'Calculando...'
+													: 'Obter sugestões avançadas'}
+											</button>
+										</div>
+									)}
+
+									{priceSuggestions && (
+										<div className="mt-3 p-3 bg-gray-50 rounded-lg">
+											<h4 className="text-sm font-medium text-gray-700 mb-2">
+												Sugestões de Preço:
+											</h4>
+											<div className="grid grid-cols-2 gap-2 text-xs">
+												<button
+													type="button"
+													onClick={() =>
+														setFormData((prev) => ({
+															...prev,
+															salePrice: priceSuggestions.suggested?.toFixed(2) || '0.00',
+														}))
+													}
+													className="p-2 bg-green-100 text-green-800 rounded hover:bg-green-200"
+												>
+													Sugerido: R$ {priceSuggestions.suggested?.toFixed(2) || '0.00'}
+												</button>
+												<button
+													type="button"
+													onClick={() =>
+														setFormData((prev) => ({
+															...prev,
+															salePrice:
+																priceSuggestions.competitive?.toFixed(2) || '0.00',
+														}))
+													}
+													className="p-2 bg-blue-100 text-blue-800 rounded hover:bg-blue-200"
+												>
+													Competitivo: R${' '}
+													{priceSuggestions.competitive?.toFixed(2) || '0.00'}
+												</button>
+												<button
+													type="button"
+													onClick={() =>
+														setFormData((prev) => ({
+															...prev,
+															salePrice: priceSuggestions.premium?.toFixed(2) || '0.00',
+														}))
+													}
+													className="p-2 bg-purple-100 text-purple-800 rounded hover:bg-purple-200"
+												>
+													Premium: R$ {priceSuggestions.premium?.toFixed(2) || '0.00'}
+												</button>
+												<button
+													type="button"
+													onClick={() =>
+														setFormData((prev) => ({
+															...prev,
+															salePrice: priceSuggestions.budget?.toFixed(2) || '0.00',
+														}))
+													}
+													className="p-2 bg-orange-100 text-orange-800 rounded hover:bg-orange-200"
+												>
+													Econômico: R$ {priceSuggestions.budget?.toFixed(2) || '0.00'}
+												</button>
+											</div>
+										</div>
+									)}
 								</div>
 							</div>
 						</div>
@@ -543,24 +682,24 @@ const ProductsPage: React.FC = () => {
 					<div className="border-b border-gray-200">
 						<nav className="-mb-px flex space-x-8" aria-label="Sub Tabs">
 							<button
+								key="basic-subtab"
 								type="button"
 								onClick={() => setActiveSubTab('basic')}
-								className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
-									activeSubTab === 'basic'
-										? 'border-blue-500 text-blue-600'
-										: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-								}`}
+								className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${activeSubTab === 'basic'
+									? 'border-blue-500 text-blue-600'
+									: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+									}`}
 							>
 								Informações Básicas
 							</button>
 							<button
+								key="pricesStock-subtab"
 								type="button"
 								onClick={() => setActiveSubTab('pricesStock')}
-								className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
-									activeSubTab === 'pricesStock'
-										? 'border-blue-500 text-blue-600'
-										: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-								}`}
+								className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${activeSubTab === 'pricesStock'
+									? 'border-blue-500 text-blue-600'
+									: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+									}`}
 							>
 								Preços e Estoque
 							</button>
@@ -584,20 +723,34 @@ const ProductsPage: React.FC = () => {
 									code: '',
 									name: '',
 									description: '',
-									unit: 'pc',
+									unit: 'un',
 									stock: '',
 									saleType: 'unit' as 'unit' | 'fractional',
 									purchasePrice: '',
 									markup: '',
 									salePrice: '',
 								});
+								setEditingProduct(null);
 								setActiveSubTab('basic');
 							}}
 						>
-							Limpar
+							{editingProduct ? 'Cancelar' : 'Limpar'}
 						</Button>
-						<Button type="submit" variant="primary">
-							Cadastrar Produto
+						<Button
+							type="submit"
+							variant="primary"
+							disabled={
+								isLoading ||
+								!formData.name ||
+								!formData.purchasePrice ||
+								!formData.salePrice
+							}
+						>
+							{isLoading
+								? 'Salvando...'
+								: editingProduct
+									? 'Atualizar Produto'
+									: 'Cadastrar Produto'}
 						</Button>
 					</div>
 				</form>
@@ -629,24 +782,24 @@ const ProductsPage: React.FC = () => {
 					<div className="border-b border-gray-200">
 						<nav className="-mb-px flex space-x-8" aria-label="Tabs">
 							<button
+								key="list-tab"
 								type="button"
 								onClick={() => handleTabChange('list')}
-								className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
-									activeTab === 'list'
-										? 'border-blue-500 text-blue-600'
-										: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-								}`}
+								className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'list'
+									? 'border-blue-500 text-blue-600'
+									: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+									}`}
 							>
 								Listagem
 							</button>
 							<button
+								key="register-tab"
 								type="button"
 								onClick={() => handleTabChange('register')}
-								className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
-									activeTab === 'register'
-										? 'border-blue-500 text-blue-600'
-										: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-								}`}
+								className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'register'
+									? 'border-blue-500 text-blue-600'
+									: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+									}`}
 							>
 								Cadastro
 							</button>

@@ -34,6 +34,9 @@ const ProductsPage = lazy(
 	() => import('../components/features/products/ProductsPage'),
 );
 const UsersPage = lazy(() => import('../components/features/users/UsersPage'));
+const ReportsPage = lazy(
+	() => import('../components/features/reports/ReportsPage'),
+);
 
 // Loading component
 const LoadingSpinner = () => (
@@ -169,6 +172,18 @@ export const router = createHashRouter([
 				<LayoutWrapper title="Gestão de Usuários">
 					<LazyWrapper>
 						<UsersPage />
+					</LazyWrapper>
+				</LayoutWrapper>
+			</ProtectedRoute>
+		),
+	},
+	{
+		path: '/reports',
+		element: (
+			<ProtectedRoute requiredPermission="modules.reports">
+				<LayoutWrapper title="Relatórios">
+					<LazyWrapper>
+						<ReportsPage />
 					</LazyWrapper>
 				</LayoutWrapper>
 			</ProtectedRoute>

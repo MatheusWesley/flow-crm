@@ -8,6 +8,11 @@ export const formatCurrency = (value: number): string => {
 };
 
 export const formatCPF = (cpf: string): string => {
+	// Check if cpf is valid before processing
+	if (!cpf || typeof cpf !== 'string') {
+		return '';
+	}
+
 	const cleaned = cpf.replace(/\D/g, '');
 	const match = cleaned.match(/^(\d{3})(\d{3})(\d{3})(\d{2})$/);
 	if (match) {
@@ -17,6 +22,11 @@ export const formatCPF = (cpf: string): string => {
 };
 
 export const validateCPF = (cpf: string): boolean => {
+	// Check if cpf is valid before processing
+	if (!cpf || typeof cpf !== 'string') {
+		return false;
+	}
+
 	const cleaned = cpf.replace(/\D/g, '');
 	if (cleaned.length !== 11) return false;
 
@@ -60,10 +70,9 @@ export const generateProductCode = (): string => {
 
 // Export new services
 export { default as AutoCodeService } from './autoCodeService';
+
 // Export error handling utilities
 export * from './errorHandling';
-export type { PriceCalculationConfig } from './priceCalculationService';
-export { default as PriceCalculationService } from './priceCalculationService';
 
 // Export validation utilities
 export * from './validationUtils';

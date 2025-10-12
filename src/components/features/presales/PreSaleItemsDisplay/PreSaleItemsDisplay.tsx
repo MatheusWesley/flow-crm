@@ -1,6 +1,6 @@
 import { Package } from 'lucide-react';
 import type React from 'react';
-import type { PreSaleItem } from '../../../../types';
+import type { PreSaleItem } from '../../../../types/api';
 import { formatCurrency } from '../../../../utils';
 
 interface PreSaleItemsDisplayProps {
@@ -10,9 +10,12 @@ interface PreSaleItemsDisplayProps {
 const PreSaleItemsDisplay: React.FC<PreSaleItemsDisplayProps> = ({ items }) => {
 	if (items.length === 0) {
 		return (
-			<div className="flex flex-col items-center justify-center py-8 text-gray-500">
-				<Package className="h-12 w-12 text-gray-300 mb-3" />
-				<p className="text-sm">Nenhum item encontrado</p>
+			<div className="flex flex-col items-center justify-center py-12 text-gray-500 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
+				<Package className="h-16 w-16 text-gray-300 mb-4" />
+				<p className="text-lg font-medium">Nenhum item encontrado</p>
+				<p className="text-sm text-gray-400 mt-1">
+					Esta pré-venda não possui itens
+				</p>
 			</div>
 		);
 	}
@@ -20,146 +23,146 @@ const PreSaleItemsDisplay: React.FC<PreSaleItemsDisplayProps> = ({ items }) => {
 	return (
 		<div className="w-full">
 			{/* Mobile Card Layout (< md) */}
-			<div
-				className="block md:hidden space-y-3"
-				role="list"
-				aria-label="Itens da pré-venda"
-			>
+			<ul className="block md:hidden space-y-4">
 				{items.map((item, index) => (
-					<div
+					<li
 						key={item.id}
-						className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2 transition-shadow duration-200"
-						role="listitem"
-						tabIndex={0}
-						aria-label={`Item ${index + 1}: ${item.product.name}, ${item.quantity} ${item.product.unit}, ${formatCurrency(item.totalPrice)}`}
+						className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-lg focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2 transition-all duration-200"
+						aria-label={`Item ${index + 1}: ${item.product.name}, ${item.quantity} ${item.product.unit}, ${formatCurrency(Number(item.totalPrice))}`}
 					>
-						<div className="flex justify-between items-start mb-3">
+						<div className="flex justify-between items-start mb-4">
 							<div className="flex-1 min-w-0">
-								<h4 className="font-semibold text-gray-900 truncate">
+								<h4 className="font-bold text-gray-900 text-lg leading-tight">
 									{item.product.name}
 								</h4>
-								<p className="text-sm text-gray-500 mt-1">
+								<p className="text-sm text-gray-500 mt-1 bg-gray-100 px-2 py-1 rounded-md inline-block">
 									Código: {item.product.code}
 								</p>
 							</div>
-							<div className="ml-3 text-right">
-								<p className="font-bold text-lg text-green-600 tabular-nums">
-									{formatCurrency(item.totalPrice)}
+							<div className="ml-4 text-right">
+								<p className="font-bold text-2xl text-green-600 tabular-nums">
+									{formatCurrency(Number(item.totalPrice))}
 								</p>
+								<p className="text-xs text-gray-500 mt-1">Total</p>
 							</div>
 						</div>
 
-						<div className="grid grid-cols-2 gap-4 text-sm">
-							<div>
-								<span className="text-gray-600">Quantidade:</span>
-								<div className="mt-1">
-									<span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-										{item.quantity} {item.product.unit}
+						<div className="grid grid-cols-2 gap-6">
+							<div className="text-center">
+								<span className="text-xs text-gray-500 uppercase tracking-wide font-medium block mb-2">
+									Quantidade
+								</span>
+								<div className="bg-blue-50 rounded-lg p-3">
+									<span className="text-lg font-bold text-blue-700">
+										{Number(item.quantity)}
+									</span>
+									<span className="text-sm text-blue-600 ml-1">
+										{item.product.unit}
 									</span>
 								</div>
 							</div>
-							<div className="text-right">
-								<span className="text-gray-600">Preço Unit.:</span>
-								<p className="font-medium tabular-nums mt-1">
-									{formatCurrency(item.unitPrice)}
-								</p>
+							<div className="text-center">
+								<span className="text-xs text-gray-500 uppercase tracking-wide font-medium block mb-2">
+									Preço Unit.
+								</span>
+								<div className="bg-purple-50 rounded-lg p-3">
+									<span className="text-lg font-bold text-purple-700 tabular-nums">
+										{formatCurrency(Number(item.unitPrice))}
+									</span>
+								</div>
 							</div>
 						</div>
-					</div>
+					</li>
 				))}
-			</div>
+			</ul>
 
 			{/* Desktop Table Layout (≥ md) */}
 			<div className="hidden md:block">
-				<div
-					className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm"
-					role="table"
-					aria-label="Itens da pré-venda"
-				>
+				<table className="w-full bg-white border border-gray-200 rounded-xl overflow-hidden shadow-lg">
 					{/* Table Header */}
-					<div
-						className="bg-gray-50 px-6 py-3 border-b border-gray-200"
-						role="rowgroup"
-					>
-						<div
-							className="grid grid-cols-12 gap-4 text-xs font-medium text-gray-700 uppercase tracking-wider"
-							role="row"
-						>
-							<div className="col-span-5" role="columnheader" aria-sort="none">
+					<thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+						<tr>
+							<th
+								scope="col"
+								className="px-6 py-4 text-left text-sm font-bold text-gray-700 uppercase tracking-wider"
+							>
 								Produto
-							</div>
-							<div
-								className="col-span-2 text-center"
-								role="columnheader"
-								aria-sort="none"
+							</th>
+							<th
+								scope="col"
+								className="px-6 py-4 text-center text-sm font-bold text-gray-700 uppercase tracking-wider"
 							>
 								Quantidade
-							</div>
-							<div
-								className="col-span-2 text-right"
-								role="columnheader"
-								aria-sort="none"
+							</th>
+							<th
+								scope="col"
+								className="px-6 py-4 text-center text-sm font-bold text-gray-700 uppercase tracking-wider"
 							>
 								Preço Unit.
-							</div>
-							<div
-								className="col-span-3 text-right"
-								role="columnheader"
-								aria-sort="none"
+							</th>
+							<th
+								scope="col"
+								className="px-6 py-4 text-center text-sm font-bold text-gray-700 uppercase tracking-wider"
 							>
 								Total
-							</div>
-						</div>
-					</div>
+							</th>
+						</tr>
+					</thead>
 
 					{/* Table Body */}
-					<div className="divide-y divide-gray-200" role="rowgroup">
+					<tbody className="divide-y divide-gray-100">
 						{items.map((item, index) => (
-							<div
+							<tr
 								key={item.id}
-								className={`grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2 transition-colors duration-150 ${
-									index % 2 === 0 ? 'bg-white' : 'bg-gray-25'
+								className={`hover:bg-blue-50 transition-all duration-200 ${
+									index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
 								}`}
-								role="row"
-								tabIndex={0}
-								aria-label={`Item ${index + 1}: ${item.product.name}, ${item.quantity} ${item.product.unit}, ${formatCurrency(item.totalPrice)}`}
 							>
 								{/* Product Info */}
-								<div className="col-span-5 flex items-center min-w-0">
+								<td className="px-6 py-5">
 									<div className="flex-1 min-w-0">
-										<h4 className="font-semibold text-gray-900 truncate">
+										<h4 className="font-bold text-gray-900 text-lg leading-tight">
 											{item.product.name}
 										</h4>
-										<p className="text-sm text-gray-500 truncate">
-											{item.product.code}
+										<p className="text-sm text-gray-500 mt-1 bg-gray-100 px-2 py-1 rounded-md inline-block">
+											Código: {item.product.code}
 										</p>
 									</div>
-								</div>
+								</td>
 
 								{/* Quantity */}
-								<div className="col-span-2 flex items-center justify-center">
-									<span className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
-										{item.quantity} {item.product.unit}
-									</span>
-								</div>
+								<td className="px-6 py-5 text-center">
+									<div className="bg-blue-50 rounded-lg px-4 py-2 inline-block">
+										<span className="text-xl font-bold text-blue-700">
+											{Number(item.quantity)}
+										</span>
+										<span className="text-sm text-blue-600 ml-1">
+											{item.product.unit}
+										</span>
+									</div>
+								</td>
 
 								{/* Unit Price */}
-								<div className="col-span-2 flex items-center justify-end">
-									<span className="font-medium tabular-nums text-gray-900">
-										{formatCurrency(item.unitPrice)}
-									</span>
-								</div>
+								<td className="px-6 py-5 text-center">
+									<div className="bg-purple-50 rounded-lg px-4 py-2 inline-block">
+										<span className="text-lg font-bold tabular-nums text-purple-700">
+											{formatCurrency(Number(item.unitPrice))}
+										</span>
+									</div>
+								</td>
 
 								{/* Total Price */}
-								<div className="col-span-3 flex items-center justify-end">
-									<span className="font-bold text-lg tabular-nums text-green-600">
-										{formatCurrency(item.totalPrice)}
-									</span>
-								</div>
-							</div>
+								<td className="px-6 py-5 text-center">
+									<div className="bg-green-50 rounded-lg px-4 py-2 inline-block">
+										<span className="text-2xl font-bold tabular-nums text-green-700">
+											{formatCurrency(Number(item.totalPrice))}
+										</span>
+									</div>
+								</td>
+							</tr>
 						))}
-					</div>
-				</div>
+					</tbody>
+				</table>
 			</div>
 		</div>
 	);

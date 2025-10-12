@@ -6,16 +6,17 @@ import {
 	Users,
 } from 'lucide-react';
 import type React from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
-import {
-	MockDashboardService,
-	type SalesData,
-} from '../../../data/mockDashboardService';
+import { useDashboard } from '../../../hooks/useDashboard';
+import { useCustomers } from '../../../hooks/useCustomers';
+import { useProducts } from '../../../hooks/useProducts';
+import { presaleService } from '../../../services/presaleService';
 import toastService, { TOAST_MESSAGES } from '../../../services/ToastService';
-import type { Customer, PreSale, Product } from '../../../types';
-import { PresaleModal } from '../shared/presaleModal';
+import type { Customer } from '../../../types/api';
+import type { PreSale } from '../../../types';
+import { UnifiedPresaleModal } from '../shared/presaleModal';
 
 // Type for metrics cards
 interface MetricCardData {
@@ -32,6 +33,8 @@ interface MetricCardData {
 
 import MetricsCard from './MetricsCard';
 import SalesChart from './SalesChart';
+import RecentActivities from './RecentActivities';
+import InventoryAlerts from './InventoryAlerts';
 
 interface DashboardProps {
 	className?: string;
@@ -41,192 +44,99 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
 	const navigate = useNavigate();
 	const { isAdmin, isEmployee, hasPermission, user } = useAuth();
 
-	const [salesData, setSalesData] = useState<SalesData[]>([]);
 	const [showPresaleModal, setShowPresaleModal] = useState(false);
-
-	const [loadingStates, setLoadingStates] = useState({
-		metrics: true,
-		sales: true,
-	});
-
-	const [errors, setErrors] = useState({
-		metrics: '',
-		sales: '',
-	});
-
 	const [isRefreshing, setIsRefreshing] = useState(false);
 
-	// Dados reais do sistema - produtos e clientes
-	const [customers] = useState<Customer[]>([
-		{
-			id: '1',
-			name: 'João Silva',
-			email: 'joao.silva@email.com',
-			phone: '(11) 99999-9999',
-			cpf: '123.456.789-01',
-			address: 'Rua Teste, 123',
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		},
-		{
-			id: '2',
-			name: 'Maria Oliveira',
-			email: 'maria.oliveira@email.com',
-			phone: '(21) 98888-8888',
-			cpf: '234.567.890-12',
-			address: 'Avenida Central, 456',
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		},
-	]);
+	// Hook personalizado para dados do dashboard
+	const {
+		metrics,
+		salesData,
+		recentActivities,
+		inventoryAlerts,
+		loading,
+		errors,
+		refresh,
+	} = useDashboard();
 
-	const [products] = useState<Product[]>([
-		{
-			id: '1',
-			code: 'PROD0000001',
-			name: 'Pilhas Alcalinas AA de Longa Duração (Pacote Econômico com 4 Unidades)',
-			description:
-				'Pacote com 4 unidades de pilhas alcalinas AA - Compra de emergência para controles, relógios e pequenos brinquedos.',
-			unit: 'pc',
-			stock: 50,
-			saleType: 'unit',
-			purchasePrice: 12.0,
-			salePrice: 18.0,
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		},
-		{
-			id: '2',
-			code: 'PROD0000002',
-			name: 'Pão de Alho Congelado Tradicional (4un)',
-			description: '',
-			unit: 'un',
-			stock: 35,
-			saleType: 'unit',
-			purchasePrice: 8.5,
-			salePrice: 12.0,
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		},
-	]);
+	// Carregar dados reais do banco de dados
+	const {
+		customers,
+		error: customersError,
+		fetchCustomers,
+	} = useCustomers({ page: 1, limit: 100 }); // Carregar mais clientes para o modal
 
-	const loadDashboardData = useCallback(async () => {
-		try {
-			// Simular carregamento de métricas (dados já calculados localmente)
-			setLoadingStates((prev) => ({ ...prev, metrics: true }));
-			setErrors((prev) => ({ ...prev, metrics: '' }));
-
-			// Simular delay de rede
-			await new Promise((resolve) => setTimeout(resolve, 500));
-
-			setLoadingStates((prev) => ({ ...prev, metrics: false }));
-		} catch (error) {
-			setErrors((prev) => ({
-				...prev,
-				metrics: error instanceof Error ? error.message : 'Erro desconhecido',
-			}));
-			setLoadingStates((prev) => ({ ...prev, metrics: false }));
-		}
-
-		try {
-			// Gerar dados reais de vendas dos últimos 7 dias baseado nos produtos do sistema
-			setLoadingStates((prev) => ({ ...prev, sales: true }));
-			setErrors((prev) => ({ ...prev, sales: '' }));
-
-			// Simular delay de rede
-			await new Promise((resolve) => setTimeout(resolve, 500));
-
-			const generateRealSalesData = (): SalesData[] => {
-				const data: SalesData[] = [];
-				const today = new Date();
-
-				for (let i = 6; i >= 0; i--) {
-					const date = new Date(today);
-					date.setDate(date.getDate() - i);
-
-					// Calcular vendas baseadas nos produtos reais
-					const dailySales = Math.floor(Math.random() * 8) + 2; // 2-10 vendas por dia
-					const dailyRevenue =
-						products.reduce((total, product) => {
-							// Simular que alguns produtos foram vendidos
-							const soldQuantity = Math.floor(Math.random() * 3);
-							return total + product.salePrice * soldQuantity;
-						}, 0) + Math.floor(Math.random() * 500); // Adicionar variação
-
-					data.push({
-						date: date.toISOString().split('T')[0],
-						sales: dailySales,
-						revenue: Math.max(dailyRevenue, 200), // Mínimo de R$ 200 por dia
-					});
-				}
-
-				return data;
-			};
-
-			const realSalesData = generateRealSalesData();
-			setSalesData(realSalesData);
-			setLoadingStates((prev) => ({ ...prev, sales: false }));
-		} catch (error) {
-			setErrors((prev) => ({
-				...prev,
-				sales: error instanceof Error ? error.message : 'Erro desconhecido',
-			}));
-			setLoadingStates((prev) => ({ ...prev, sales: false }));
-		}
-	}, [products]);
+	const {
+		products,
+		error: productsError,
+		fetchProducts,
+	} = useProducts({ page: 1, limit: 100 }); // Carregar mais produtos para o modal
 
 	const handleRefresh = async () => {
 		setIsRefreshing(true);
-		await loadDashboardData();
+		await Promise.all([
+			refresh(),
+			fetchCustomers({ page: 1, limit: 100 }),
+			fetchProducts({ page: 1, limit: 100 }),
+		]);
 		setIsRefreshing(false);
 	};
 
+	// Mostrar erros se houver (apenas uma vez por erro)
 	useEffect(() => {
-		loadDashboardData();
-	}, [loadDashboardData]);
+		if (customersError) {
+			console.error('Erro ao carregar clientes:', customersError);
+		}
+	}, [customersError]);
 
-	// Calcular dados reais do sistema
-	const calculateRealMetrics = () => {
-		// Vendas hoje - simulando com base nos dados reais (em um sistema real viria do backend)
-		const salesToday = 2450.0; // Valor baseado nas vendas reais do dia
+	useEffect(() => {
+		if (productsError) {
+			console.error('Erro ao carregar produtos:', productsError);
+		}
+	}, [productsError]);
 
-		// Receita mensal - calculada com base nos produtos e vendas
-		const monthlyRevenue = products.reduce((total, product) => {
-			return total + product.salePrice * Math.floor(product.stock * 0.1); // Simula 10% do estoque vendido no mês
-		}, 0);
-
-		return {
-			salesToday: {
-				value: salesToday,
-				trend: { value: 8.5, isPositive: true },
-			},
-			monthlyRevenue: {
-				value: monthlyRevenue,
-				trend: { value: 12.3, isPositive: true },
-			},
-		};
+	// Converter dados da API para o formato esperado pelo modal
+	const convertCustomersForModal = (apiCustomers: Customer[] | undefined) => {
+		if (!apiCustomers) return [];
+		return apiCustomers.map(customer => ({
+			...customer,
+			createdAt: new Date(customer.createdAt),
+			updatedAt: new Date(customer.updatedAt),
+		}));
 	};
 
-	const realMetrics = calculateRealMetrics();
 
-	const metricsCards: MetricCardData[] = [
+
+	// Criar cards de métricas baseados nos dados reais
+	const metricsCards: MetricCardData[] = metrics ? [
 		{
 			title: 'Vendas Hoje',
-			value: MockDashboardService.formatCurrency(realMetrics.salesToday.value),
+			value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(metrics.salesToday.value),
 			icon: <ShoppingCart className="w-6 h-6" />,
-			trend: realMetrics.salesToday.trend,
+			trend: metrics.salesToday.trend,
 			color: 'green',
 		},
 		{
 			title: 'Receita Mensal',
-			value: MockDashboardService.formatCurrency(
-				realMetrics.monthlyRevenue.value,
-			),
+			value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(metrics.monthlyRevenue.value),
 			icon: <DollarSign className="w-6 h-6" />,
-			trend: realMetrics.monthlyRevenue.trend,
+			trend: metrics.monthlyRevenue.trend,
 			color: 'blue',
 		},
-	];
+		{
+			title: 'Total de Produtos',
+			value: new Intl.NumberFormat('pt-BR').format(metrics.totalProducts.value),
+			icon: <Package className="w-6 h-6" />,
+			trend: metrics.totalProducts.trend,
+			color: 'purple',
+		},
+		{
+			title: 'Clientes Ativos',
+			value: new Intl.NumberFormat('pt-BR').format(metrics.activeCustomers.value),
+			icon: <Users className="w-6 h-6" />,
+			trend: metrics.activeCustomers.trend,
+			color: 'indigo',
+		},
+	] : [];
 
 	const handleNewSale = () => {
 		setShowPresaleModal(true);
@@ -240,15 +150,38 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
 		navigate('/customers');
 	};
 
-	const handlePresaleSubmit = (
+	const handlePresaleSubmit = async (
 		presaleData: Omit<PreSale, 'id' | 'createdAt' | 'updatedAt'>,
 	) => {
-		// In a real app, this would save to the backend
-		console.log('Nova pré-venda criada:', presaleData);
-		toastService.success(TOAST_MESSAGES.presale.created);
+		try {
+			// Converter dados do modal para o formato da API
+			const apiPresaleData = {
+				customerId: presaleData.customer.id,
+				status: 'draft' as const,
+				discount: presaleData.discount?.toString() || '0',
+				discountType: presaleData.discountType || 'percentage',
+				discountPercentage: presaleData.discountType === 'percentage' ? presaleData.discount?.toString() || '0' : '0',
+				notes: presaleData.notes || '',
+				items: presaleData.items.map(item => ({
+					productId: item.product.id,
+					quantity: item.quantity.toString(),
+					unitPrice: item.unitPrice.toString(),
+				})),
+			};
 
-		// Optionally redirect to presales page to see the created presale
-		navigate('/presales');
+			const response = await presaleService.create(apiPresaleData);
+
+			if (response.success) {
+				toastService.success(TOAST_MESSAGES.presale.created);
+				// Redirect to presales page to see the created presale
+				navigate('/presales');
+			} else {
+				toastService.error('Erro ao criar pré-venda: ' + response.message);
+			}
+		} catch (error) {
+			console.error('Erro ao criar pré-venda:', error);
+			toastService.error('Erro ao criar pré-venda. Tente novamente.');
+		}
 	};
 
 	return (
@@ -287,7 +220,7 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
 			</div>
 
 			{/* KPI Cards Grid */}
-			<div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
 				{metricsCards.map((card) => (
 					<MetricsCard
 						key={card.title}
@@ -296,19 +229,19 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
 						icon={card.icon}
 						trend={card.trend}
 						color={card.color}
-						loading={loadingStates.metrics}
+						loading={loading.metrics}
 						error={errors.metrics}
 					/>
 				))}
 			</div>
 
 			{/* Main Content Grid */}
-			<div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 				{/* Sales Chart */}
-				<div className="lg:col-span-3">
+				<div className="lg:col-span-2">
 					<SalesChart
 						data={salesData}
-						loading={loadingStates.sales}
+						loading={loading.sales}
 						error={errors.sales}
 					/>
 				</div>
@@ -380,15 +313,34 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
 				</div>
 			</div>
 
+			{/* Additional Dashboard Widgets */}
+			<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+				{/* Recent Activities */}
+				<RecentActivities
+					activities={recentActivities}
+					loading={loading.activities}
+					error={errors.activities}
+				/>
+
+				{/* Inventory Alerts */}
+				<InventoryAlerts
+					alerts={inventoryAlerts}
+					loading={loading.alerts}
+					error={errors.alerts}
+				/>
+			</div>
+
 			{/* Modal para Nova Pré-venda */}
-			<PresaleModal
-				isOpen={showPresaleModal}
-				onClose={() => setShowPresaleModal(false)}
-				onSubmit={handlePresaleSubmit}
-				customers={customers}
-				products={products}
-				title="Nova Pré-venda"
-			/>
+			{customers && products && (
+				<UnifiedPresaleModal
+					isOpen={showPresaleModal}
+					onClose={() => setShowPresaleModal(false)}
+					onSubmit={handlePresaleSubmit}
+					customers={convertCustomersForModal(customers)}
+					products={(products || []).map(p => ({ ...p, purchasePrice: Number(p.purchasePrice), salePrice: Number(p.salePrice), createdAt: new Date(p.createdAt), updatedAt: new Date(p.updatedAt) })) as any}
+					title="Nova Pré-venda"
+				/>
+			)}
 		</div>
 	);
 };

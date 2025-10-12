@@ -5,12 +5,15 @@ interface Props {
 	children: ReactNode;
 	fallback?: ReactNode;
 	onError?: (error: Error, errorInfo: ErrorInfo) => void;
+	showRetry?: boolean;
+	retryOperation?: () => Promise<void>;
 }
 
 interface State {
 	hasError: boolean;
 	error: Error | null;
 	errorInfo: ErrorInfo | null;
+	isRetrying: boolean;
 }
 
 /**
@@ -20,7 +23,12 @@ interface State {
 class ErrorBoundary extends Component<Props, State> {
 	constructor(props: Props) {
 		super(props);
-		this.state = { hasError: false, error: null, errorInfo: null };
+		this.state = {
+			hasError: false,
+			error: null,
+			errorInfo: null,
+			isRetrying: false,
+		};
 	}
 
 	static getDerivedStateFromError(error: Error): State {
@@ -28,6 +36,7 @@ class ErrorBoundary extends Component<Props, State> {
 			hasError: true,
 			error,
 			errorInfo: null,
+			isRetrying: false,
 		};
 	}
 
@@ -49,8 +58,29 @@ class ErrorBoundary extends Component<Props, State> {
 		}
 	}
 
-	handleRetry = () => {
-		this.setState({ hasError: false, error: null, errorInfo: null });
+	handleRetry = async () => {
+		if (this.props.retryOperation) {
+			this.setState({ isRetrying: true });
+			try {
+				await this.props.retryOperation();
+				this.setState({
+					hasError: false,
+					error: null,
+					errorInfo: null,
+					isRetrying: false,
+				});
+			} catch (error) {
+				this.setState({ isRetrying: false });
+				// Error will be caught by componentDidCatch again
+			}
+		} else {
+			this.setState({
+				hasError: false,
+				error: null,
+				errorInfo: null,
+				isRetrying: false,
+			});
+		}
 	};
 
 	handleGoHome = () => {
@@ -108,28 +138,60 @@ class ErrorBoundary extends Component<Props, State> {
 						)}
 
 						<div className="space-y-3">
-							<button
-								type="button"
-								onClick={this.handleRetry}
-								className="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-							>
-								<svg
-									className="mr-2 h-4 w-4"
-									fill="none"
-									viewBox="0 0 24 24"
-									stroke="currentColor"
-									aria-label="Ícone de tentar novamente"
+							{this.props.showRetry !== false && (
+								<button
+									type="button"
+									onClick={this.handleRetry}
+									disabled={this.state.isRetrying}
+									className="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
 								>
-									<title>Ícone de tentar novamente</title>
-									<path
-										strokeLinecap="round"
-										strokeLinejoin="round"
-										strokeWidth={2}
-										d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-									/>
-								</svg>
-								Tentar Novamente
-							</button>
+									{this.state.isRetrying ? (
+										<>
+											<svg
+												className="animate-spin mr-2 h-4 w-4"
+												fill="none"
+												viewBox="0 0 24 24"
+												aria-label="Carregando"
+											>
+												<title>Carregando</title>
+												<circle
+													className="opacity-25"
+													cx="12"
+													cy="12"
+													r="10"
+													stroke="currentColor"
+													strokeWidth="4"
+												/>
+												<path
+													className="opacity-75"
+													fill="currentColor"
+													d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+												/>
+											</svg>
+											Tentando novamente...
+										</>
+									) : (
+										<>
+											<svg
+												className="mr-2 h-4 w-4"
+												fill="none"
+												viewBox="0 0 24 24"
+												stroke="currentColor"
+												aria-label="Ícone de tentar novamente"
+											>
+												<title>Ícone de tentar novamente</title>
+												<path
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													strokeWidth={2}
+													d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+												/>
+											</svg>
+											Tentar Novamente
+										</>
+									)}
+								</button>
+							)}
 
 							<button
 								type="button"

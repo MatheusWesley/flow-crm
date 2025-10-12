@@ -6,7 +6,8 @@ import {
 	useEffect,
 	useReducer,
 } from 'react';
-import { mockAuthService } from '../data/mockAuthService';
+import { authDebugLog } from '../config/environment';
+import { authService } from '../services/authService';
 import type {
 	AuthContextType,
 	AuthError,
@@ -14,6 +15,7 @@ import type {
 	UserCredentials,
 	UserPermissions,
 } from '../types';
+import type { User } from '../types/api';
 
 // Auth state interface for reducer
 interface AuthState {
@@ -165,45 +167,100 @@ interface AuthProviderProps {
 	children: React.ReactNode;
 }
 
+// Helper function to extract permissions from API User
+const extractPermissionsFromUser = (user: User): UserPermissions => {
+	// Use permissions from database if available, otherwise use defaults based on role
+	if (user.permissions) {
+		return user.permissions as UserPermissions;
+	}
+	
+	// Fallback to default permissions based on role
+	if (user.role === 'admin') {
+		return {
+			modules: {
+				products: true,
+				customers: true,
+				reports: true,
+				paymentMethods: true,
+				userManagement: true,
+			},
+			presales: {
+				canCreate: true,
+				canViewOwn: true,
+				canViewAll: true,
+			},
+		};
+	} else {
+		return {
+			modules: {
+				products: true,
+				customers: true,
+				reports: false,
+				paymentMethods: false,
+				userManagement: false,
+			},
+			presales: {
+				canCreate: true,
+				canViewOwn: true,
+				canViewAll: false,
+			},
+		};
+	}
+};
+
+// Helper function to convert API User to AuthUser
+const convertApiUserToAuthUser = (user: User): AuthUser => {
+	return {
+		id: user.id,
+		name: user.name,
+		email: user.email,
+		password: '', // Don't store password in context
+		userType: user.role === 'admin' ? 'admin' : 'employee',
+		permissions: extractPermissionsFromUser(user),
+		isActive: true,
+		createdAt: new Date(user.createdAt),
+		updatedAt: new Date(user.updatedAt),
+		lastLoginAt: new Date(),
+	};
+};
+
 // AuthProvider component
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 	const [state, dispatch] = useReducer(authReducer, initialState);
 
-	// Initialize auth state from localStorage on mount
+	// Initialize auth state from stored tokens on mount
 	useEffect(() => {
 		const initializeAuth = async () => {
 			dispatch({ type: 'INIT_START' });
 
 			try {
-				// Small delay to show loading state
-				await new Promise((resolve) => setTimeout(resolve, 300));
+				authDebugLog('Initializing authentication context');
 
-				const storedUser = mockAuthService.getStoredUser();
-				const permissions = storedUser ? storedUser.permissions : null;
+				// Try to initialize auth with stored tokens
+				const user = await authService.initializeAuth();
 
-				// Check if session is still valid
-				if (storedUser) {
-					const lastActivity = localStorage.getItem('flowcrm_last_activity');
-					if (lastActivity) {
-						const lastActivityDate = new Date(lastActivity);
-						const now = new Date();
-						const timeDiff = (now.getTime() - lastActivityDate.getTime()) / (1000 * 60); // minutes
+				let authUser: AuthUser | null = null;
+				let permissions: UserPermissions | null = null;
 
-						// If more than 30 minutes of inactivity, expire session
-						if (timeDiff > 30) {
-							mockAuthService.logout();
-							dispatch({ type: 'SESSION_EXPIRED' });
-							return;
-						}
-					}
+				if (user) {
+					// Convert API User to AuthUser and extract permissions
+					authUser = convertApiUserToAuthUser(user);
+					permissions = extractPermissionsFromUser(user);
+
+					authDebugLog('Authentication initialized successfully', {
+						userId: user.id,
+						email: user.email,
+					});
+				} else {
+					authDebugLog('No valid authentication found');
 				}
 
 				dispatch({
 					type: 'INIT_SUCCESS',
-					payload: { user: storedUser, permissions },
+					payload: { user: authUser, permissions },
 				});
 			} catch (error) {
-				console.error('Failed to initialize authentication:', error);
+				authDebugLog('Failed to initialize authentication:', error);
 				dispatch({
 					type: 'INIT_SUCCESS',
 					payload: { user: null, permissions: null },
@@ -219,24 +276,46 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		dispatch({ type: 'LOGIN_START' });
 
 		try {
-			const user = await mockAuthService.login(credentials);
-			const permissions = user.permissions;
+			authDebugLog('Attempting login', { email: credentials.email });
+
+			const loginResponse = await authService.login(credentials);
+			const authUser = convertApiUserToAuthUser(loginResponse.user);
+			const permissions = extractPermissionsFromUser(loginResponse.user);
 
 			dispatch({
 				type: 'LOGIN_SUCCESS',
-				payload: { user, permissions },
+				payload: { user: authUser, permissions },
+			});
+
+			authDebugLog('Login successful', {
+				userId: authUser.id,
+				email: authUser.email,
 			});
 		} catch (error) {
-			const authError: AuthError = error as AuthError;
+			authDebugLog('Login failed:', error);
+
+			const authError: AuthError = {
+				message: error instanceof Error ? error.message : 'Login failed',
+				code: 'INVALID_CREDENTIALS',
+			};
+
 			dispatch({ type: 'LOGIN_ERROR', payload: authError });
 			throw authError; // Re-throw for component handling
 		}
 	}, []);
 
 	// Logout function
-	const logout = useCallback(() => {
-		mockAuthService.logout();
-		dispatch({ type: 'LOGOUT' });
+	const logout = useCallback(async () => {
+		try {
+			authDebugLog('Attempting logout');
+			await authService.logout();
+			dispatch({ type: 'LOGOUT' });
+			authDebugLog('Logout successful');
+		} catch (error) {
+			authDebugLog('Logout error (proceeding anyway):', error);
+			// Even if server logout fails, clear local state
+			dispatch({ type: 'LOGOUT' });
+		}
 	}, []);
 
 	// Clear error function
@@ -252,6 +331,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		}
 	}, [state.user]);
 
+	// Listen for auth events from HTTP client
+	useEffect(() => {
+		const handleAuthLogout = (event: CustomEvent) => {
+			authDebugLog('Auth logout event received:', event.detail);
+			dispatch({ type: 'LOGOUT' });
+		};
+
+		window.addEventListener('auth:logout', handleAuthLogout as EventListener);
+
+		return () => {
+			window.removeEventListener(
+				'auth:logout',
+				handleAuthLogout as EventListener,
+			);
+		};
+	}, []);
+
 	// Session timeout monitoring
 	useEffect(() => {
 		if (!state.user || !state.isInitialized) return;
@@ -261,10 +357,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 			if (lastActivity) {
 				const lastActivityDate = new Date(lastActivity);
 				const now = new Date();
-				const timeDiff = (now.getTime() - lastActivityDate.getTime()) / (1000 * 60); // minutes
+				const timeDiff =
+					(now.getTime() - lastActivityDate.getTime()) / (1000 * 60); // minutes
 
 				if (timeDiff > state.sessionTimeout) {
-					mockAuthService.logout();
+					authDebugLog('Session timeout detected');
+					authService.logout();
 					dispatch({ type: 'SESSION_EXPIRED' });
 				}
 			}
@@ -280,20 +378,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 	useEffect(() => {
 		if (!state.user) return;
 
-		const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
-		
+		const activityEvents = [
+			'mousedown',
+			'mousemove',
+			'keypress',
+			'scroll',
+			'touchstart',
+			'click',
+		];
+
 		const handleActivity = () => {
 			updateActivity();
 		};
 
 		// Add event listeners for user activity
-		activityEvents.forEach(event => {
+		activityEvents.forEach((event) => {
 			document.addEventListener(event, handleActivity, true);
 		});
 
 		return () => {
 			// Remove event listeners
-			activityEvents.forEach(event => {
+			activityEvents.forEach((event) => {
 				document.removeEventListener(event, handleActivity, true);
 			});
 		};

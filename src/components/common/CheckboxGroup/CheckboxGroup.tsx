@@ -1,4 +1,5 @@
 import type React from 'react';
+import { useId } from 'react';
 
 export interface CheckboxOption {
 	value: string;
@@ -17,6 +18,7 @@ export interface CheckboxGroupProps {
 	disabled?: boolean;
 	className?: string;
 	direction?: 'horizontal' | 'vertical';
+	name?: string; // Optional custom name for the radio group
 }
 
 const CheckboxGroup: React.FC<CheckboxGroupProps> = ({
@@ -29,10 +31,19 @@ const CheckboxGroup: React.FC<CheckboxGroupProps> = ({
 	disabled,
 	className = '',
 	direction = 'horizontal',
+	name,
 }) => {
-	const handleOptionChange = (optionValue: string) => {
-		if (!disabled) {
-			onChange(optionValue);
+	// Generate unique ID for this group if name is not provided
+	const uniqueId = useId();
+	const groupName = name || `checkbox-group-${uniqueId}`;
+
+	const handleOptionChange = (eventOrValue: string | React.ChangeEvent<HTMLInputElement>) => {
+		if (disabled) return;
+
+		if (typeof eventOrValue === 'string') {
+			onChange(eventOrValue);
+		} else if (eventOrValue && eventOrValue.target) {
+			onChange(eventOrValue.target.value);
 		}
 	};
 
@@ -65,10 +76,10 @@ const CheckboxGroup: React.FC<CheckboxGroupProps> = ({
 						>
 							<input
 								type="radio"
-								name="checkbox-group"
+								name={groupName}
 								value={option.value}
 								checked={isSelected}
-								onChange={() => handleOptionChange(option.value)}
+								onChange={(e) => handleOptionChange(e)}
 								disabled={isDisabled}
 								className="sr-only"
 							/>
@@ -77,10 +88,9 @@ const CheckboxGroup: React.FC<CheckboxGroupProps> = ({
 							<div
 								className={`
                   relative w-5 h-5 rounded border-2 transition-all duration-200 mr-3
-                  ${
-										isSelected
-											? 'bg-blue-600 border-blue-600'
-											: 'bg-white border-gray-300 hover:border-blue-400'
+                  ${isSelected
+										? 'bg-blue-600 border-blue-600'
+										: 'bg-white border-gray-300 hover:border-blue-400'
 									}
                   ${isDisabled ? 'bg-gray-100 border-gray-300' : ''}
                 `}

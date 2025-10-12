@@ -161,9 +161,9 @@ export interface User extends BaseEntity {
 	userType: 'admin' | 'employee';
 	permissions: UserPermissions;
 	isActive: boolean;
+	avatar?: string; // Avatar image URL or path
 	lastLoginAt?: Date;
 	createdBy?: string; // ID do administrador que criou
-	avatar?: string;
 }
 
 // User session interface for tracking active sessions
@@ -268,6 +268,53 @@ export type UserType = 'admin' | 'employee';
 export type ModulePermission = keyof UserPermissions['modules'];
 export type PresalePermission = keyof UserPermissions['presales'];
 export type AuditAction = AuditLog['action'];
+
+// Reports data structures
+export interface Sale extends BaseEntity {
+	customerId: string;
+	customerName: string;
+	paymentMethodId: string;
+	paymentMethodCode: string;
+	paymentMethodDescription: string;
+	totalAmount: number;
+	saleDate: Date;
+	status: 'completed' | 'cancelled';
+	isFromPresale: boolean;
+	presaleId?: string;
+}
+
+export interface ReportFilters {
+	dateRange: {
+		startDate: Date;
+		endDate: Date;
+	};
+	paymentMethodId?: string;
+}
+
+export interface PaymentMethodReportData {
+	paymentMethod: PaymentMethod;
+	totalAmount: number;
+	salesCount: number;
+	convertedPresalesCount: number;
+	convertedPresalesAmount: number;
+}
+
+export interface ReportSummary {
+	totalAmount: number;
+	totalSalesCount: number;
+	totalConvertedPresales: number;
+	totalConvertedPresalesAmount: number;
+	period: {
+		startDate: Date;
+		endDate: Date;
+	};
+}
+
+export interface ReportError {
+	message: string;
+	code: 'NETWORK_ERROR' | 'DATA_PROCESSING_ERROR' | 'INVALID_FILTERS' | 'NO_DATA_FOUND';
+	details?: string;
+}
 
 // Default permissions by user type
 export interface DefaultPermissions {

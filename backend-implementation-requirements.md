@@ -306,13 +306,49 @@ PUT    /api/presales/{id}/status      - Atualizar apenas status
 
 #### Endpoints Necessários:
 ```
-GET    /api/reports/sales             - Relatório de vendas
-GET    /api/reports/products          - Relatório de produtos
-GET    /api/reports/customers         - Relatório de clientes
-GET    /api/reports/inventory         - Relatório de estoque
-POST   /api/reports/custom            - Relatório customizado
-GET    /api/reports/{id}/export       - Exportar relatório
+GET    /api/reports/payment-methods   - Relatório de vendas por forma de pagamento
+GET    /api/reports/payment-methods/export - Exportar relatório (PDF/Excel)
 ```
+
+#### Modelo de Dados:
+```typescript
+interface PaymentMethodReport {
+  period: {
+    startDate: string;
+    endDate: string;
+  };
+  paymentMethods: PaymentMethodSummary[];
+  totalConvertedPresales: {
+    count: number;
+    totalValue: number;
+  };
+}
+
+interface PaymentMethodSummary {
+  id: string;
+  code: string;
+  description: string; // Nome da finalizadora
+  totalSales: number;   // Valor total
+  salesCount: number;   // Quantidade de vendas
+  percentage: number;   // Percentual do total
+}
+
+interface ReportFilters {
+  startDate?: string;
+  endDate?: string;
+  paymentMethodId?: string; // Filtro por finalizadora específica
+}
+```
+
+#### Funcionalidades Específicas:
+- ✅ Listagem de todas as formas de pagamento (finalizadoras)
+- ✅ Resumo de vendas agrupado por forma de pagamento
+- ✅ Filtros por período de data (obrigatório)
+- ✅ Filtro opcional por finalizadora específica
+- ✅ Exibição do total de pré-vendas convertidas no período
+- ✅ Cálculo de percentuais por finalizadora
+- ✅ Exportação em PDF/Excel
+- ✅ Dados baseados apenas em pré-vendas convertidas (finalizadas)
 
 ### 9. Configurações do Sistema
 

@@ -1,9 +1,6 @@
 import type React from 'react';
 import { useCallback, useEffect, useState } from 'react';
-import {
-	getDefaultPermissions,
-	mockUserManagementService,
-} from '../../../data/mockUserManagementService';
+import { userService, getDefaultPermissions } from '../../../services/userService';
 import { useErrorHandler } from '../../../hooks/useErrorHandler';
 import toastService from '../../../services/ToastService';
 import type {
@@ -42,7 +39,6 @@ const UserForm: React.FC<UserFormProps> = ({
 		confirmPassword: '',
 		userType: 'employee' as 'admin' | 'employee',
 		isActive: true,
-		avatar: '',
 	});
 
 	const [permissions, setPermissions] = useState<UserPermissions>(() => {
@@ -61,13 +57,11 @@ const UserForm: React.FC<UserFormProps> = ({
 	// Stable onChange function for permissions
 	const handlePermissionsChange = useCallback(
 		(newPermissions: UserPermissions) => {
-			console.log(
-				'UserForm: handlePermissionsChange called with:',
-				newPermissions,
-			);
-			setPermissions({
-				modules: { ...newPermissions.modules },
-				presales: { ...newPermissions.presales },
+			setPermissions(() => {
+				return {
+					modules: { ...newPermissions.modules },
+					presales: { ...newPermissions.presales },
+				};
 			});
 		},
 		[],
@@ -83,7 +77,7 @@ const UserForm: React.FC<UserFormProps> = ({
 	useEffect(() => {
 		const loadUsers = async () => {
 			const users = await handleAsyncOperation(
-				() => mockUserManagementService.getAllUsers(),
+				() => userService.getAllUsers(),
 				{ action: 'load_users_for_validation' },
 			);
 			if (users) {
@@ -103,7 +97,6 @@ const UserForm: React.FC<UserFormProps> = ({
 				confirmPassword: '',
 				userType: editingUser.userType,
 				isActive: editingUser.isActive,
-				avatar: editingUser.avatar || '',
 			});
 			setPermissions({
 				modules: { ...editingUser.permissions.modules },
@@ -173,12 +166,10 @@ const UserForm: React.FC<UserFormProps> = ({
 		// Sanitize text inputs
 		if (
 			typeof value === 'string' &&
-			['name', 'email', 'avatar'].includes(field)
+			['name', 'email'].includes(field)
 		) {
 			if (field === 'email') {
 				processedValue = formatEmail(value);
-			} else if (field === 'avatar') {
-				processedValue = sanitizeUserInput(value, true); // Don't encode URLs
 			} else {
 				processedValue = sanitizeUserInput(value);
 			}
@@ -232,7 +223,6 @@ const UserForm: React.FC<UserFormProps> = ({
 						userType: formData.userType,
 						isActive: formData.isActive,
 						permissions,
-						avatar: formData.avatar || undefined,
 					};
 
 					// Only include password if it was changed
@@ -240,7 +230,7 @@ const UserForm: React.FC<UserFormProps> = ({
 						updateData.password = formData.password;
 					}
 
-					await mockUserManagementService.updateUser(
+					await userService.updateUser(
 						editingUser.id,
 						updateData,
 					);
@@ -253,10 +243,9 @@ const UserForm: React.FC<UserFormProps> = ({
 						password: formData.password,
 						userType: formData.userType,
 						permissions,
-						avatar: formData.avatar || undefined,
 					};
 
-					await mockUserManagementService.createUser(createData);
+					await userService.createUser(createData);
 					return { action: 'create', name: formData.name };
 				}
 			},
@@ -427,15 +416,7 @@ const UserForm: React.FC<UserFormProps> = ({
 						/>
 					</div>
 
-					{/* Avatar URL (optional) */}
-					<div>
-						<Input
-							label="URL do Avatar (opcional)"
-							value={formData.avatar}
-							onChange={handleInputChange('avatar')}
-							placeholder="https://exemplo.com/avatar.jpg"
-						/>
-					</div>
+
 				</div>
 			</div>
 

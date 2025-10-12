@@ -1,46 +1,59 @@
 import {
 	Calculator,
 	Calendar,
+	CheckCircle,
+	Clock,
 	Download,
 	Edit,
 	Eye,
+	FileText,
 	Plus,
 	RotateCcw,
 	Search,
+	Sparkles,
 	Trash2,
+	X,
+	XCircle,
 } from 'lucide-react';
+import jsPDF from 'jspdf';
 import type React from 'react';
-import { useEffect, useId, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../../context/AuthContext';
-import { mockPaymentMethodService } from '../../../data/mockPaymentMethodService';
+import { useCustomers } from '../../../hooks/useCustomers';
+import { usePresales } from '../../../hooks/usePresales';
+import { useProducts } from '../../../hooks/useProducts';
 import toastService, { TOAST_MESSAGES } from '../../../services/ToastService';
+
+import type { PreSale as ApiPreSale } from '../../../types/api';
 import type {
-	Customer,
-	PaymentMethod,
 	PreSale,
 	PreSaleItem,
-	Product,
 } from '../../../types';
 import Button from '../../common/Button';
 import InPageModal from '../../common/InPageModal';
 import Select from '../../common/Select';
 import SimpleModal from '../../common/SimpleModal';
-import { PresaleModal } from '../shared/presaleModal';
+import { UnifiedPresaleModal } from '../shared/presaleModal';
 import PreSaleItemsDisplay from './PreSaleItemsDisplay';
 
 const PresalesPage: React.FC = () => {
-	const editFormId = useId();
 	const { isAdmin, isEmployee, user, hasPermission } = useAuth();
+
+
+
+
 	const [searchTerm, setSearchTerm] = useState('');
 	const [selectedPreSale, setSelectedPreSale] = useState<PreSale | null>(null);
 	const [showViewModal, setShowViewModal] = useState(false);
 	const [showCreateModal, setShowCreateModal] = useState(false);
 	const [showEditModal, setShowEditModal] = useState(false);
 	const [showStatusModal, setShowStatusModal] = useState(false);
+	const [showPdfConfirmModal, setShowPdfConfirmModal] = useState(false);
+	const [pendingConversion, setPendingConversion] = useState<PreSale | null>(null);
 	const [statusFilter, setStatusFilter] = useState<PreSale['status'] | 'all'>(
 		'all',
 	);
-	// Initialize date filters to show today's presales by default
+	// Initialize date filters to show all presales by default
 	// Use local date to avoid timezone issues
 	const getLocalDateString = (date: Date) => {
 		const year = date.getFullYear();
@@ -49,178 +62,179 @@ const PresalesPage: React.FC = () => {
 		return `${year}-${month}-${day}`;
 	};
 	const today = getLocalDateString(new Date());
-	const [startDate, setStartDate] = useState(today);
-	const [endDate, setEndDate] = useState(today);
+	const [startDate, setStartDate] = useState(''); // Mostrar todas as datas por padrão
+	const [endDate, setEndDate] = useState(''); // Mostrar todas as datas por padrão
 
-	// Mock data for customers
-	const [customers] = useState<Customer[]>([
-		{
-			id: '1',
-			name: 'João Silva',
-			email: 'joao@email.com',
-			phone: '(11) 99999-9999',
-			cpf: '123.456.789-01',
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		},
-		{
-			id: '2',
-			name: 'Maria Santos',
-			email: 'maria@email.com',
-			phone: '(11) 88888-8888',
-			cpf: '987.654.321-00',
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		},
-	]);
+	// Carregar dados reais do banco de dados
+	const {
+		customers,
+		error: customersError,
+	} = useCustomers({ page: 1, limit: 100 });
 
-	// Mock data for products
-	const [products] = useState<Product[]>([
-		{
-			id: '1',
-			code: 'PRD001',
-			name: 'Produto Exemplo 1',
-			description: 'Descrição do produto exemplo 1',
-			unit: 'pc',
-			stock: 100,
-			category: 'Categoria A',
-			saleType: 'unit',
-			purchasePrice: 20.0,
-			salePrice: 29.99,
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		},
-		{
-			id: '2',
-			code: 'PRD002',
-			name: 'Produto Exemplo 2',
-			description: 'Descrição do produto exemplo 2',
-			unit: 'kg',
-			stock: 50,
-			category: 'Categoria B',
-			saleType: 'fractional',
-			purchasePrice: 30.0,
-			salePrice: 45.5,
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		},
-	]);
+	const {
+		products,
+		error: productsError,
+	} = useProducts({ page: 1, limit: 100 });
 
-	// Mock data for pre-sales - includes different salespersons for permission testing
-	const [preSales, setPreSales] = useState<PreSale[]>([
-		{
-			id: '1',
-			customer: customers[0],
-			items: [
-				{
-					id: '1',
-					product: products[0],
-					quantity: 2,
-					unitPrice: 29.99,
-					totalPrice: 59.98,
-				},
-				{
-					id: '2',
-					product: products[1],
-					quantity: 1.5,
-					unitPrice: 45.5,
-					totalPrice: 68.25,
-				},
-			],
-			total: 128.23,
-			status: 'pending',
-			notes: 'Entrega urgente solicitada',
-			salesperson: user?.name || 'Usuário Atual',
-			salespersonId: user?.id || '1',
-			createdAt: new Date('2024-01-15'),
-			updatedAt: new Date('2024-01-15'),
-		},
-		{
-			id: '2',
-			customer: customers[1],
-			items: [
-				{
-					id: '3',
-					product: products[0],
-					quantity: 5,
-					unitPrice: 29.99,
-					totalPrice: 149.95,
-				},
-			],
-			total: 149.95,
-			status: 'approved',
-			salesperson: 'Outro Funcionário',
-			salespersonId: 'other-user',
-			createdAt: new Date('2024-01-10'),
-			updatedAt: new Date('2024-01-12'),
-		},
-		{
-			id: '3',
-			customer: customers[0],
-			items: [
-				{
-					id: '4',
-					product: products[1],
-					quantity: 3,
-					unitPrice: 45.5,
-					totalPrice: 136.5,
-				},
-			],
-			total: 136.5,
-			status: 'converted',
-			salesperson: user?.name || 'Usuário Atual',
-			salespersonId: user?.id || '1',
-			createdAt: new Date('2024-01-08'),
-			updatedAt: new Date('2024-01-09'),
-		},
-		{
-			id: '4',
-			customer: customers[1],
-			items: [
-				{
-					id: '5',
-					product: products[0],
-					quantity: 1,
-					unitPrice: 29.99,
-					totalPrice: 29.99,
-				},
-			],
-			total: 29.99,
-			status: 'draft',
-			salesperson: 'Terceiro Funcionário',
-			salespersonId: 'third-user',
-			createdAt: new Date('2024-01-12'),
-			updatedAt: new Date('2024-01-12'),
-		},
-	]);
+	// Carregar pré-vendas reais do banco de dados
+	const {
+		presales,
+		loading: presalesLoading,
+		error: presalesError,
+		createPresale: createPresaleAPI,
+		updatePresale: updatePresaleAPI,
+		deletePresale,
+		updatePresaleStatus,
+		refreshPresales,
+	} = usePresales({ autoFetch: true });
 
-	// Payment methods from centralized service
-	const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
 
-	// Load payment methods on component mount
-	useEffect(() => {
-		const loadPaymentMethods = async () => {
-			try {
-				const data = await mockPaymentMethodService.getAll();
-				setPaymentMethods(data);
-			} catch (error) {
-				console.error('Error loading payment methods:', error);
-				toastService.error('Erro ao carregar formas de pagamento');
+
+
+
+	// Converter pré-vendas da API para o formato local com verificações de segurança
+	const convertApiPresaleToLocal = useCallback((apiPresale: ApiPreSale): PreSale | null => {
+		try {
+			console.log('Converting API presale:', apiPresale);
+
+			// Verificar se os dados essenciais existem
+			if (!apiPresale || !apiPresale.id) {
+				console.warn('Pré-venda inválida:', apiPresale);
+				return null;
 			}
-		};
 
-		loadPaymentMethods();
+			// Verificar se o customer existe e tem dados válidos
+			if (!apiPresale.customer || !apiPresale.customer.id || !apiPresale.customer.name) {
+				console.warn('Pré-venda sem customer válido:', apiPresale.id, apiPresale.customer);
+				return null;
+			}
+
+			return {
+				id: apiPresale.id,
+				customer: {
+					id: apiPresale.customer.id,
+					name: apiPresale.customer.name,
+					email: apiPresale.customer.email,
+					phone: apiPresale.customer.phone || '',
+					cpf: apiPresale.customer.cpf,
+					address: apiPresale.customer.address || '',
+					createdAt: apiPresale.customer.createdAt ? new Date(apiPresale.customer.createdAt) : new Date(),
+					updatedAt: apiPresale.customer.updatedAt ? new Date(apiPresale.customer.updatedAt) : new Date(),
+				},
+				items: (apiPresale.items || []).map(item => {
+					if (!item || !item.product) {
+						console.warn('Item sem produto na pré-venda:', apiPresale.id);
+						return null;
+					}
+
+					return {
+						id: item.id || 'temp-id',
+						product: {
+							id: item.product.id,
+							code: item.product.code,
+							name: item.product.name,
+							unit: item.product.unit,
+							description: item.product.description || '',
+							stock: item.product.stock || 0,
+							purchasePrice: typeof item.product.purchasePrice === 'string' ? Number(item.product.purchasePrice) : item.product.purchasePrice || 0,
+							salePrice: typeof item.product.salePrice === 'string' ? Number(item.product.salePrice) : item.product.salePrice || 0,
+							saleType: (item.product.saleType as 'unit' | 'fractional') || 'unit',
+							createdAt: item.product.createdAt ? new Date(item.product.createdAt) : new Date(),
+							updatedAt: item.product.updatedAt ? new Date(item.product.updatedAt) : new Date(),
+						},
+						quantity: Number(item.quantity) || 0,
+						unitPrice: Number(item.unitPrice) || 0,
+						totalPrice: Number(item.totalPrice) || 0,
+						discount: item.discount ? Number(item.discount) : undefined,
+					};
+				}).filter(Boolean) as PreSaleItem[], // Remove itens nulos
+				total: Number(apiPresale.total) || 0,
+				status: apiPresale.status || 'draft',
+				notes: apiPresale.notes,
+				discount: apiPresale.discount ? Number(apiPresale.discount) : undefined,
+				discountType: apiPresale.discountType || 'percentage',
+				salesperson: 'Sistema', // Não vem da API, valor padrão
+				salespersonId: '1', // Não vem da API, valor padrão
+				createdAt: apiPresale.createdAt ? new Date(apiPresale.createdAt) : new Date(),
+				updatedAt: apiPresale.updatedAt ? new Date(apiPresale.updatedAt) : new Date(),
+			};
+		} catch (error) {
+			console.error('Erro ao converter pré-venda da API:', error, apiPresale);
+			return null;
+		}
 	}, []);
 
-	// Select options
+	// Usar as pré-vendas reais convertidas, filtrando as que falharam na conversão
+	const preSales = useMemo(() => {
+		// Garantir que presales seja sempre um array
+		const presalesArray = Array.isArray(presales) ? presales : [];
+		console.log('PresalesPage - Converting presales:', {
+			rawPresales: presales,
+			presalesArrayLength: presalesArray.length,
+			firstPresale: presalesArray[0]
+		});
 
-	const paymentMethodOptions = paymentMethods
-		.filter((method) => method.isActive)
-		.map((method) => ({
-			value: method.id,
-			label: method.description,
+		const converted = presalesArray
+			.map(convertApiPresaleToLocal)
+			.filter(Boolean) as PreSale[];
+
+		console.log('PresalesPage - Converted presales:', {
+			convertedLength: converted.length,
+			firstConverted: converted[0]
+		});
+
+		return converted;
+	}, [presales]);
+
+
+
+
+	// Os hooks useCustomers e useProducts já fazem o fetch automaticamente
+	// Não precisamos chamar fetchCustomers e fetchProducts novamente
+
+	// Mostrar erros se houver (apenas uma vez por erro)
+	useEffect(() => {
+		if (customersError) {
+			console.error('Erro ao carregar clientes:', customersError);
+		}
+	}, [customersError]);
+
+	useEffect(() => {
+		if (productsError) {
+			console.error('Erro ao carregar produtos:', productsError);
+		}
+	}, [productsError]);
+
+	useEffect(() => {
+		if (presalesError) {
+			console.error('Erro ao carregar pré-vendas:', presalesError);
+			toastService.error('Erro ao carregar pré-vendas: ' + presalesError);
+		}
+	}, [presalesError]);
+
+	// Converter dados da API para o formato esperado pelo modal
+	const convertCustomersForModal = (apiCustomers: any[] | undefined) => {
+		if (!apiCustomers) return [];
+		return apiCustomers.map(customer => ({
+			...customer,
+			createdAt: typeof customer.createdAt === 'string' ? new Date(customer.createdAt) : customer.createdAt,
+			updatedAt: typeof customer.updatedAt === 'string' ? new Date(customer.updatedAt) : customer.updatedAt,
 		}));
+	};
 
+	const convertProductsForModal = (apiProducts: any[] | undefined) => {
+		if (!apiProducts) return [];
+		return apiProducts.map(product => ({
+			...product,
+			purchasePrice: typeof product.purchasePrice === 'string' ? Number(product.purchasePrice) : product.purchasePrice,
+			salePrice: typeof product.salePrice === 'string' ? Number(product.salePrice) : product.salePrice,
+			saleType: product.saleType as 'unit' | 'fractional',
+			createdAt: typeof product.createdAt === 'string' ? new Date(product.createdAt) : product.createdAt,
+			updatedAt: typeof product.updatedAt === 'string' ? new Date(product.updatedAt) : product.updatedAt,
+		}));
+	};
+
+	// Select options
 	const statusOptions = [
 		{ value: 'all', label: 'Todos os Status' },
 		{ value: 'draft', label: 'Rascunho' },
@@ -230,39 +244,9 @@ const PresalesPage: React.FC = () => {
 		{ value: 'converted', label: 'Convertida' },
 	];
 
-	const discountTypeOptions = [
-		{ value: 'percentage', label: 'Percentual (%)' },
-		{ value: 'fixed', label: 'Valor Fixo (R$)' },
-	];
 
-	// Form state for creating new pre-sale
-	const [formData, setFormData] = useState({
-		customerId: '',
-		paymentMethodId: '',
-		notes: '',
-		discount: '',
-		discountType: 'percentage' as 'percentage' | 'fixed',
-	});
 
-	const [formItems, setFormItems] = useState<
-		Omit<PreSaleItem, 'id' | 'totalPrice'>[]
-	>([]);
 
-	// New item form state
-	const [newItemForm, setNewItemForm] = useState({
-		productCode: '',
-		productDescription: '',
-		quantity: 1,
-		unitPrice: 0,
-		selectedProduct: null as Product | null,
-	});
-
-	// Product dropdown state
-	const [showProductDropdown, setShowProductDropdown] = useState(false);
-
-	// Customer search state
-	const [customerSearchTerm, setCustomerSearchTerm] = useState('');
-	const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
 
 	const getStatusLabel = (status: PreSale['status']) => {
 		const statusLabels = {
@@ -287,11 +271,18 @@ const PresalesPage: React.FC = () => {
 	};
 
 	const filteredPreSales = preSales.filter((preSale) => {
+		// Verificações de segurança
+		if (!preSale || !preSale.customer) {
+			return false;
+		}
+
 		const matchesSearch =
-			preSale.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-			preSale.id.toLowerCase().includes(searchTerm.toLowerCase());
+			preSale.customer.name?.toLowerCase()?.includes(searchTerm.toLowerCase()) ||
+			preSale.id?.toLowerCase()?.includes(searchTerm.toLowerCase());
 		const matchesStatus =
 			statusFilter === 'all' || preSale.status === statusFilter;
+
+
 
 		// Date filtering - usando string comparison para evitar problemas de fuso horário
 		let matchesDateRange = true;
@@ -329,55 +320,30 @@ const PresalesPage: React.FC = () => {
 		);
 	});
 
-	// Filter customers for search
-	const filteredCustomers = useMemo(() => {
-		if (!customerSearchTerm) return [];
-		return customers.filter(
-			(customer) =>
-				customer.name
-					.toLowerCase()
-					.includes(customerSearchTerm.toLowerCase()) ||
-				customer.email
-					.toLowerCase()
-					.includes(customerSearchTerm.toLowerCase()) ||
-				customer.cpf?.includes(customerSearchTerm),
-		);
-	}, [customers, customerSearchTerm]);
-
 	const handleViewPreSale = (preSale: PreSale) => {
 		setSelectedPreSale(preSale);
 		setShowViewModal(true);
 	};
 
-	const handleDeletePreSale = (id: string) => {
+	const handleDeletePreSale = async (id: string) => {
 		if (confirm(TOAST_MESSAGES.presale.deleteConfirm)) {
-			setPreSales((prev) => prev.filter((preSale) => preSale.id !== id));
-			toastService.success(TOAST_MESSAGES.presale.deleted);
+			try {
+				const success = await deletePresale(id);
+				if (success) {
+					toastService.success(TOAST_MESSAGES.presale.deleted);
+					await refreshPresales();
+				} else {
+					toastService.error('Erro ao excluir pré-venda.');
+				}
+			} catch (error) {
+				console.error('Erro ao excluir pré-venda:', error);
+				toastService.error('Erro ao excluir pré-venda. Tente novamente.');
+			}
 		}
 	};
 
 	const handleEditPreSale = (preSale: PreSale) => {
 		setSelectedPreSale(preSale);
-		// Populate form with existing data
-		setFormData({
-			customerId: preSale.customer.id,
-			paymentMethodId: preSale.paymentMethodId || '1', // Default to first payment method
-			notes: preSale.notes || '',
-			discount: preSale.discount?.toString() || '',
-			discountType: preSale.discountType || 'percentage',
-		});
-
-		// Initialize customer search state
-		setCustomerSearchTerm(preSale.customer.name);
-
-		setFormItems(
-			preSale.items.map((item) => ({
-				product: item.product,
-				quantity: item.quantity,
-				unitPrice: item.unitPrice,
-				notes: item.notes || '',
-			})),
-		);
 		setShowEditModal(true);
 	};
 
@@ -386,51 +352,60 @@ const PresalesPage: React.FC = () => {
 		setShowStatusModal(true);
 	};
 
-	const updatePreSaleStatus = (newStatus: PreSale['status']) => {
+	const updatePreSaleStatusLocal = async (newStatus: PreSale['status']) => {
 		if (!selectedPreSale) return;
 
-		setPreSales((prev) =>
-			prev.map((preSale) =>
-				preSale.id === selectedPreSale.id
-					? { ...preSale, status: newStatus, updatedAt: new Date() }
-					: preSale,
-			),
-		);
-		setShowStatusModal(false);
-		toastService.success(
-			`Status da pré-venda alterado para ${getStatusLabel(newStatus)}`,
-		);
-	};
-
-	const handleInputChange = (field: string) => (value: string) => {
-		setFormData((prev) => ({ ...prev, [field]: value }));
-	};
-
-	// Handle customer search
-	const handleCustomerSearch = (searchTerm: string) => {
-		setCustomerSearchTerm(searchTerm);
-		setShowCustomerDropdown(searchTerm.length > 0);
-
-		// Find matching customer
-		const matchingCustomer = customers.find(
-			(customer) =>
-				customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-				customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-				customer.cpf?.includes(searchTerm),
-		);
-
-		if (matchingCustomer) {
-			setFormData((prev) => ({ ...prev, customerId: matchingCustomer.id }));
-		} else {
-			setFormData((prev) => ({ ...prev, customerId: '' }));
+		// Se está convertendo para "converted", mostrar modal de confirmação de PDF
+		if (newStatus === 'converted') {
+			setPendingConversion(selectedPreSale);
+			setShowStatusModal(false);
+			setShowPdfConfirmModal(true);
+			return;
 		}
+
+		try {
+			const updatedPresale = await updatePresaleStatus(selectedPreSale.id, newStatus);
+			if (updatedPresale) {
+				toastService.success(
+					`Status da pré-venda alterado para ${getStatusLabel(newStatus)}`,
+				);
+				await refreshPresales();
+			} else {
+				toastService.error('Erro ao atualizar status da pré-venda.');
+			}
+		} catch (error) {
+			console.error('Erro ao atualizar status:', error);
+			toastService.error('Erro ao atualizar status. Tente novamente.');
+		}
+
+		setShowStatusModal(false);
+		setSelectedPreSale(null);
 	};
 
-	// Handle customer selection from dropdown
-	const handleCustomerSelect = (customer: Customer) => {
-		setCustomerSearchTerm(customer.name);
-		setFormData((prev) => ({ ...prev, customerId: customer.id }));
-		setShowCustomerDropdown(false);
+	const handleConvertWithPdf = async (generatePdf: boolean) => {
+		if (!pendingConversion) return;
+
+		try {
+			const updatedPresale = await updatePresaleStatus(pendingConversion.id, 'converted');
+			if (updatedPresale) {
+				toastService.success('Pré-venda convertida com sucesso!');
+
+				if (generatePdf) {
+					handleGeneratePDF(pendingConversion);
+				}
+
+				await refreshPresales();
+			} else {
+				toastService.error('Erro ao converter pré-venda.');
+			}
+		} catch (error) {
+			console.error('Erro ao converter pré-venda:', error);
+			toastService.error('Erro ao converter pré-venda. Tente novamente.');
+		}
+
+		setShowPdfConfirmModal(false);
+		setPendingConversion(null);
+		setSelectedPreSale(null);
 	};
 
 	// Clear date filters to show all dates
@@ -446,244 +421,178 @@ const PresalesPage: React.FC = () => {
 		setEndDate(todayDate);
 	};
 
-	// Generate PDF function
+	// Generate PDF function using jsPDF
 	const handleGeneratePDF = (preSale: PreSale) => {
-		// Simulated PDF generation
-		toastService.success(
-			`PDF da pré-venda #${preSale.id} será gerado em breve!`,
-		);
-		// TODO: Implement actual PDF generation using libraries like jsPDF or react-pdf
-		console.log('Generating PDF for pre-sale:', preSale);
-	};
+		try {
+			// Validar dados antes de gerar PDF
+			if (!preSale || !preSale.customer || !preSale.items || preSale.items.length === 0) {
+				toastService.error('Dados da pré-venda incompletos para gerar PDF.');
+				return;
+			}
 
-	// Handle product description search and auto-fill code
-	const handleProductDescriptionChange = (description: string) => {
-		setNewItemForm((prev) => ({
-			...prev,
-			productDescription: description,
-		}));
+			toastService.info('Gerando PDF da pré-venda...');
 
-		// Show/hide dropdown based on input
-		setShowProductDropdown(description.length > 0);
+			const doc = new jsPDF();
 
-		// Find product by description
-		const matchingProduct = products.find(
-			(product) =>
-				product.name.toLowerCase().includes(description.toLowerCase()) ||
-				product.code.toLowerCase().includes(description.toLowerCase()),
-		);
+			// Header
+			doc.setFontSize(20);
+			doc.text(`PRÉ-VENDA #${preSale.id}`, 20, 20);
 
-		if (matchingProduct && description.length > 2) {
-			setNewItemForm((prev) => ({
-				...prev,
-				productCode: matchingProduct.code,
-				unitPrice: matchingProduct.salePrice,
-				selectedProduct: matchingProduct,
-			}));
-		} else if (!description) {
-			// Clear fields when description is empty
-			setNewItemForm((prev) => ({
-				...prev,
-				productCode: '',
-				unitPrice: 0,
-				selectedProduct: null,
-			}));
+			// Customer info
+			doc.setFontSize(12);
+			doc.text('DADOS DO CLIENTE', 20, 40);
+			doc.setFontSize(10);
+			doc.text(`Nome: ${preSale.customer.name}`, 20, 50);
+			doc.text(`Email: ${preSale.customer.email}`, 20, 55);
+			doc.text(`CPF: ${preSale.customer.cpf}`, 20, 60);
+			doc.text(`Telefone: ${preSale.customer.phone}`, 20, 65);
+
+			// Pre-sale info
+			doc.setFontSize(12);
+			doc.text('INFORMAÇÕES DA PRÉ-VENDA', 20, 80);
+			doc.setFontSize(10);
+			doc.text(`Data: ${preSale.createdAt.toLocaleDateString('pt-BR')}`, 20, 90);
+			doc.text(`Status: ${getStatusLabel(preSale.status)}`, 20, 95);
+
+			// Items section - Manual table
+			doc.setFontSize(12);
+			doc.text('ITENS DA PRÉ-VENDA', 20, 105);
+
+			// Table header
+			doc.setFontSize(9);
+			doc.setFont('helvetica', 'bold');
+			doc.text('#', 20, 115);
+			doc.text('Produto', 30, 115);
+			doc.text('Código', 90, 115);
+			doc.text('Qtd', 130, 115);
+			doc.text('Valor Unit.', 150, 115);
+			doc.text('Total', 180, 115);
+
+			// Draw header line
+			doc.line(20, 117, 200, 117);
+
+			// Table rows
+			doc.setFont('helvetica', 'normal');
+			let currentY = 125;
+
+			preSale.items.forEach((item, index) => {
+				if (currentY > 270) { // New page if needed
+					doc.addPage();
+					currentY = 20;
+				}
+
+				doc.text(`${index + 1}`, 20, currentY);
+				doc.text(item.product.name.substring(0, 25), 30, currentY); // Limit text length
+				doc.text(item.product.code, 90, currentY);
+				doc.text(`${item.quantity}`, 130, currentY);
+				doc.text(`R$ ${item.unitPrice.toFixed(2)}`, 150, currentY);
+				doc.text(`R$ ${item.totalPrice.toFixed(2)}`, 180, currentY);
+
+				currentY += 8;
+			});
+
+			// Draw bottom line
+			doc.line(20, currentY, 200, currentY);
+
+			// Total section
+			const finalY = currentY + 10;
+			doc.setFontSize(12);
+			if (preSale.discount) {
+				doc.text(`Desconto: R$ ${preSale.discount.toFixed(2)}`, 20, finalY);
+			}
+			doc.setFontSize(14);
+			doc.text(`TOTAL: R$ ${preSale.total.toFixed(2)}`, 20, finalY + 10);
+
+			// Notes
+			if (preSale.notes) {
+				doc.setFontSize(10);
+				doc.text('Observações:', 20, finalY + 25);
+				doc.text(preSale.notes, 20, finalY + 30);
+			}
+
+			// Save PDF
+			doc.save(`presale-${preSale.id}.pdf`);
+			toastService.success('PDF gerado com sucesso! 📄');
+
+		} catch (error) {
+			console.error('Erro ao gerar PDF:', error);
+			toastService.error('Erro ao gerar PDF. Tente novamente.');
 		}
 	};
 
-	// Handle product selection from dropdown
-	const handleProductSelect = (product: Product) => {
-		setNewItemForm({
-			productCode: product.code,
-			productDescription: product.name,
-			quantity: newItemForm.quantity,
-			unitPrice: product.salePrice,
-			selectedProduct: product,
-		});
-		setShowProductDropdown(false);
-	};
 
-	// Filter products for dropdown
-	const filteredProductsForDropdown = products.filter(
-		(product) =>
-			product.name
-				.toLowerCase()
-				.includes(newItemForm.productDescription.toLowerCase()) ||
-			product.code
-				.toLowerCase()
-				.includes(newItemForm.productDescription.toLowerCase()),
-	);
 
-	// Add item from the new inline form
-	const handleAddItemFromForm = () => {
-		if (!newItemForm.selectedProduct) {
-			toastService.error('Selecione um produto válido!');
-			return;
-		}
-
-		if (newItemForm.quantity <= 0) {
-			toastService.error('Quantidade deve ser maior que zero!');
-			return;
-		}
-
-		if (newItemForm.unitPrice <= 0) {
-			toastService.error('Valor unitário deve ser maior que zero!');
-			return;
-		}
-
-		// Check if product is already in the list
-		const existingItemIndex = formItems.findIndex(
-			(item) => item.product.id === newItemForm.selectedProduct!.id,
-		);
-
-		if (existingItemIndex >= 0) {
-			// If product already exists, update quantity and price
-			setFormItems((prev) =>
-				prev.map((item, index) =>
-					index === existingItemIndex
-						? {
-								...item,
-								quantity: item.quantity + newItemForm.quantity,
-								unitPrice: newItemForm.unitPrice,
-							}
-						: item,
-				),
-			);
-			toastService.info(
-				`"${newItemForm.selectedProduct.name}" atualizado na lista!`,
-			);
-		} else {
-			// Add new product to the list
-			setFormItems((prev) => [
-				...prev,
-				{
-					product: newItemForm.selectedProduct!,
-					quantity: newItemForm.quantity,
-					unitPrice: newItemForm.unitPrice,
-					notes: '',
-				},
-			]);
-			toastService.success(
-				`"${newItemForm.selectedProduct.name}" adicionado aos itens!`,
-			);
-		}
-
-		// Clear the form
-		setNewItemForm({
-			productCode: '',
-			productDescription: '',
-			quantity: 1,
-			unitPrice: 0,
-			selectedProduct: null,
-		});
-	};
-
-	const removeItemFromForm = (index: number) => {
-		setFormItems((prev) => prev.filter((_, i) => i !== index));
-	};
-
-	const calculateItemTotal = (quantity: number, unitPrice: number) => {
-		return quantity * unitPrice;
-	};
-
-	const calculateFormTotal = () => {
-		const itemsTotal = formItems.reduce(
-			(sum, item) => sum + calculateItemTotal(item.quantity, item.unitPrice),
-			0,
-		);
-		const discountAmount =
-			formData.discountType === 'percentage'
-				? (itemsTotal * (Number(formData.discount) || 0)) / 100
-				: Number(formData.discount) || 0;
-		return itemsTotal - discountAmount;
-	};
-
-	const handleCreatePresale = (
+	const handleCreatePresale = async (
 		presaleData: Omit<PreSale, 'id' | 'createdAt' | 'updatedAt'>,
 	) => {
-		const newPresale: PreSale = {
-			...presaleData,
-			id: Date.now().toString(),
-			salesperson: user?.name || 'Usuário Atual',
-			salespersonId: user?.id || '1',
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		};
+		try {
+			// Converter dados do modal para o formato da API
+			const apiPresaleData = {
+				customerId: presaleData.customer.id,
+				status: 'pending' as const, // Sempre inicia como pending
+				discount: presaleData.discount?.toString() || '0',
+				discountType: presaleData.discountType || 'percentage',
+				discountPercentage: presaleData.discountType === 'percentage' ? presaleData.discount?.toString() || '0' : '0',
+				notes: presaleData.notes || '',
+				items: presaleData.items.map(item => ({
+					productId: item.product.id,
+					quantity: item.quantity.toString(),
+					unitPrice: item.unitPrice.toString(),
+				})),
+			};
 
-		setPreSales((prev) => [newPresale, ...prev]);
-		toastService.success(TOAST_MESSAGES.presale.created);
+			// Usar o hook para criar a pré-venda
+			const createdPresale = await createPresaleAPI(apiPresaleData);
+
+			if (createdPresale) {
+				toastService.success(TOAST_MESSAGES.presale.created);
+				// Recarregar a lista de pré-vendas para mostrar a nova
+				await refreshPresales();
+			} else {
+				toastService.error('Erro ao criar pré-venda. Tente novamente.');
+			}
+		} catch (error) {
+			console.error('Erro ao criar pré-venda:', error);
+			toastService.error('Erro ao criar pré-venda. Tente novamente.');
+		}
 	};
 
-	const handleUpdatePresale = (
+	const handleUpdatePresale = async (
 		presaleData: Omit<PreSale, 'id' | 'createdAt' | 'updatedAt'>,
 	) => {
 		if (!selectedPreSale) return;
 
-		const updatedPresale: PreSale = {
-			...presaleData,
-			id: selectedPreSale.id,
-			createdAt: selectedPreSale.createdAt,
-			updatedAt: new Date(),
-		};
+		try {
+			// Converter dados para o formato da API
+			const apiPresaleData = {
+				customerId: presaleData.customer.id,
+				status: presaleData.status,
+				discount: presaleData.discount?.toString() || '0',
+				discountType: presaleData.discountType || 'percentage',
+				discountPercentage: presaleData.discountType === 'percentage' ? presaleData.discount?.toString() || '0' : '0',
+				notes: presaleData.notes || '',
+				items: presaleData.items.map(item => ({
+					productId: item.product.id,
+					quantity: item.quantity.toString(),
+					unitPrice: item.unitPrice.toString(),
+				})),
+			};
 
-		setPreSales((prev) =>
-			prev.map((preSale) =>
-				preSale.id === selectedPreSale.id ? updatedPresale : preSale,
-			),
-		);
+			const updatedPresale = await updatePresaleAPI(selectedPreSale.id, apiPresaleData);
+
+			if (updatedPresale) {
+				toastService.success(TOAST_MESSAGES.presale.updated);
+				await refreshPresales();
+			} else {
+				toastService.error('Erro ao atualizar pré-venda.');
+			}
+		} catch (error) {
+			console.error('Erro ao atualizar pré-venda:', error);
+			toastService.error('Erro ao atualizar pré-venda. Tente novamente.');
+		}
 
 		setSelectedPreSale(null);
 		setShowEditModal(false);
-		toastService.success(TOAST_MESSAGES.presale.updated);
-	};
-
-	const handleSubmitForm = (e: React.FormEvent, isEdit = false) => {
-		e.preventDefault();
-
-		if (!formData.customerId) {
-			toastService.error('Selecione um cliente!');
-			return;
-		}
-
-		if (!formData.paymentMethodId) {
-			toastService.error('Selecione uma forma de pagamento!');
-			return;
-		}
-
-		if (formItems.length === 0) {
-			toastService.error('Adicione pelo menos um item à pré-venda!');
-			return;
-		}
-
-		const selectedCustomer = customers.find(
-			(c) => c.id === formData.customerId,
-		);
-		if (!selectedCustomer) return;
-
-		const presaleData: Omit<PreSale, 'id' | 'createdAt' | 'updatedAt'> = {
-			customer: selectedCustomer,
-			items: formItems.map((item, index) => ({
-				id: `item-${index}`,
-				...item,
-				totalPrice: calculateItemTotal(item.quantity, item.unitPrice),
-			})),
-			total: calculateFormTotal(),
-			status: isEdit && selectedPreSale ? selectedPreSale.status : 'pending',
-			notes: formData.notes || undefined,
-			discount: Number(formData.discount) || undefined,
-			discountType: formData.discountType,
-			paymentMethodId: formData.paymentMethodId,
-			salesperson:
-				isEdit && selectedPreSale
-					? selectedPreSale.salesperson
-					: 'Current User',
-		};
-
-		if (isEdit) {
-			handleUpdatePresale(presaleData);
-		} else {
-			handleCreatePresale(presaleData);
-		}
 	};
 
 	const renderTabContent = () => {
@@ -736,22 +645,20 @@ const PresalesPage: React.FC = () => {
 								<button
 									type="button"
 									onClick={resetToToday}
-									className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${
-										startDate === today && endDate === today
-											? 'bg-blue-600 text-white'
-											: 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-300'
-									}`}
+									className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${startDate === today && endDate === today
+										? 'bg-blue-600 text-white'
+										: 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-300'
+										}`}
 								>
 									Hoje
 								</button>
 								<button
 									type="button"
 									onClick={clearDateFilters}
-									className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${
-										!startDate && !endDate
-											? 'bg-blue-600 text-white'
-											: 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-300'
-									}`}
+									className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${!startDate && !endDate
+										? 'bg-blue-600 text-white'
+										: 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-300'
+										}`}
 								>
 									Todas as Datas
 								</button>
@@ -907,15 +814,15 @@ const PresalesPage: React.FC = () => {
 										{/* Status change button - only for admins or own presales */}
 										{(isAdmin ||
 											(isEmployee && preSale.salespersonId === user?.id)) && (
-											<button
-												type="button"
-												onClick={() => handleStatusChange(preSale)}
-												className="p-1 text-purple-600 hover:text-purple-800 hover:bg-purple-100 rounded transition-colors"
-												title="Alterar Status"
-											>
-												<RotateCcw className="h-4 w-4" />
-											</button>
-										)}
+												<button
+													type="button"
+													onClick={() => handleStatusChange(preSale)}
+													className="p-1 text-purple-600 hover:text-purple-800 hover:bg-purple-100 rounded transition-colors"
+													title="Alterar Status"
+												>
+													<RotateCcw className="h-4 w-4" />
+												</button>
+											)}
 
 										{/* Delete button - only for admins or own presales (and not converted) */}
 										{preSale.status !== 'converted' &&
@@ -936,19 +843,24 @@ const PresalesPage: React.FC = () => {
 						))}
 					</div>
 
-					{filteredPreSales.length === 0 && (
+					{presalesLoading ? (
+						<div className="text-center py-12">
+							<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+							<p className="text-gray-500 text-lg">Carregando pré-vendas...</p>
+						</div>
+					) : filteredPreSales.length === 0 && (
 						<div className="text-center py-12">
 							<Calculator className="h-12 w-12 text-gray-400 mx-auto mb-4" />
 							<p className="text-gray-500 text-lg">
 								{searchTerm
 									? 'Nenhuma pré-venda encontrada'
 									: isEmployee &&
-											!hasPermission('presales.canViewOwn') &&
-											!hasPermission('presales.canViewAll')
+										!hasPermission('presales.canViewOwn') &&
+										!hasPermission('presales.canViewAll')
 										? 'Você não tem permissão para visualizar pré-vendas'
 										: isEmployee &&
-												hasPermission('presales.canViewOwn') &&
-												!hasPermission('presales.canViewAll')
+											hasPermission('presales.canViewOwn') &&
+											!hasPermission('presales.canViewAll')
 											? 'Você ainda não criou nenhuma pré-venda'
 											: 'Nenhuma pré-venda cadastrada ainda.'}
 							</p>
@@ -960,8 +872,8 @@ const PresalesPage: React.FC = () => {
 										className="mt-4"
 									>
 										{isEmployee &&
-										hasPermission('presales.canViewOwn') &&
-										!hasPermission('presales.canViewAll')
+											hasPermission('presales.canViewOwn') &&
+											!hasPermission('presales.canViewAll')
 											? 'Criar sua primeira pré-venda'
 											: 'Criar primeira pré-venda'}
 									</Button>
@@ -1074,7 +986,7 @@ const PresalesPage: React.FC = () => {
 						{/* Itens */}
 						<section>
 							<h3 className="text-sm font-medium text-gray-900 mb-3">Itens</h3>
-							<PreSaleItemsDisplay items={selectedPreSale.items} />
+							<PreSaleItemsDisplay items={selectedPreSale.items as any} />
 						</section>
 
 						{/* Total */}
@@ -1110,456 +1022,31 @@ const PresalesPage: React.FC = () => {
 				</InPageModal>
 			)}
 			{/* Create Pre-sale Modal */}
-			<PresaleModal
-				isOpen={showCreateModal}
-				onClose={() => setShowCreateModal(false)}
-				onSubmit={handleCreatePresale}
-				customers={customers}
-				products={products}
-				title="Nova Pré-venda"
-			/>
+			{customers && products && (
+				<UnifiedPresaleModal
+					isOpen={showCreateModal}
+					onClose={() => setShowCreateModal(false)}
+					onSubmit={handleCreatePresale}
+					customers={convertCustomersForModal(customers) as any}
+					products={convertProductsForModal(products) as any}
+					title="Nova Pré-venda"
+				/>
+			)}
 
-			{/* Edit Pre-sale Modal - Using same layout as create modal */}
-			{showEditModal && selectedPreSale && (
-				<InPageModal
+			{/* Edit Pre-sale Modal */}
+			{showEditModal && selectedPreSale && customers && products && (
+				<UnifiedPresaleModal
 					isOpen={showEditModal}
 					onClose={() => {
 						setShowEditModal(false);
 						setSelectedPreSale(null);
-						setFormData({
-							customerId: '',
-							paymentMethodId: '',
-							notes: '',
-							discount: '',
-							discountType: 'percentage',
-						});
-						setFormItems([]);
-						setNewItemForm({
-							productCode: '',
-							productDescription: '',
-							quantity: 1,
-							unitPrice: 0,
-							selectedProduct: null,
-						});
-						// Reset customer search states
-						setCustomerSearchTerm('');
-						setShowCustomerDropdown(false);
-						setShowProductDropdown(false);
 					}}
+					onSubmit={handleUpdatePresale}
+					customers={convertCustomersForModal(customers) as any}
+					products={convertProductsForModal(products) as any}
+					editingPresale={selectedPreSale}
 					title={`Editar Pré-venda #${selectedPreSale.id}`}
-				>
-					<div className="px-6 py-6">
-						<form
-							onSubmit={(e) => handleSubmitForm(e, true)}
-							className="space-y-6"
-						>
-							{/* Customer Search Field - Full width at the top */}
-							<div className="relative">
-								<label className="block text-sm font-medium text-gray-700 mb-1">
-									Cliente *
-								</label>
-								<input
-									type="text"
-									value={customerSearchTerm}
-									onChange={(e) => handleCustomerSearch(e.target.value)}
-									onFocus={() =>
-										setShowCustomerDropdown(customerSearchTerm.length > 0)
-									}
-									placeholder="Digite o nome do cliente..."
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-								/>
-								{/* Customer dropdown */}
-								{showCustomerDropdown && (
-									<div className="absolute top-full mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-40 overflow-y-auto">
-										{filteredCustomers.length === 0 ? (
-											<div className="px-3 py-2 text-gray-500 text-center">
-												{customerSearchTerm
-													? 'Nenhum cliente encontrado'
-													: 'Digite para buscar clientes'}
-											</div>
-										) : (
-											filteredCustomers.map((customer) => (
-												<div
-													key={customer.id}
-													onClick={() => handleCustomerSelect(customer)}
-													className="px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-												>
-													<div className="font-medium text-gray-900">
-														{customer.name}
-													</div>
-													<div className="text-sm text-gray-500">
-														{customer.email} • {customer.cpf}
-													</div>
-												</div>
-											))
-										)}
-									</div>
-								)}
-							</div>
-
-							{/* Add Item Form - Same as create modal */}
-							<div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-								<h3 className="text-sm font-medium text-gray-700 mb-3">
-									Adicionar Item
-								</h3>
-								<div className="grid grid-cols-12 gap-3 items-end">
-									{/* Código do Produto */}
-									<div className="col-span-2">
-										<label className="block text-xs font-medium text-gray-600 mb-1">
-											Cód. Prod
-										</label>
-										<input
-											type="text"
-											value={newItemForm.productCode}
-											readOnly
-											placeholder="Auto"
-											className="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg bg-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
-										/>
-									</div>
-
-									{/* Descrição do Produto */}
-									<div className="col-span-4 relative">
-										<label className="block text-xs font-medium text-gray-600 mb-1">
-											Descrição
-										</label>
-										<input
-											type="text"
-											value={newItemForm.productDescription}
-											onChange={(e) =>
-												handleProductDescriptionChange(e.target.value)
-											}
-											onFocus={() => setShowProductDropdown(true)}
-											onBlur={() => {
-												// Delay hiding dropdown to allow clicking on items
-												setTimeout(() => setShowProductDropdown(false), 150);
-											}}
-											placeholder="Clique para buscar produto..."
-											className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
-										/>
-
-										{/* Product Dropdown */}
-										{showProductDropdown && (
-											<div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-												{filteredProductsForDropdown.length > 0 ? (
-													filteredProductsForDropdown
-														.slice(0, 8)
-														.map((product) => (
-															<div
-																key={product.id}
-																onMouseDown={() => handleProductSelect(product)}
-																className="p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0 flex justify-between items-center"
-															>
-																<div>
-																	<p className="font-medium text-gray-900 text-sm">
-																		{product.name}
-																	</p>
-																	<p className="text-xs text-gray-600">
-																		Código: {product.code}
-																	</p>
-																</div>
-																<div className="text-right">
-																	<p className="font-medium text-green-600 text-sm">
-																		R$ {product.salePrice.toFixed(2)}
-																	</p>
-																	<p className="text-xs text-gray-500">
-																		Estoque: {product.stock}
-																	</p>
-																</div>
-															</div>
-														))
-												) : (
-													<div className="p-3 text-sm text-gray-500 text-center">
-														{newItemForm.productDescription
-															? 'Nenhum produto encontrado'
-															: 'Digite para buscar produtos'}
-													</div>
-												)}
-											</div>
-										)}
-									</div>
-
-									{/* Quantidade */}
-									<div className="col-span-2">
-										<label className="block text-xs font-medium text-gray-600 mb-1">
-											Quantidade
-										</label>
-										<input
-											type="number"
-											step="0.01"
-											min="0.01"
-											value={newItemForm.quantity}
-											onChange={(e) =>
-												setNewItemForm((prev) => ({
-													...prev,
-													quantity: Number(e.target.value),
-												}))
-											}
-											className="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-right"
-										/>
-									</div>
-
-									{/* Valor Unitário */}
-									<div className="col-span-2">
-										<label className="block text-xs font-medium text-gray-600 mb-1">
-											Valor Unitário
-										</label>
-										<input
-											type="number"
-											step="0.01"
-											min="0"
-											value={newItemForm.unitPrice}
-											onChange={(e) =>
-												setNewItemForm((prev) => ({
-													...prev,
-													unitPrice: Number(e.target.value),
-												}))
-											}
-											className="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-right"
-										/>
-									</div>
-
-									{/* Botão Adicionar */}
-									<div className="col-span-2">
-										<label className="block text-xs font-medium text-gray-600 mb-1">
-											&nbsp;
-										</label>
-										<Button
-											type="button"
-											variant="primary"
-											size="sm"
-											onClick={handleAddItemFromForm}
-											className="w-full h-[38px] flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200 shadow-sm hover:shadow-md"
-										>
-											<Plus className="h-4 w-4" />
-										</Button>
-									</div>
-								</div>
-							</div>
-
-							{/* Items Section - Same as create modal */}
-							<div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-								<div className="flex justify-between items-center mb-4">
-									<h3 className="text-sm font-medium text-gray-700">
-										Itens da Pré-venda*
-									</h3>
-								</div>
-
-								{/* Items Header */}
-								{formItems.length > 0 && (
-									<div className="bg-white border border-gray-200 rounded-lg mb-2">
-										<div className="grid grid-cols-12 gap-2 px-3 py-2 bg-gray-50 rounded-t-lg border-b border-gray-200 text-xs font-medium text-gray-700">
-											<div className="col-span-4">Descrição do Item</div>
-											<div className="col-span-2 text-right">Valor</div>
-											<div className="col-span-2 text-right">Quantidade</div>
-											<div className="col-span-2 text-right">Preço Unit.</div>
-											<div className="col-span-1 text-right">Total</div>
-											<div className="col-span-1"></div>
-										</div>
-									</div>
-								)}
-
-								{/* Items List */}
-								{formItems.map((item, index) => (
-									<div
-										key={index}
-										className="bg-white border border-gray-200 rounded-lg mb-2"
-									>
-										<div className="grid grid-cols-12 gap-2 px-3 py-2 items-center">
-											{/* Product Name - Disabled after adding */}
-											<div className="col-span-4">
-												<div className="text-sm text-gray-900 font-medium bg-gray-100 px-3 py-2 rounded border border-gray-200">
-													<div>
-														<div className="font-semibold">
-															{item.product.name}
-														</div>
-														<div className="text-xs text-gray-600">
-															Cód: {item.product.code}
-														</div>
-													</div>
-												</div>
-											</div>
-
-											{/* Value Display */}
-											<div className="col-span-2 text-right text-sm font-medium">
-												{calculateItemTotal(
-													item.quantity,
-													item.unitPrice,
-												).toFixed(2)}
-											</div>
-
-											{/* Quantity Input - Disabled after adding */}
-											<div className="col-span-2">
-												<input
-													type="number"
-													step="0.01"
-													min="0.01"
-													value={item.quantity}
-													readOnly={true}
-													className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-right bg-gray-100 cursor-not-allowed opacity-60"
-													title="Campo bloqueado após adição do item"
-												/>
-											</div>
-
-											{/* Unit Price Input - Disabled after adding */}
-											<div className="col-span-2">
-												<input
-													type="number"
-													step="0.01"
-													min="0"
-													value={item.unitPrice}
-													readOnly={true}
-													className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-right bg-gray-100 cursor-not-allowed opacity-60"
-													title="Campo bloqueado após adição do item"
-												/>
-											</div>
-
-											{/* Total Display */}
-											<div className="col-span-1 text-right text-sm font-semibold">
-												{calculateItemTotal(
-													item.quantity,
-													item.unitPrice,
-												).toFixed(2)}
-											</div>
-
-											{/* Delete Button */}
-											<div className="col-span-1 text-center">
-												<button
-													type="button"
-													onClick={() => removeItemFromForm(index)}
-													className="p-1 text-red-600 hover:text-red-800 hover:bg-red-100 rounded"
-													title="Remover item"
-												>
-													<Trash2 className="h-4 w-4" />
-												</button>
-											</div>
-										</div>
-									</div>
-								))}
-
-								{/* Total Summary */}
-								{formItems.length > 0 && (
-									<div className="bg-white border border-gray-200 rounded-lg px-3 py-2">
-										<div className="flex justify-between items-center">
-											<span className="text-sm font-medium text-gray-700">
-												Total dos itens:
-											</span>
-											<span className="text-lg font-bold text-green-600">
-												R$ {calculateFormTotal().toFixed(2)}
-											</span>
-										</div>
-									</div>
-								)}
-							</div>
-
-							{/* Payment Method, Discount and Notes Section - Same as create modal */}
-							<div className="space-y-4">
-								{/* Payment Method and Discount in same row */}
-								<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-									<Select
-										label="Forma de Pagamento *"
-										value={formData.paymentMethodId}
-										onChange={(value) =>
-											handleInputChange('paymentMethodId')(value)
-										}
-										options={paymentMethodOptions}
-										placeholder="Selecione a forma de pagamento"
-										required
-									/>
-									<div>
-										<label className="block text-sm font-medium text-gray-700 mb-1">
-											Desconto
-										</label>
-										<input
-											type="number"
-											step="0.01"
-											min="0"
-											value={formData.discount}
-											onChange={(e) =>
-												handleInputChange('discount')(e.target.value)
-											}
-											placeholder="0.00"
-											className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-										/>
-									</div>
-									<Select
-										label="Tipo de Desconto"
-										value={formData.discountType}
-										onChange={(value) =>
-											handleInputChange('discountType')(value)
-										}
-										options={discountTypeOptions}
-									/>
-								</div>
-
-								{/* Observations - Full width */}
-								<div>
-									<label className="block text-sm font-medium text-gray-700 mb-1">
-										Observações
-									</label>
-									<textarea
-										value={formData.notes}
-										onChange={(e) => handleInputChange('notes')(e.target.value)}
-										placeholder="Observações sobre a pré-venda..."
-										rows={3}
-										className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-									/>
-								</div>
-							</div>
-
-							{/* Total Summary */}
-							{formItems.length > 0 && (
-								<div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-									<div className="flex justify-between items-center text-lg font-semibold">
-										<span className="text-gray-700">Total Geral:</span>
-										<span className="text-blue-700">
-											R$ {calculateFormTotal().toFixed(2)}
-										</span>
-									</div>
-								</div>
-							)}
-
-							{/* Actions */}
-							<div className="flex justify-end space-x-3 pt-4">
-								<Button
-									type="button"
-									variant="secondary"
-									onClick={() => {
-										setShowEditModal(false);
-										setSelectedPreSale(null);
-										setFormData({
-											customerId: '',
-											paymentMethodId: '',
-											notes: '',
-											discount: '',
-											discountType: 'percentage',
-										});
-										setFormItems([]);
-										setNewItemForm({
-											productCode: '',
-											productDescription: '',
-											quantity: 1,
-											unitPrice: 0,
-											selectedProduct: null,
-										});
-										// Reset customer search states
-										setCustomerSearchTerm('');
-										setShowCustomerDropdown(false);
-										setShowProductDropdown(false);
-									}}
-								>
-									Cancelar
-								</Button>
-								<Button
-									id={`${editFormId}-submit-presale-edit-button`}
-									type="submit"
-									variant="primary"
-								>
-									Atualizar Pré-venda
-								</Button>
-							</div>
-						</form>
-					</div>
-				</InPageModal>
+				/>
 			)}
 
 			{/* Status Change Modal - Compact Design */}
@@ -1569,106 +1056,149 @@ const PresalesPage: React.FC = () => {
 					onClose={() => setShowStatusModal(false)}
 					title="Alterar Status"
 				>
-					<div className="space-y-5">
-						{/* Header com ícone */}
-						<div className="flex items-center gap-3 pb-4 border-b border-gray-200">
-							<div className="p-2 bg-purple-100 rounded-lg">
-								<RotateCcw className="h-5 w-5 text-purple-600" />
+					<div className="space-y-4">
+						{/* Header compacto */}
+						<div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
+							<RotateCcw className="h-5 w-5 text-blue-600" />
+							<div className="flex-1">
+								<p className="font-medium text-gray-900">#{selectedPreSale.id} - {selectedPreSale.customer.name}</p>
+								<p className="text-sm text-gray-600">R$ {selectedPreSale.total.toFixed(2)}</p>
 							</div>
-							<div>
-								<p className="text-sm text-gray-500">
-									Pré-venda #{selectedPreSale.id}
-								</p>
-							</div>
-						</div>
-
-						{/* Lista de Status */}
-						<div className="space-y-4">
-							<p className="text-sm text-gray-600 mb-1">Status atual:</p>
-							<span
-								className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(selectedPreSale.status)}`}
-							>
+							<span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(selectedPreSale.status)}`}>
 								{getStatusLabel(selectedPreSale.status)}
 							</span>
 						</div>
 
-						{/* Opções de Status - Cards Modernos */}
-						<div>
-							<p className="text-sm text-gray-600 mb-4 text-center">
-								Selecione o novo status:
-							</p>
-							<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-								{(
-									[
-										'draft',
-										'pending',
-										'approved',
-										'cancelled',
-										'converted',
-									] as PreSale['status'][]
-								).map((status) => {
-									const isCurrent = selectedPreSale.status === status;
-									const statusInfo = {
-										draft: { icon: '📝', desc: 'Pré-venda em rascunho' },
-										pending: {
-											icon: '⏳',
-											desc: 'Aguardando aprovação do cliente',
-										},
-										approved: {
-											icon: '✅',
-											desc: 'Cliente aprovou a proposta',
-										},
-										cancelled: { icon: '❌', desc: 'Pré-venda foi cancelada' },
-										converted: {
-											icon: '✨',
-											desc: 'Convertida em venda final',
-										},
-									};
+						{/* Opções de Status - Grid compacto */}
+						<div className="grid grid-cols-2 gap-2">
+							{(
+								[
+									'draft',
+									'pending',
+									'approved',
+									'cancelled',
+									'converted',
+								] as PreSale['status'][]
+							).filter((status) => {
+								if (status === selectedPreSale.status) return true;
 
-									return (
-										<button
-											key={status}
-											onClick={() => updatePreSaleStatus(status)}
-											disabled={isCurrent}
-											className={`
-												relative p-4 rounded-xl border-2 text-left transition-all duration-200 transform
-												${
-													isCurrent
-														? 'bg-gray-50 border-gray-300 text-gray-400 cursor-not-allowed'
-														: 'bg-white border-gray-200 hover:border-purple-300 hover:bg-purple-50 hover:scale-105 hover:shadow-md cursor-pointer'
-												}
-											`}
-										>
-											{isCurrent && (
-												<div className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs px-2 py-1 rounded-full font-medium">
-													Atual
-												</div>
-											)}
+								const validTransitions: Record<PreSale['status'], PreSale['status'][]> = {
+									draft: ['pending', 'cancelled'],
+									pending: ['approved', 'cancelled', 'converted'],
+									approved: ['converted', 'cancelled'],
+									cancelled: [],
+									converted: [],
+								};
 
-											<div className="flex items-center gap-3 mb-2">
-												<span className="text-2xl">
-													{statusInfo[status].icon}
-												</span>
-												<div>
-													<div className="flex items-center gap-2">
-														<span className="font-semibold text-gray-900">
-															{getStatusLabel(status)}
-														</span>
-														<span
-															className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(status)}`}
-														>
-															{status}
-														</span>
-													</div>
-												</div>
+								return validTransitions[selectedPreSale.status]?.includes(status) || false;
+							}).map((status) => {
+								const isCurrent = selectedPreSale.status === status;
+
+								const statusConfig = {
+									draft: { icon: FileText, color: 'text-gray-600', bg: 'bg-gray-50', border: 'border-gray-200' },
+									pending: { icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-200' },
+									approved: { icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200' },
+									cancelled: { icon: XCircle, color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200' },
+									converted: { icon: Sparkles, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-200' },
+								};
+
+								const config = statusConfig[status];
+								const IconComponent = config.icon;
+
+								return (
+									<button
+										key={status}
+										onClick={() => updatePreSaleStatusLocal(status)}
+										disabled={isCurrent}
+										className={`
+											relative p-3 rounded-lg border text-left transition-all duration-200
+											${isCurrent
+												? `${config.bg} ${config.border} opacity-60 cursor-not-allowed`
+												: `bg-white ${config.border} hover:${config.bg} hover:shadow-md cursor-pointer`
+											}
+										`}
+									>
+										{isCurrent && (
+											<div className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs px-1 py-0.5 rounded font-medium">
+												Atual
 											</div>
-											<p className="text-sm text-gray-500 leading-relaxed">
-												{statusInfo[status].desc}
-											</p>
-										</button>
-									);
-								})}
+										)}
+
+										<div className="flex items-center gap-2">
+											<IconComponent className={`h-4 w-4 ${config.color}`} />
+											<div>
+												<p className="font-medium text-sm text-gray-900">
+													{getStatusLabel(status)}
+												</p>
+												{status === 'converted' && !isCurrent && (
+													<p className="text-xs text-purple-600 flex items-center gap-1">
+														<Download className="h-3 w-3" />
+														PDF incluído
+													</p>
+												)}
+											</div>
+										</div>
+									</button>
+								);
+							})}
+						</div>
+					</div>
+				</SimpleModal>
+			)}
+
+			{/* Modal de Confirmação de PDF - Compacto */}
+			{showPdfConfirmModal && pendingConversion && (
+				<SimpleModal
+					isOpen={showPdfConfirmModal}
+					onClose={() => {
+						setShowPdfConfirmModal(false);
+						setPendingConversion(null);
+					}}
+					title="Pré-venda Convertida!"
+				>
+					<div className="space-y-4">
+						{/* Header compacto */}
+						<div className="text-center">
+							<div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-3">
+								<Sparkles className="h-6 w-6 text-green-600" />
 							</div>
+							<p className="text-gray-600">
+								#{pendingConversion.id} - {pendingConversion.customer.name}
+							</p>
+							<p className="font-semibold text-green-600">
+								R$ {pendingConversion.total.toFixed(2)}
+							</p>
+						</div>
+
+						{/* Pergunta sobre PDF */}
+						<div className="text-center p-3 bg-blue-50 rounded-lg">
+							<div className="flex items-center justify-center gap-2 mb-2">
+								<Download className="h-4 w-4 text-blue-600" />
+								<span className="font-medium text-gray-900">Gerar PDF?</span>
+							</div>
+							<p className="text-sm text-gray-600">
+								Deseja gerar o PDF desta pré-venda?
+							</p>
+						</div>
+
+						{/* Botões de ação */}
+						<div className="flex gap-2">
+							<Button
+								variant="secondary"
+								onClick={() => handleConvertWithPdf(false)}
+								className="flex-1 flex items-center justify-center gap-1 text-sm"
+							>
+								<X className="h-3 w-3" />
+								Não
+							</Button>
+							<Button
+								variant="primary"
+								onClick={() => handleConvertWithPdf(true)}
+								className="flex-1 flex items-center justify-center gap-1 bg-green-600 hover:bg-green-700 text-sm"
+							>
+								<Download className="h-3 w-3" />
+								Sim, gerar PDF
+							</Button>
 						</div>
 					</div>
 				</SimpleModal>

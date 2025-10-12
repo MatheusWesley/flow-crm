@@ -3,7 +3,7 @@ import type React from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import type { SelectOption } from '../../../components/common/Select';
 import Select from '../../../components/common/Select';
-import { mockUserManagementService } from '../../../data/mockUserManagementService';
+import { userService } from '../../../services/userService';
 import toastService from '../../../services/ToastService';
 import type { User } from '../../../types';
 import Input from '../../common/Input';
@@ -45,7 +45,7 @@ const UsersList: React.FC<UsersListProps> = ({ onEditUser }) => {
 	const loadUsers = useCallback(async () => {
 		try {
 			setLoading(true);
-			const usersData = await mockUserManagementService.getAllUsers();
+			const usersData = await userService.getAllUsers();
 			setUsers(usersData);
 		} catch (error) {
 			console.error('Error loading users:', error);
@@ -70,7 +70,7 @@ const UsersList: React.FC<UsersListProps> = ({ onEditUser }) => {
 
 		if (confirm(`Tem certeza que deseja excluir o usuário "${user.name}"?`)) {
 			try {
-				await mockUserManagementService.deleteUser(user.id);
+				await userService.deleteUser(user.id);
 				toastService.success(`Usuário ${user.name} excluído com sucesso!`);
 				await loadUsers(); // Reload the list
 			} catch (error) {
@@ -231,19 +231,9 @@ const UsersList: React.FC<UsersListProps> = ({ onEditUser }) => {
 						>
 							<div className="flex justify-between items-start mb-3">
 								<div className="flex items-center space-x-3 flex-grow">
-									{user.avatar ? (
-										<img
-											src={user.avatar}
-											alt={user.name}
-											className="w-10 h-10 rounded-full object-cover"
-										/>
-									) : (
-										<div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
-											<span className="text-gray-600 font-medium text-sm">
-												{user.name.charAt(0).toUpperCase()}
-											</span>
-										</div>
-									)}
+									<div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium">
+										{user.name.charAt(0).toUpperCase()}
+									</div>
 									<div className="flex-grow min-w-0">
 										<h3 className="font-semibold text-gray-900 truncate">
 											{user.name}

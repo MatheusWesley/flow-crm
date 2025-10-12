@@ -1,6 +1,6 @@
 import { Check, Info, X } from 'lucide-react';
 import type React from 'react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { UserPermissions } from '../../../types';
 
 interface PermissionsEditorProps {
@@ -35,11 +35,6 @@ const PermissionsEditor: React.FC<PermissionsEditorProps> = ({
 		'modules',
 		'presales',
 	]);
-
-	// Debug: Log when permissions prop changes
-	useEffect(() => {
-		console.log('PermissionsEditor: permissions prop changed:', permissions);
-	}, [permissions]);
 
 	// Define permission groups and items
 	const permissionGroups: PermissionGroup[] = [
@@ -135,36 +130,59 @@ const PermissionsEditor: React.FC<PermissionsEditorProps> = ({
 
 	// Helper function to set permission value by path
 	const setPermissionValue = (path: string, value: boolean) => {
-		console.log('setPermissionValue called:', {
-			path,
-			value,
-			currentPermissions: permissions,
-		});
-
-		// Force a re-render by creating a completely new object structure
-		const newPermissions = JSON.parse(
-			JSON.stringify(permissions),
-		) as UserPermissions;
+		// Create a completely new permissions object
+		const newPermissions: UserPermissions = {
+			modules: {
+				products: permissions.modules.products,
+				customers: permissions.modules.customers,
+				reports: permissions.modules.reports,
+				paymentMethods: permissions.modules.paymentMethods,
+				userManagement: permissions.modules.userManagement,
+			},
+			presales: {
+				canCreate: permissions.presales.canCreate,
+				canViewOwn: permissions.presales.canViewOwn,
+				canViewAll: permissions.presales.canViewAll,
+			},
+		};
 
 		const keys = path.split('.');
 		if (keys.length === 2) {
 			const [section, permission] = keys;
 
-			if (section === 'modules' && permission in newPermissions.modules) {
-				newPermissions.modules[
-					permission as keyof typeof newPermissions.modules
-				] = value;
-			} else if (
-				section === 'presales' &&
-				permission in newPermissions.presales
-			) {
-				newPermissions.presales[
-					permission as keyof typeof newPermissions.presales
-				] = value;
+			if (section === 'modules') {
+				switch (permission) {
+					case 'products':
+						newPermissions.modules.products = value;
+						break;
+					case 'customers':
+						newPermissions.modules.customers = value;
+						break;
+					case 'reports':
+						newPermissions.modules.reports = value;
+						break;
+					case 'paymentMethods':
+						newPermissions.modules.paymentMethods = value;
+						break;
+					case 'userManagement':
+						newPermissions.modules.userManagement = value;
+						break;
+				}
+			} else if (section === 'presales') {
+				switch (permission) {
+					case 'canCreate':
+						newPermissions.presales.canCreate = value;
+						break;
+					case 'canViewOwn':
+						newPermissions.presales.canViewOwn = value;
+						break;
+					case 'canViewAll':
+						newPermissions.presales.canViewAll = value;
+						break;
+				}
 			}
 		}
 
-		console.log('Calling onChange with:', newPermissions);
 		onChange(newPermissions);
 	};
 
@@ -405,15 +423,6 @@ const PermissionsEditor: React.FC<PermissionsEditorProps> = ({
 									{availablePermissions.map((permission) => {
 										const isEnabled = getPermissionValue(permission.path);
 
-										const handleCheckboxChange = (checked: boolean) => {
-											console.log(
-												'handleCheckboxChange called:',
-												permission.path,
-												checked,
-											);
-											setPermissionValue(permission.path, checked);
-										};
-
 										return (
 											<div
 												key={permission.id}
@@ -425,19 +434,17 @@ const PermissionsEditor: React.FC<PermissionsEditorProps> = ({
 											>
 												<div className="flex items-center h-5 pt-0.5">
 													<input
-														type="checkbox"
 														id={`${group.id}-${permission.id}`}
+														type="checkbox"
 														checked={isEnabled}
+														disabled={disabled}
 														onChange={(e) => {
-															console.log(
-																'Checkbox onChange event:',
+															setPermissionValue(
 																permission.path,
 																e.target.checked,
 															);
-															handleCheckboxChange(e.target.checked);
 														}}
-														disabled={disabled}
-														className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+														className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
 													/>
 												</div>
 												<div className="flex-1 min-w-0">

@@ -69,9 +69,12 @@ class AutoCodeService {
 		const config = AutoCodeService.configs[entityType];
 		if (!config) return;
 
+		// Ensure we have a valid array and filter out invalid codes
+		const validCodes = existingCodes || [];
+
 		// Extract numbers from existing codes and find the highest one
-		const numbers = existingCodes
-			.filter((code) => code.startsWith(config.prefix))
+		const numbers = validCodes
+			.filter((code) => code && typeof code === 'string' && code.startsWith(config.prefix))
 			.map((code) => parseInt(code.replace(config.prefix, ''), 10))
 			.filter((num) => !isNaN(num));
 

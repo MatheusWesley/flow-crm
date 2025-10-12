@@ -22,7 +22,6 @@ export interface UserFormData {
     confirmPassword: string;
     userType: 'admin' | 'employee';
     isActive: boolean;
-    avatar?: string;
 }
 
 /**
@@ -47,25 +46,7 @@ export const getPasswordValidation = (password: string) => {
     return validatePasswordStrength(password);
 };
 
-/**
- * Validates URL format (for avatar)
- */
-export const isValidUrl = (url: string): boolean => {
-    if (!url.trim()) return true; // Optional field
 
-    // More permissive URL validation for avatars
-    const urlPattern =
-        /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?(\?[;&a-z\d%_.~+=-]*)?(#[-a-z\d_]*)?$/i;
-
-    try {
-        // Try to create URL object first
-        new URL(url.startsWith('http') ? url : `https://${url}`);
-        return true;
-    } catch {
-        // Fallback to regex pattern
-        return urlPattern.test(url);
-    }
-};
 
 /**
  * Validates user name
@@ -87,7 +68,7 @@ export const validateUserForm = (
     const securityThreats: string[] = [];
 
     // Security validation for all string inputs
-    const stringFields = ['name', 'email', 'password', 'avatar'];
+    const stringFields = ['name', 'email', 'password'];
     for (const field of stringFields) {
         const value = formData[field as keyof UserFormData];
         if (typeof value === 'string' && value) {
@@ -143,10 +124,7 @@ export const validateUserForm = (
         }
     }
 
-    // Avatar URL validation (optional)
-    if (formData.avatar && !isValidUrl(formData.avatar)) {
-        errors.avatar = 'URL do avatar inválida';
-    }
+
 
     return {
         isValid: Object.keys(errors).length === 0,
@@ -194,10 +172,7 @@ export const validateField = (
             if (formData.password !== String(value)) return 'Senhas não coincidem';
             break;
 
-        case 'avatar':
-            if (String(value) && !isValidUrl(String(value)))
-                return 'URL do avatar inválida';
-            break;
+
     }
 
     return '';

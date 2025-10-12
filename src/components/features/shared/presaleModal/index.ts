@@ -1,1 +1,1 @@
-export { default as PresaleModal } from './PresaleModal';
+export { default as UnifiedPresaleModal } from './UnifiedPresaleModal';

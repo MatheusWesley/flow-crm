@@ -48,6 +48,21 @@ export const TOAST_MESSAGES = {
 		invalidData: 'Preencha todos os campos obrigatórios!',
 	},
 
+	// Formas de pagamento
+	paymentMethod: {
+		created: 'Forma de pagamento criada com sucesso!',
+		updated: 'Forma de pagamento atualizada com sucesso!',
+		deleted: 'Forma de pagamento excluída com sucesso!',
+		invalidData: 'Preencha todos os campos obrigatórios!',
+		deleteConfirm: 'Tem certeza que deseja excluir esta forma de pagamento?',
+		duplicateCode: 'Já existe uma forma de pagamento com este código!',
+		inUse: 'Esta forma de pagamento está sendo usada e não pode ser excluída!',
+		networkError: 'Erro de conexão. Verifique sua internet e tente novamente.',
+		serverError: 'Erro no servidor. Tente novamente em alguns minutos.',
+		loadError: 'Erro ao carregar formas de pagamento. Tente novamente.',
+		retrying: 'Tentando novamente...',
+	},
+
 	// Genéricas
 	generic: {
 		success: 'Operação realizada com sucesso!',
