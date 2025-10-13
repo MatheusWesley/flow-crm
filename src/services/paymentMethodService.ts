@@ -16,7 +16,7 @@ export interface PaymentMethodFilters {
  * Handles all payment method-related API operations
  */
 export class PaymentMethodService {
-    private readonly baseUrl = '/api/payment-methods';
+    private readonly baseUrl = '/payment-methods';
 
     /**
      * Get all payment methods

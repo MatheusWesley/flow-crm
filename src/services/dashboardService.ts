@@ -60,9 +60,9 @@ class DashboardService {
         try {
             // Buscar dados reais em paralelo
             const [productsResponse, , presalesResponse] = await Promise.all([
-                httpClient.get<PaginatedResponse<Product>>('/api/products?limit=100'),
-                httpClient.get<PaginatedResponse<Customer>>('/api/customers?limit=100'),
-                httpClient.get<PaginatedResponse<PreSale>>('/api/presales?limit=100'),
+                httpClient.get<PaginatedResponse<Product>>('/products?limit=100'),
+                httpClient.get<PaginatedResponse<Customer>>('/customers?limit=100'),
+                httpClient.get<PaginatedResponse<PreSale>>('/presales?limit=100'),
             ]);
 
             const products = productsResponse.data || [];
@@ -171,7 +171,7 @@ class DashboardService {
      */
     async getSalesData(): Promise<SalesData[]> {
         try {
-            const response = await httpClient.get<PaginatedResponse<PreSale>>('/api/presales?limit=100');
+            const response = await httpClient.get<PaginatedResponse<PreSale>>('/presales?limit=100');
             const presales = response.data || [];
 
             const data: SalesData[] = [];
@@ -212,9 +212,9 @@ class DashboardService {
         try {
             // Buscar dados recentes
             const [productsResponse, customersResponse, presalesResponse] = await Promise.all([
-                httpClient.get<PaginatedResponse<Product>>('/api/products?limit=10'),
-                httpClient.get<PaginatedResponse<Customer>>('/api/customers?limit=10'),
-                httpClient.get<PaginatedResponse<PreSale>>('/api/presales?limit=10'),
+                httpClient.get<PaginatedResponse<Product>>('/products?limit=10'),
+                httpClient.get<PaginatedResponse<Customer>>('/customers?limit=10'),
+                httpClient.get<PaginatedResponse<PreSale>>('/presales?limit=10'),
             ]);
 
             const activities: RecentActivity[] = [];
@@ -264,7 +264,7 @@ class DashboardService {
      */
     async getInventoryAlerts(): Promise<InventoryAlert[]> {
         try {
-            const response = await httpClient.get<PaginatedResponse<Product>>('/api/products?limit=100');
+            const response = await httpClient.get<PaginatedResponse<Product>>('/products?limit=100');
             const products = response.data || [];
 
             // Filtrar produtos com estoque baixo

@@ -59,7 +59,7 @@ export interface StockHistoryFilters {
  * and response transformation
  */
 class InventoryService {
-    private readonly baseUrl = '/api';
+    private readonly baseUrl = '';
     private readonly defaultRetryConfig: RetryConfig = {
         maxRetries: 3,
         baseDelay: 1000,

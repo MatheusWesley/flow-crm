@@ -28,7 +28,7 @@ export class ReportsServiceError extends Error {
  * Service for handling reports API calls with enhanced error handling and retry logic
  */
 class ReportsService {
-    private readonly baseUrl = '/api/reports';
+    private readonly baseUrl = '/reports';
     private readonly maxRetries = 3;
     private readonly retryDelay = 1000; // 1 second base delay
 

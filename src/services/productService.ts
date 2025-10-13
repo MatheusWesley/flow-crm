@@ -33,7 +33,7 @@ export interface ProductSearchParams {
 }
 
 class ProductService {
-    private readonly baseUrl = '/api/products';
+    private readonly baseUrl = '/products';
 
     /**
      * Get all products with filtering and pagination

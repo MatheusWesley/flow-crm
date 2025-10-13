@@ -12,7 +12,7 @@ import { httpClient } from './httpClient';
  * Handles all customer-related API operations
  */
 export class CustomerService {
-    private readonly baseUrl = '/api/customers';
+    private readonly baseUrl = '/customers';
 
     /**
      * Get all customers with pagination and filtering

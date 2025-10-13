@@ -9,7 +9,7 @@ import type {
 import { httpClient } from './httpClient';
 
 export class PresaleService {
-    private readonly baseUrl = '/api/presales';
+    private readonly baseUrl = '/presales';
 
     /**
      * Get all pre-sales with optional filtering and pagination

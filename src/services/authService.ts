@@ -26,7 +26,7 @@ export class AuthService {
             authDebugLog('Attempting login for user:', credentials.email);
 
             const response = await httpClient.post<LoginResponse>(
-                '/api/auth/login',
+                '/auth/login',
                 credentials,
             );
 
@@ -56,7 +56,7 @@ export class AuthService {
             authDebugLog('Attempting logout');
 
             // Call the logout endpoint to invalidate the token on the server
-            await httpClient.post('/api/auth/logout');
+            await httpClient.post('/auth/logout');
 
             authDebugLog('Server logout successful');
         } catch (error) {
@@ -84,7 +84,7 @@ export class AuthService {
         try {
             authDebugLog('Fetching current user profile');
 
-            const response = await httpClient.get<{ data: User }>('/api/auth/me');
+            const response = await httpClient.get<{ data: User }>('/auth/me');
 
             authDebugLog('User profile fetched successfully:', response.data.email);
             return response.data;
@@ -102,7 +102,7 @@ export class AuthService {
             authDebugLog('Refreshing authentication token');
 
             const response =
-                await httpClient.post<{ data: RefreshTokenResponse }>('/api/auth/refresh');
+                await httpClient.post<{ data: RefreshTokenResponse }>('/auth/refresh');
 
             const { token } = response.data;
             authDebugLog('Token refresh successful');

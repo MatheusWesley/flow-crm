@@ -18,7 +18,7 @@ export class UserService implements UserManagementService {
      */
     async getAllUsers(): Promise<User[]> {
         try {
-            const response = await httpClient.get<{ success: boolean; data: any[] }>('/api/users');
+            const response = await httpClient.get<{ success: boolean; data: any[] }>('/users');
 
             // Check if response has the expected structure
             if (!response.success || !Array.isArray(response.data)) {
@@ -97,7 +97,7 @@ export class UserService implements UserManagementService {
                 permissions: userData.permissions,
             };
 
-            const response = await httpClient.post<{ success: boolean; data: any }>('/api/auth/register', backendData);
+            const response = await httpClient.post<{ success: boolean; data: any }>('/auth/register', backendData);
 
             // Check if response has the expected structure
             if (!response.success || !response.data) {
@@ -190,7 +190,7 @@ export class UserService implements UserManagementService {
                 backendData.permissions = userData.permissions;
             }
 
-            const response = await httpClient.put<{ success: boolean; data: any }>(`/api/users/${userId}`, backendData);
+            const response = await httpClient.put<{ success: boolean; data: any }>(`/users/${userId}`, backendData);
 
             // Check if response has the expected structure
             if (!response.success || !response.data) {
@@ -272,7 +272,7 @@ export class UserService implements UserManagementService {
      */
     async deleteUser(userId: string): Promise<void> {
         try {
-            const response = await httpClient.delete<{ success: boolean }>(`/api/users/${userId}`);
+            const response = await httpClient.delete<{ success: boolean }>(`/users/${userId}`);
 
             if (!response.success) {
                 throw new Error('Falha ao excluir usuário');
@@ -301,7 +301,7 @@ export class UserService implements UserManagementService {
      */
     async updateUserPermissions(userId: string, permissions: UserPermissions): Promise<void> {
         try {
-            const response = await httpClient.put<{ success: boolean }>(`/api/users/${userId}`, {
+            const response = await httpClient.put<{ success: boolean }>(`/users/${userId}`, {
                 permissions
             });
 
@@ -320,7 +320,7 @@ export class UserService implements UserManagementService {
     async getAuditLogs(filters?: AuditLogFilters): Promise<AuditLog[]> {
         try {
             // This would connect to the audit logs API when available
-            const response = await httpClient.get<any[]>('/api/audit-logs', { params: filters });
+            const response = await httpClient.get<any[]>('/audit-logs', { params: filters });
 
             return response.map((log: any) => ({
                 ...log,
