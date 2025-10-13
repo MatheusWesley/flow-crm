@@ -26,14 +26,24 @@ export class AuthService {
             authDebugLog('Attempting login for user:', credentials.email);
             console.log('Making login request...');
 
-            // Try XMLHttpRequest first (more reliable in some environments)
-            const apiUrl = 'https://flow-crm-backend-58ub.onrender.com/api/auth/login';
+            let responseData: any;
 
-            console.log('Trying XMLHttpRequest approach...');
-            const responseData = await this.makeXHRRequest(apiUrl, credentials);
-            console.log('XHR request successful:', responseData);
+            // Strategy 1: Try local Vercel proxy first
+            try {
+                console.log('Trying local Vercel proxy...');
+                const proxyUrl = '/api/proxy-login';
+                responseData = await this.makeXHRRequest(proxyUrl, credentials);
+                console.log('Local proxy successful:', responseData);
 
+            } catch (proxyError) {
+                console.warn('Local proxy failed:', proxyError);
 
+                // Strategy 2: Try direct connection
+                console.log('Trying direct XMLHttpRequest approach...');
+                const apiUrl = 'https://flow-crm-backend-58ub.onrender.com/api/auth/login';
+                responseData = await this.makeXHRRequest(apiUrl, credentials);
+                console.log('Direct XHR request successful:', responseData);
+            }
 
             const loginData = responseData.data as LoginResponse;
             console.log('Extracted login data:', loginData);
