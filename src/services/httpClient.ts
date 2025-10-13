@@ -20,10 +20,12 @@ class HttpClient {
 
         this.axiosInstance = axios.create({
             baseURL: config.apiBaseUrl,
-            timeout: 15000, // Reduced timeout for better UX - reports should load quickly
+            timeout: 15000,
             headers: {
                 'Content-Type': 'application/json',
             },
+            withCredentials: false, // Explicitly disable credentials for CORS
+            validateStatus: (status) => status >= 200 && status < 300,
         });
 
         this.setupInterceptors();
