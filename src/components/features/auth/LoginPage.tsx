@@ -12,7 +12,6 @@ import { useEffect, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import flowcrmSvg from '../../../assets/flowcrm.svg';
 import { useAuth } from '../../../context/AuthContext';
-import { DebugInfo } from '../../DebugInfo';
 
 const LoginPage: React.FC = () => {
 	const navigate = useNavigate();
@@ -98,20 +97,16 @@ const LoginPage: React.FC = () => {
 		}
 
 		try {
-			console.log('LoginPage: Starting login process...');
 			await login(formData);
-			console.log('LoginPage: Login successful, navigating to:', from);
 			navigate(from, { replace: true });
-			console.log('LoginPage: Navigation completed');
 		} catch (loginError) {
 			// Error is handled by the context and displayed via the error state
-			console.error('LoginPage: Login failed:', loginError);
+			console.error('Login failed:', loginError);
 		}
 	};
 
 	return (
 		<div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-white">
-			<DebugInfo />
 			{/* Coluna da imagem (desktop) */}
 			<div className="hidden lg:block relative h-full min-h-screen">
 				<img
