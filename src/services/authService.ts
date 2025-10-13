@@ -25,13 +25,30 @@ export class AuthService {
         try {
             authDebugLog('Attempting login for user:', credentials.email);
 
-            const response = await httpClient.post<LoginResponse>(
-                '/auth/login',
-                credentials,
-            );
+            // Try with fetch first as a fallback
+            const apiUrl = 'https://flow-crm-backend-58ub.onrender.com/api/auth/login';
+
+            console.log('Making direct fetch request to:', apiUrl);
+
+            const fetchResponse = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(credentials),
+            });
+
+            console.log('Fetch response status:', fetchResponse.status);
+
+            if (!fetchResponse.ok) {
+                throw new Error(`HTTP ${fetchResponse.status}: ${fetchResponse.statusText}`);
+            }
+
+            const responseData = await fetchResponse.json();
+            console.log('Fetch response data:', responseData);
 
             // Handle response format from backend (wrapped in data property)
-            const loginData = (response as any).data as LoginResponse;
+            const loginData = responseData.data as LoginResponse;
 
             const { token, refreshToken, user } = loginData;
 
@@ -44,7 +61,31 @@ export class AuthService {
             return loginData;
         } catch (error) {
             authDebugLog('Login failed:', error);
-            throw error;
+
+            // If fetch fails, try with httpClient as fallback
+            try {
+                console.log('Fetch failed, trying with httpClient...');
+
+                const response = await httpClient.post<LoginResponse>(
+                    '/auth/login',
+                    credentials,
+                );
+
+                // Handle response format from backend (wrapped in data property)
+                const loginData = (response as any).data as LoginResponse;
+
+                const { token, refreshToken, user } = loginData;
+
+                // Store tokens using the HTTP client's token manager
+                httpClient.setAuthTokens(token, refreshToken || '');
+
+                authDebugLog('Login successful with httpClient for user:', user.email);
+
+                return loginData;
+            } catch (httpClientError) {
+                authDebugLog('Both fetch and httpClient failed:', httpClientError);
+                throw error; // Throw original fetch error
+            }
         }
     }
 

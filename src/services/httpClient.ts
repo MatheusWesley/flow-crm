@@ -10,6 +10,8 @@ class HttpClient {
     private axiosInstance: AxiosInstance;
 
     constructor() {
+        console.log('HttpClient initialized with baseURL:', config.apiBaseUrl);
+
         this.axiosInstance = axios.create({
             baseURL: config.apiBaseUrl,
             timeout: 15000, // Reduced timeout for better UX - reports should load quickly
@@ -25,6 +27,13 @@ class HttpClient {
         // Request interceptor for authentication
         this.axiosInstance.interceptors.request.use(
             (config) => {
+                console.log('Request interceptor:', {
+                    url: config.url,
+                    baseURL: config.baseURL,
+                    method: config.method,
+                    headers: config.headers
+                });
+
                 const token = tokenStorage.getToken();
 
                 if (token) {
@@ -33,6 +42,7 @@ class HttpClient {
                 return config;
             },
             (error) => {
+                console.error('Request interceptor error:', error);
                 return Promise.reject(error);
             }
         );
@@ -43,6 +53,15 @@ class HttpClient {
                 return response;
             },
             (error) => {
+                console.error('HTTP Client Error:', {
+                    message: error.message,
+                    status: error.response?.status,
+                    statusText: error.response?.statusText,
+                    url: error.config?.url,
+                    baseURL: error.config?.baseURL,
+                    fullURL: error.config?.baseURL + error.config?.url
+                });
+
                 // Handle 401 errors by clearing token
                 if (error.response?.status === 401) {
                     tokenStorage.removeToken();
@@ -62,6 +81,13 @@ class HttpClient {
     }
 
     async post<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+        console.log('Making POST request:', {
+            url,
+            baseURL: this.axiosInstance.defaults.baseURL,
+            fullURL: `${this.axiosInstance.defaults.baseURL}${url}`,
+            data
+        });
+
         const response = await this.axiosInstance.post<T>(url, data, config);
         return response.data;
     }

@@ -30,7 +30,7 @@ export interface EnvironmentConfig {
 
 // Default configuration values
 const DEFAULT_CONFIG: EnvironmentConfig = {
-    apiBaseUrl: '',
+    apiBaseUrl: 'https://flow-crm-backend-58ub.onrender.com/api',
     apiTimeout: 10000,
     tokenStorageKey: 'flowcrm_token',
     refreshTokenStorageKey: 'flowcrm_refresh_token',
@@ -113,8 +113,8 @@ function createConfig(): EnvironmentConfig {
         secureCookies: getEnvBoolean('VITE_SECURE_COOKIES', DEFAULT_CONFIG.secureCookies),
     };
 
-    // Log configuration in development
-    if (config.appEnvironment === 'development' && config.debugApiCalls) {
+    // Log configuration in development and production for debugging
+    if (config.debugApiCalls || config.appEnvironment === 'production') {
         console.log('Environment Configuration:', {
             ...config,
             // Don't log sensitive keys
