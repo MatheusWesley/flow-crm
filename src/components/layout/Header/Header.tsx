@@ -1,27 +1,22 @@
-import { ChevronDown, LogOut, Search, X } from 'lucide-react';
+import { ChevronDown, LogOut, X } from 'lucide-react';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
-import { useSearchShortcut } from '../../../hooks/useKeyboardShortcut';
 import type { User as UserType } from '../../../types';
-import SearchModal from '../../common/SearchModal';
 
 interface HeaderProps {
 	title: string;
 	user?: UserType;
-	onSearch?: (query: string) => void;
 	className?: string;
 }
 
 const Header: React.FC<HeaderProps> = ({
 	title,
 	user,
-	onSearch,
 	className = '',
 }) => {
 	const navigate = useNavigate();
 	const { logout } = useAuth();
-	const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 	const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
 	// CSS para animação do dropdown
@@ -45,16 +40,7 @@ const Header: React.FC<HeaderProps> = ({
 		};
 	}, []);
 
-	// Atalho de teclado para abrir a pesquisa (Ctrl+K / Cmd+K)
-	useSearchShortcut(() => setIsSearchModalOpen(true));
 
-	const handleSearchClick = () => {
-		setIsSearchModalOpen(true);
-	};
-
-	const handleSearchModalClose = () => {
-		setIsSearchModalOpen(false);
-	};
 
 	// Handle logout
 	const handleLogout = () => {
@@ -95,29 +81,8 @@ const Header: React.FC<HeaderProps> = ({
 						</h1>
 					</div>
 
-					{/* Right section - Search, Notifications and User */}
+					{/* Right section - User */}
 					<div className="flex items-center space-x-3">
-						{/* Search button */}
-						<button
-							type="button"
-							onClick={handleSearchClick}
-							className="
-								flex items-center space-x-2 px-3 py-2 text-slate-300 
-								hover:text-white hover:bg-slate-800/50 rounded-xl 
-								transition-all duration-300 border border-slate-700/50
-								hover:border-slate-600 hover:scale-105
-							"
-							aria-label="Search (Ctrl+K)"
-							title="Pesquisar (Ctrl+K)"
-						>
-							<Search className="h-4 w-4" />
-							<span className="hidden sm:inline text-sm font-medium">
-								Pesquisar
-							</span>
-							<kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 border border-slate-600 rounded text-xs font-mono bg-slate-800/50 text-slate-300">
-								⌘K
-							</kbd>
-						</button>
 
 						{/* User menu */}
 						{user && (
@@ -215,12 +180,7 @@ const Header: React.FC<HeaderProps> = ({
 				</div>
 			</header>
 
-			{/* Search Modal */}
-			<SearchModal
-				isOpen={isSearchModalOpen}
-				onClose={handleSearchModalClose}
-				onSearch={onSearch}
-			/>
+
 		</>
 	);
 };

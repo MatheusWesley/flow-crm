@@ -7,13 +7,13 @@ import {
 	Home,
 	LogOut,
 	Package,
-	Settings,
 	ShoppingCart,
 	Users,
 } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../context/AuthContext';
 import { usePermissions } from '../../../hooks/usePermissions';
 import type { MenuItem } from '../../../types';
 
@@ -30,6 +30,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
 	const navigate = useNavigate();
 	const location = useLocation();
+	const { logout } = useAuth();
 	const permissions = usePermissions();
 	const [expandedItems, setExpandedItems] = useState<string[]>([]);
 	const [hoveredItem, setHoveredItem] = useState<string | null>(null);
@@ -204,12 +205,6 @@ const Sidebar: React.FC<SidebarProps> = ({
 	// Bottom menu items
 	const bottomMenuItems: MenuItem[] = [
 		{
-			id: 'settings',
-			label: 'Configurações',
-			icon: 'Settings',
-			path: '/settings',
-		},
-		{
 			id: 'logout',
 			label: 'Sair',
 			icon: 'LogOut',
@@ -225,7 +220,6 @@ const Sidebar: React.FC<SidebarProps> = ({
 		Package,
 		BarChart3,
 		FileText,
-		Settings,
 		LogOut,
 		CreditCard,
 	};
@@ -246,15 +240,18 @@ const Sidebar: React.FC<SidebarProps> = ({
 		return IconComponent ? <IconComponent size={20} /> : null;
 	};
 
+	// Handle logout
+	const handleLogout = async () => {
+		await logout();
+		navigate('/login');
+	};
+
 	const handleItemClick = (item: MenuItem) => {
 		if (item.children && item.children.length > 0 && !isCollapsed) {
 			toggleExpanded(item.id);
 		} else if (item.path && (!item.children || item.children.length === 0)) {
 			if (item.id === 'logout') {
-				// Handle logout logic here
-				console.log('Logout clicked');
-				// For now, just navigate to dashboard
-				navigate('/dashboard');
+				handleLogout();
 			} else {
 				navigate(item.path);
 			}
@@ -290,16 +287,15 @@ const Sidebar: React.FC<SidebarProps> = ({
                             group flex items-center rounded-xl cursor-pointer 
                             transition-all duration-300 ease-in-out transform hover:scale-105
                             ${level === 0 ? 'px-4 py-3 mx-2 mb-1' : 'px-4 py-2 mx-6 mb-0.5'}
-                            ${
-															isActive && !hasChildren
-																? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25'
-																: isActive && level > 0
-																	? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25'
-																	: hasChildren &&
-																			(isItemExpanded || isParentActive)
-																		? 'bg-slate-800/50 text-blue-400'
-																		: 'text-slate-300 hover:bg-slate-800/50 hover:text-white'
-														}
+                            ${isActive && !hasChildren
+								? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25'
+								: isActive && level > 0
+									? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25'
+									: hasChildren &&
+										(isItemExpanded || isParentActive)
+										? 'bg-slate-800/50 text-blue-400'
+										: 'text-slate-300 hover:bg-slate-800/50 hover:text-white'
+							}
                             ${isCollapsed && level === 0 ? 'justify-center px-3 mx-2' : ''}
                             ${level > 0 ? 'text-sm' : ''}
                         `}
@@ -376,7 +372,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 						<div
 							className={`
 								absolute left-full ml-2 z-[60] pointer-events-auto
-								${item.id === 'logout' || item.id === 'settings' ? 'bottom-0' : 'top-0'}
+								${item.id === 'logout' ? 'bottom-0' : 'top-0'}
 							`}
 							onMouseEnter={() => {
 								if (hoverTimeout) {
@@ -393,30 +389,37 @@ const Sidebar: React.FC<SidebarProps> = ({
 								</div>
 								{hasChildren && item.children
 									? item.children.map((child) => (
-											<button
-												type="button"
-												key={child.id}
-												onClick={(e) => handleChildClick(child, e)}
-												className="w-full text-left px-3 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors duration-200"
-											>
-												{child.label}
-											</button>
-										))
+										<button
+											type="button"
+											key={child.id}
+											onClick={(e) => handleChildClick(child, e)}
+											className="w-full text-left px-3 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors duration-200"
+										>
+											{child.label}
+										</button>
+									))
 									: item.path && (
-											<button
-												type="button"
-												onClick={(e) => handleChildClick(item, e)}
-												className="w-full text-left px-3 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors duration-200"
-											>
-												Acessar {item.label}
-											</button>
-										)}
+										<button
+											type="button"
+											onClick={(e) => {
+												e.stopPropagation();
+												if (item.id === 'logout') {
+													handleLogout();
+												} else {
+													handleChildClick(item, e);
+												}
+											}}
+											className="w-full text-left px-3 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors duration-200"
+										>
+											{item.id === 'logout' ? item.label : `Acessar ${item.label}`}
+										</button>
+									)}
 							</div>
 							{/* Tooltip arrow */}
 							<div
 								className={`
 								absolute w-2 h-2 bg-slate-800 border-l border-b border-slate-600 rotate-45
-								${item.id === 'logout' || item.id === 'settings' ? 'left-0 bottom-4 transform -translate-x-1' : 'left-0 top-4 transform -translate-x-1'}
+								${item.id === 'logout' ? 'left-0 bottom-4 transform -translate-x-1' : 'left-0 top-4 transform -translate-x-1'}
 							`}
 							/>
 						</div>

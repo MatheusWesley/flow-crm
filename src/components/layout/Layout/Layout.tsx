@@ -9,7 +9,6 @@ interface LayoutProps {
 	children: React.ReactNode;
 	title?: string;
 	user?: User;
-	onSearch?: (query: string) => void;
 	className?: string;
 }
 
@@ -17,7 +16,6 @@ const Layout: React.FC<LayoutProps> = ({
 	children,
 	title = 'Dashboard',
 	user,
-	onSearch,
 	className = '',
 }) => {
 	const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -74,12 +72,11 @@ const Layout: React.FC<LayoutProps> = ({
 			<div
 				className={`
           fixed top-0 left-0 h-full z-40 transition-transform duration-300 ease-in-out
-          ${
-						isMobile
-							? isMobileSidebarOpen
-								? 'translate-x-0'
-								: '-translate-x-full'
-							: 'translate-x-0'
+          ${isMobile
+						? isMobileSidebarOpen
+							? 'translate-x-0'
+							: '-translate-x-full'
+						: 'translate-x-0'
 					}
         `}
 			>
@@ -101,7 +98,6 @@ const Layout: React.FC<LayoutProps> = ({
 				<Header
 					title={title}
 					user={user}
-					onSearch={onSearch}
 					className="sticky top-0 z-20"
 				/>
 

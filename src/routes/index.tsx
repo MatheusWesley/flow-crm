@@ -65,13 +65,8 @@ const LayoutWrapper = ({
 		return null;
 	}
 
-	const handleSearch = (query: string) => {
-		console.log('Search query:', query);
-		// TODO: Implement search functionality
-	};
-
 	return (
-		<Layout title={title} user={user} onSearch={handleSearch}>
+		<Layout title={title} user={user}>
 			{children}
 		</Layout>
 	);
