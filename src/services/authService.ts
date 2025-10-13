@@ -26,34 +26,14 @@ export class AuthService {
             authDebugLog('Attempting login for user:', credentials.email);
             console.log('Making login request...');
 
-            // Try direct fetch first (most reliable in production)
+            // Try XMLHttpRequest first (more reliable in some environments)
             const apiUrl = 'https://flow-crm-backend-58ub.onrender.com/api/auth/login';
 
-            const fetchResponse = await fetch(apiUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(credentials),
-            });
+            console.log('Trying XMLHttpRequest approach...');
+            const responseData = await this.makeXHRRequest(apiUrl, credentials);
+            console.log('XHR request successful:', responseData);
 
-            console.log('Fetch response status:', fetchResponse.status);
 
-            if (!fetchResponse.ok) {
-                const errorText = await fetchResponse.text();
-                console.error('Fetch error response:', errorText);
-                throw new Error(`HTTP ${fetchResponse.status}: ${fetchResponse.statusText}`);
-            }
-
-            const responseData = await fetchResponse.json();
-            console.log('Login response received:', {
-                success: responseData.success,
-                message: responseData.message,
-                hasUser: !!responseData.data?.user,
-                hasToken: !!responseData.data?.token
-            });
-
-            console.log('Full response data:', responseData);
 
             const loginData = responseData.data as LoginResponse;
             console.log('Extracted login data:', loginData);
@@ -83,6 +63,56 @@ export class AuthService {
 
             throw error;
         }
+    }
+
+    /**
+     * Make request using XMLHttpRequest as fallback
+     */
+    private async makeXHRRequest(url: string, credentials: LoginRequest): Promise<any> {
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+
+            xhr.open('POST', url, true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.setRequestHeader('Accept', 'application/json');
+
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    console.log('XHR status:', xhr.status);
+                    console.log('XHR response:', xhr.responseText);
+
+                    if (xhr.status === 200) {
+                        try {
+                            const responseData = JSON.parse(xhr.responseText);
+                            resolve(responseData);
+                        } catch (parseError) {
+                            reject(new Error('Failed to parse response'));
+                        }
+                    } else {
+                        reject(new Error(`HTTP ${xhr.status}: ${xhr.statusText}`));
+                    }
+                }
+            };
+
+            xhr.onerror = function () {
+                console.error('XHR network error');
+                reject(new Error('Network error occurred'));
+            };
+
+            xhr.ontimeout = function () {
+                console.error('XHR timeout');
+                reject(new Error('Request timeout'));
+            };
+
+            xhr.timeout = 30000; // 30 second timeout
+
+            try {
+                console.log('Sending XHR request...');
+                xhr.send(JSON.stringify(credentials));
+            } catch (sendError) {
+                reject(sendError);
+            }
+        });
     }
 
     /**
