@@ -18,13 +18,18 @@ class HttpClient {
             PROD: import.meta.env.PROD
         });
 
+        // Use local proxy in production, direct API in development
+        const baseURL = config.appEnvironment === 'production'
+            ? '/api/proxy'
+            : config.apiBaseUrl;
+
         this.axiosInstance = axios.create({
-            baseURL: config.apiBaseUrl,
+            baseURL,
             timeout: 15000,
             headers: {
                 'Content-Type': 'application/json',
             },
-            withCredentials: false, // Explicitly disable credentials for CORS
+            withCredentials: false,
             validateStatus: (status) => status >= 200 && status < 300,
         });
 
@@ -32,7 +37,7 @@ class HttpClient {
     }
 
     private setupInterceptors(): void {
-        // Request interceptor for authentication
+        // Request interceptor for authentication and proxy URL transformation
         this.axiosInstance.interceptors.request.use(
             (config) => {
                 console.log('Request interceptor:', {
@@ -42,11 +47,26 @@ class HttpClient {
                     headers: config.headers
                 });
 
-                const token = tokenStorage.getToken();
+                // Transform URL for proxy in production
+                if (config.baseURL === '/api/proxy' && config.url) {
+                    // Remove leading slash from URL
+                    const cleanUrl = config.url.startsWith('/') ? config.url.slice(1) : config.url;
+                    config.url = `?path=${encodeURIComponent(cleanUrl)}`;
 
+                    // Add query parameters to the path
+                    if (config.params) {
+                        const searchParams = new URLSearchParams(config.params);
+                        const pathWithParams = `${cleanUrl}?${searchParams.toString()}`;
+                        config.url = `?path=${encodeURIComponent(pathWithParams)}`;
+                        config.params = {}; // Clear params as they're now in the path
+                    }
+                }
+
+                const token = tokenStorage.getToken();
                 if (token) {
                     config.headers.Authorization = `Bearer ${token}`;
                 }
+
                 return config;
             },
             (error) => {
