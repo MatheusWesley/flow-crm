@@ -53,11 +53,22 @@ export class AuthService {
                 hasToken: !!responseData.data?.token
             });
 
+            console.log('Full response data:', responseData);
+
             const loginData = responseData.data as LoginResponse;
+            console.log('Extracted login data:', loginData);
+
             const { token, refreshToken, user } = loginData;
+            console.log('Destructured data:', {
+                hasToken: !!token,
+                hasRefreshToken: !!refreshToken,
+                hasUser: !!user,
+                userEmail: user?.email
+            });
 
             // Store tokens
             httpClient.setAuthTokens(token, refreshToken || '');
+            console.log('Tokens stored successfully');
 
             authDebugLog('Login successful for user:', user.email);
             return loginData;

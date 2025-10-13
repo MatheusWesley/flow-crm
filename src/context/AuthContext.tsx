@@ -296,15 +296,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		try {
 			authDebugLog('Attempting login', { email: credentials.email });
 
+			console.log('AuthContext: Calling authService.login...');
 			const loginResponse = await authService.login(credentials);
-			const authUser = convertApiUserToAuthUser(loginResponse.user);
-			const permissions = extractPermissionsFromUser(loginResponse.user);
+			console.log('AuthContext: Login response received:', loginResponse);
 
+			console.log('AuthContext: Converting user...');
+			const authUser = convertApiUserToAuthUser(loginResponse.user);
+			console.log('AuthContext: User converted:', authUser);
+
+			console.log('AuthContext: Extracting permissions...');
+			const permissions = extractPermissionsFromUser(loginResponse.user);
+			console.log('AuthContext: Permissions extracted:', permissions);
+
+			console.log('AuthContext: Dispatching LOGIN_SUCCESS...');
 			dispatch({
 				type: 'LOGIN_SUCCESS',
 				payload: { user: authUser, permissions },
 			});
 
+			console.log('AuthContext: Login process completed successfully');
 			authDebugLog('Login successful', {
 				userId: authUser.id,
 				email: authUser.email,

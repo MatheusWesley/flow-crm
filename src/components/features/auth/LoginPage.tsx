@@ -98,11 +98,14 @@ const LoginPage: React.FC = () => {
 		}
 
 		try {
+			console.log('LoginPage: Starting login process...');
 			await login(formData);
+			console.log('LoginPage: Login successful, navigating to:', from);
 			navigate(from, { replace: true });
+			console.log('LoginPage: Navigation completed');
 		} catch (loginError) {
 			// Error is handled by the context and displayed via the error state
-			console.error('Login failed:', loginError);
+			console.error('LoginPage: Login failed:', loginError);
 		}
 	};
 
