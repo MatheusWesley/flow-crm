@@ -162,14 +162,15 @@ const UserForm: React.FC<UserFormProps> = ({
 	const handleInputChange = (field: string) => (value: string | boolean) => {
 		let processedValue = value;
 
-		// Sanitize text inputs
-		if (
-			typeof value === 'string' &&
-			['name', 'email'].includes(field)
-		) {
+		// Process text inputs
+		if (typeof value === 'string') {
 			if (field === 'email') {
 				processedValue = formatEmail(value);
-			} else {
+			} else if (field === 'name') {
+				// Para o campo nome, apenas fazemos trim básico preservando acentos e espaços
+				// Remove sanitizeUserInput que estava convertendo caracteres especiais para entidades HTML
+				processedValue = value.trim().replace(/\s+/g, ' ');
+			} else if (['name', 'email'].includes(field)) {
 				processedValue = sanitizeUserInput(value);
 			}
 		}
