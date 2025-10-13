@@ -31,7 +31,7 @@ export interface EnvironmentConfig {
 // Default configuration values
 const DEFAULT_CONFIG: EnvironmentConfig = {
     apiBaseUrl: 'https://flow-crm-backend-58ub.onrender.com/api',
-    apiTimeout: 10000,
+    apiTimeout: 15000,
     tokenStorageKey: 'flowcrm_token',
     refreshTokenStorageKey: 'flowcrm_refresh_token',
     tokenRefreshThreshold: 300000, // 5 minutes
@@ -114,14 +114,20 @@ function createConfig(): EnvironmentConfig {
     };
 
     // Log configuration in development and production for debugging
-    if (config.debugApiCalls || config.appEnvironment === 'production') {
-        console.log('Environment Configuration:', {
-            ...config,
-            // Don't log sensitive keys
-            tokenStorageKey: '[REDACTED]',
-            refreshTokenStorageKey: '[REDACTED]',
-        });
-    }
+    console.log('Environment Configuration:', {
+        ...config,
+        // Don't log sensitive keys
+        tokenStorageKey: '[REDACTED]',
+        refreshTokenStorageKey: '[REDACTED]',
+    });
+
+    console.log('Raw environment variables:', {
+        VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
+        VITE_APP_ENVIRONMENT: import.meta.env.VITE_APP_ENVIRONMENT,
+        MODE: import.meta.env.MODE,
+        PROD: import.meta.env.PROD,
+        DEV: import.meta.env.DEV
+    });
 
     return config;
 }

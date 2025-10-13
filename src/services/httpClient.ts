@@ -11,6 +11,12 @@ class HttpClient {
 
     constructor() {
         console.log('HttpClient initialized with baseURL:', config.apiBaseUrl);
+        console.log('Full config object:', config);
+        console.log('Environment variables check:', {
+            VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
+            MODE: import.meta.env.MODE,
+            PROD: import.meta.env.PROD
+        });
 
         this.axiosInstance = axios.create({
             baseURL: config.apiBaseUrl,
