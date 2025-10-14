@@ -112,3 +112,71 @@ export const isSessionExpired = (sessionTimeout: number = 30): boolean => {
     const debugInfo = getSessionDebugInfo(sessionTimeout);
     return debugInfo.hasLastActivity && !debugInfo.isActivityValid;
 };
+
+/**
+ * Detect and clean corrupted session data
+ */
+export const detectAndCleanCorruptedData = (): boolean => {
+    let wasCorrupted = false;
+
+    // Check for invalid date in flowcrm_last_activity
+    const lastActivity = localStorage.getItem('flowcrm_last_activity');
+    if (lastActivity) {
+        try {
+            const date = new Date(lastActivity);
+            if (isNaN(date.getTime())) {
+                console.warn('🚨 Corrupted flowcrm_last_activity detected, clearing...');
+                localStorage.removeItem('flowcrm_last_activity');
+                wasCorrupted = true;
+            } else {
+                // Check if date is too old (more than 7 days)
+                const now = new Date();
+                const daysDiff = (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24);
+                if (daysDiff > 7) {
+                    console.warn('🚨 Very old session data detected, clearing...');
+                    clearFlowCRMStorage();
+                    wasCorrupted = true;
+                }
+            }
+        } catch (error) {
+            console.warn('🚨 Error parsing flowcrm_last_activity, clearing...');
+            localStorage.removeItem('flowcrm_last_activity');
+            wasCorrupted = true;
+        }
+    }
+
+    // Check for invalid token format
+    const token = localStorage.getItem('flowcrm_token');
+    if (token) {
+        try {
+            // Basic JWT format check (should have 3 parts separated by dots)
+            const parts = token.split('.');
+            if (parts.length !== 3) {
+                console.warn('🚨 Invalid token format detected, clearing...');
+                localStorage.removeItem('flowcrm_token');
+                localStorage.removeItem('flowcrm_refresh_token');
+                wasCorrupted = true;
+            } else {
+                // Try to parse the payload
+                const payload = JSON.parse(atob(parts[1]));
+                if (!payload.exp || !payload.user) {
+                    console.warn('🚨 Invalid token payload detected, clearing...');
+                    localStorage.removeItem('flowcrm_token');
+                    localStorage.removeItem('flowcrm_refresh_token');
+                    wasCorrupted = true;
+                }
+            }
+        } catch (error) {
+            console.warn('🚨 Error parsing token, clearing...');
+            localStorage.removeItem('flowcrm_token');
+            localStorage.removeItem('flowcrm_refresh_token');
+            wasCorrupted = true;
+        }
+    }
+
+    if (wasCorrupted) {
+        console.log('🧹 Corrupted session data cleaned automatically');
+    }
+
+    return wasCorrupted;
+};

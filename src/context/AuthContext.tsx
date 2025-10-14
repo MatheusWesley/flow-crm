@@ -16,7 +16,7 @@ import type {
 	UserPermissions,
 } from '../types';
 import type { User } from '../types/api';
-import { logSessionDebugInfo } from '../utils/sessionDebug';
+import { logSessionDebugInfo, detectAndCleanCorruptedData } from '../utils/sessionDebug';
 
 // Auth state interface for reducer
 interface AuthState {
@@ -255,6 +255,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 			try {
 				authDebugLog('Initializing authentication context');
 
+				// Detect and clean any corrupted session data before initialization
+				const wasCorrupted = detectAndCleanCorruptedData();
+				if (wasCorrupted) {
+					authDebugLog('Corrupted session data was cleaned during initialization');
+					// Skip token validation since we cleared everything
+					dispatch({
+						type: 'INIT_SUCCESS',
+						payload: { user: null, permissions: null },
+					});
+					return;
+				}
+
 				// Try to initialize auth with stored tokens
 				const user = await authService.initializeAuth();
 
@@ -280,6 +292,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 				});
 			} catch (error) {
 				authDebugLog('Failed to initialize authentication:', error);
+
+				// Clear potentially corrupted data on initialization failure
+				localStorage.removeItem('flowcrm_last_activity');
+				localStorage.removeItem('flowcrm_token');
+				localStorage.removeItem('flowcrm_refresh_token');
+
 				dispatch({
 					type: 'INIT_SUCCESS',
 					payload: { user: null, permissions: null },
@@ -296,6 +314,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
 		try {
 			authDebugLog('Attempting login', { email: credentials.email });
+
+			// Detect and clean any corrupted session data before login
+			const wasCorrupted = detectAndCleanCorruptedData();
+			if (wasCorrupted) {
+				authDebugLog('Corrupted session data was cleaned before login');
+			}
 
 			console.log('AuthContext: Calling authService.login...');
 			const loginResponse = await authService.login(credentials);
@@ -325,6 +349,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 			});
 		} catch (error) {
 			authDebugLog('Login failed:', error);
+
+			// Clear potentially corrupted data on login failure
+			localStorage.removeItem('flowcrm_last_activity');
+			localStorage.removeItem('flowcrm_token');
+			localStorage.removeItem('flowcrm_refresh_token');
 
 			const authError: AuthError = {
 				message: error instanceof Error ? error.message : 'Login failed',
