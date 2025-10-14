@@ -16,6 +16,7 @@ import type {
 	UserPermissions,
 } from '../types';
 import type { User } from '../types/api';
+import { logSessionDebugInfo } from '../utils/sessionDebug';
 
 // Auth state interface for reducer
 interface AuthState {
@@ -314,6 +315,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 				payload: { user: authUser, permissions },
 			});
 
+			// Set initial activity timestamp for successful login
+			localStorage.setItem('flowcrm_last_activity', new Date().toISOString());
+
 			console.log('AuthContext: Login process completed successfully');
 			authDebugLog('Login successful', {
 				userId: authUser.id,
@@ -353,11 +357,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
 	// Update activity function
 	const updateActivity = useCallback(() => {
-		if (state.user) {
+		if (state.user && !state.isLoading) {
 			dispatch({ type: 'UPDATE_ACTIVITY' });
 			localStorage.setItem('flowcrm_last_activity', new Date().toISOString());
 		}
-	}, [state.user]);
+	}, [state.user, state.isLoading]);
 
 	// Listen for auth events from HTTP client
 	useEffect(() => {
@@ -378,9 +382,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
 	// Session timeout monitoring
 	useEffect(() => {
-		if (!state.user || !state.isInitialized) return;
+		if (!state.user || !state.isInitialized || state.isLoading) return;
 
 		const checkSessionTimeout = () => {
+			// Don't check timeout if user is currently logging in
+			if (state.isLoading) return;
+
 			const lastActivity = localStorage.getItem('flowcrm_last_activity');
 			if (lastActivity) {
 				const lastActivityDate = new Date(lastActivity);
@@ -388,11 +395,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 				const timeDiff =
 					(now.getTime() - lastActivityDate.getTime()) / (1000 * 60); // minutes
 
+				authDebugLog('Session timeout check', {
+					timeDiff: timeDiff.toFixed(2),
+					sessionTimeout: state.sessionTimeout,
+					lastActivity,
+					willExpire: timeDiff > state.sessionTimeout
+				});
+
 				if (timeDiff > state.sessionTimeout) {
-					authDebugLog('Session timeout detected');
+					authDebugLog('Session timeout detected - logging out user');
+					logSessionDebugInfo(state.sessionTimeout);
 					authService.logout();
 					dispatch({ type: 'SESSION_EXPIRED' });
 				}
+			} else {
+				authDebugLog('No last activity found in localStorage');
 			}
 		};
 
@@ -400,11 +417,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		const interval = setInterval(checkSessionTimeout, 60000);
 
 		return () => clearInterval(interval);
-	}, [state.user, state.isInitialized, state.sessionTimeout]);
+	}, [state.user, state.isInitialized, state.sessionTimeout, state.isLoading]);
 
 	// Track user activity
 	useEffect(() => {
-		if (!state.user) return;
+		if (!state.user || state.isLoading) return;
 
 		const activityEvents = [
 			'mousedown',
@@ -430,7 +447,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 				document.removeEventListener(event, handleActivity, true);
 			});
 		};
-	}, [state.user, updateActivity]);
+	}, [state.user, updateActivity, state.isLoading]);
 
 	// Computed values
 	const isAuthenticated = state.user !== null;

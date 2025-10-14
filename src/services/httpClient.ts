@@ -92,10 +92,19 @@ class HttpClient {
 
                 // Handle 401 errors by clearing token
                 if (error.response?.status === 401) {
-                    tokenStorage.removeToken();
-                    // Optionally redirect to login
-                    if (typeof window !== 'undefined') {
-                        window.location.href = '/login';
+                    // Don't auto-redirect if this is a login request
+                    const isLoginRequest = error.config?.url?.includes('login') || error.config?.url?.includes('auth');
+
+                    if (!isLoginRequest) {
+                        tokenStorage.removeToken();
+                        // Dispatch logout event instead of direct redirect
+                        if (typeof window !== 'undefined') {
+                            window.dispatchEvent(
+                                new CustomEvent('auth:logout', {
+                                    detail: { reason: 'token_expired' },
+                                })
+                            );
+                        }
                     }
                 }
                 return Promise.reject(error);

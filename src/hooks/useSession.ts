@@ -44,11 +44,14 @@ export const useSession = (): UseSession => {
 
         const lastActivityStr = localStorage.getItem('flowcrm_last_activity');
         if (!lastActivityStr) {
+            // Set initial activity timestamp for new sessions
+            const now = new Date();
+            localStorage.setItem('flowcrm_last_activity', now.toISOString());
             setSessionInfo(prev => ({
                 ...prev,
                 isActive: true,
                 timeRemaining: prev.sessionTimeout,
-                lastActivity: null,
+                lastActivity: now,
                 showWarning: false,
             }));
             return;
@@ -68,8 +71,9 @@ export const useSession = (): UseSession => {
             showWarning,
         }));
 
-        // Auto-logout if session expired
-        if (timeRemaining <= 0) {
+        // Auto-logout if session expired (but not during initial load)
+        if (timeRemaining <= 0 && timeSinceActivity > sessionInfo.sessionTimeout) {
+            console.warn('Session expired, logging out user');
             logout();
         }
     }, [user, logout, sessionInfo.sessionTimeout, sessionInfo.warningThreshold]);
