@@ -255,17 +255,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 			try {
 				authDebugLog('Initializing authentication context');
 
-				// Detect and clean any corrupted session data before initialization
-				const wasCorrupted = detectAndCleanCorruptedData();
-				if (wasCorrupted) {
-					authDebugLog('Corrupted session data was cleaned during initialization');
-					// Skip token validation since we cleared everything
-					dispatch({
-						type: 'INIT_SUCCESS',
-						payload: { user: null, permissions: null },
-					});
-					return;
-				}
+				// Only check for obviously corrupted data during initialization
+				// Let the authService handle token validation and expiration
+				authDebugLog('Initializing with existing tokens if valid');
 
 				// Try to initialize auth with stored tokens
 				const user = await authService.initializeAuth();
@@ -315,9 +307,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		try {
 			authDebugLog('Attempting login', { email: credentials.email });
 
-			// Detect and clean any corrupted session data before login
-			const wasCorrupted = detectAndCleanCorruptedData();
-			if (wasCorrupted) {
+			// Only clean obviously corrupted data before login (not expired data)
+			const hasCorruptedData = detectAndCleanCorruptedData();
+			if (hasCorruptedData) {
 				authDebugLog('Corrupted session data was cleaned before login');
 			}
 

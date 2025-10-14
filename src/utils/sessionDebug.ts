@@ -114,7 +114,7 @@ export const isSessionExpired = (sessionTimeout: number = 30): boolean => {
 };
 
 /**
- * Detect and clean corrupted session data
+ * Detect and clean only truly corrupted session data (not expired data)
  */
 export const detectAndCleanCorruptedData = (): boolean => {
     let wasCorrupted = false;
@@ -125,19 +125,11 @@ export const detectAndCleanCorruptedData = (): boolean => {
         try {
             const date = new Date(lastActivity);
             if (isNaN(date.getTime())) {
-                console.warn('🚨 Corrupted flowcrm_last_activity detected, clearing...');
+                console.warn('🚨 Corrupted flowcrm_last_activity detected (invalid date), clearing...');
                 localStorage.removeItem('flowcrm_last_activity');
                 wasCorrupted = true;
-            } else {
-                // Check if date is too old (more than 7 days)
-                const now = new Date();
-                const daysDiff = (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24);
-                if (daysDiff > 7) {
-                    console.warn('🚨 Very old session data detected, clearing...');
-                    clearFlowCRMStorage();
-                    wasCorrupted = true;
-                }
             }
+            // Removed the "too old" check - let the session timeout logic handle expiration
         } catch (error) {
             console.warn('🚨 Error parsing flowcrm_last_activity, clearing...');
             localStorage.removeItem('flowcrm_last_activity');
@@ -145,29 +137,37 @@ export const detectAndCleanCorruptedData = (): boolean => {
         }
     }
 
-    // Check for invalid token format
+    // Check for invalid token format (only clear if truly malformed)
     const token = localStorage.getItem('flowcrm_token');
     if (token) {
         try {
             // Basic JWT format check (should have 3 parts separated by dots)
             const parts = token.split('.');
             if (parts.length !== 3) {
-                console.warn('🚨 Invalid token format detected, clearing...');
+                console.warn('🚨 Invalid token format detected (not JWT), clearing...');
                 localStorage.removeItem('flowcrm_token');
                 localStorage.removeItem('flowcrm_refresh_token');
                 wasCorrupted = true;
             } else {
-                // Try to parse the payload
-                const payload = JSON.parse(atob(parts[1]));
-                if (!payload.exp || !payload.user) {
-                    console.warn('🚨 Invalid token payload detected, clearing...');
+                // Try to parse the payload - only clear if completely malformed
+                try {
+                    const payload = JSON.parse(atob(parts[1]));
+                    // Only check for basic structure, don't validate expiration here
+                    if (typeof payload !== 'object' || payload === null) {
+                        console.warn('🚨 Invalid token payload detected (not object), clearing...');
+                        localStorage.removeItem('flowcrm_token');
+                        localStorage.removeItem('flowcrm_refresh_token');
+                        wasCorrupted = true;
+                    }
+                } catch (parseError) {
+                    console.warn('🚨 Token payload not parseable, clearing...');
                     localStorage.removeItem('flowcrm_token');
                     localStorage.removeItem('flowcrm_refresh_token');
                     wasCorrupted = true;
                 }
             }
         } catch (error) {
-            console.warn('🚨 Error parsing token, clearing...');
+            console.warn('🚨 Error processing token, clearing...');
             localStorage.removeItem('flowcrm_token');
             localStorage.removeItem('flowcrm_refresh_token');
             wasCorrupted = true;
@@ -179,4 +179,58 @@ export const detectAndCleanCorruptedData = (): boolean => {
     }
 
     return wasCorrupted;
+};
+
+/**
+ * Force clean old or expired session data (more aggressive, for manual use)
+ */
+export const forceCleanOldSessionData = (): boolean => {
+    let wasOld = false;
+
+    // Check for very old session data (more than 24 hours)
+    const lastActivity = localStorage.getItem('flowcrm_last_activity');
+    if (lastActivity) {
+        try {
+            const date = new Date(lastActivity);
+            if (!isNaN(date.getTime())) {
+                const now = new Date();
+                const hoursDiff = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+                if (hoursDiff > 24) {
+                    console.warn('🚨 Very old session data detected (>24h), force clearing...');
+                    clearFlowCRMStorage();
+                    wasOld = true;
+                }
+            }
+        } catch (error) {
+            // Already handled by detectAndCleanCorruptedData
+        }
+    }
+
+    // Check for expired tokens
+    const token = localStorage.getItem('flowcrm_token');
+    if (token && !wasOld) {
+        try {
+            const parts = token.split('.');
+            if (parts.length === 3) {
+                const payload = JSON.parse(atob(parts[1]));
+                if (payload.exp) {
+                    const now = Math.floor(Date.now() / 1000);
+                    if (payload.exp < now) {
+                        console.warn('🚨 Expired token detected, force clearing...');
+                        localStorage.removeItem('flowcrm_token');
+                        localStorage.removeItem('flowcrm_refresh_token');
+                        wasOld = true;
+                    }
+                }
+            }
+        } catch (error) {
+            // Already handled by detectAndCleanCorruptedData
+        }
+    }
+
+    if (wasOld) {
+        console.log('🧹 Old/expired session data force cleaned');
+    }
+
+    return wasOld;
 };

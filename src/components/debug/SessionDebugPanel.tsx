@@ -4,7 +4,8 @@ import {
     logSessionDebugInfo,
     clearFlowCRMStorage,
     resetSessionActivity,
-    detectAndCleanCorruptedData
+    detectAndCleanCorruptedData,
+    forceCleanOldSessionData
 } from '../../utils/sessionDebug';
 
 interface SessionDebugPanelProps {
@@ -39,6 +40,16 @@ const SessionDebugPanel: React.FC<SessionDebugPanelProps> = ({ isVisible = false
             alert('Dados corrompidos foram limpos!');
         } else {
             alert('Nenhum dado corrompido encontrado.');
+        }
+        refreshDebugInfo();
+    };
+
+    const handleForceCleanOld = () => {
+        const wasOld = forceCleanOldSessionData();
+        if (wasOld) {
+            alert('Dados antigos/expirados foram limpos!');
+        } else {
+            alert('Nenhum dado antigo encontrado.');
         }
         refreshDebugInfo();
     };
@@ -130,6 +141,13 @@ const SessionDebugPanel: React.FC<SessionDebugPanelProps> = ({ isVisible = false
                     className="bg-orange-500 text-white px-2 py-1 rounded text-xs hover:bg-orange-600"
                 >
                     🧹 Clean Corrupted
+                </button>
+
+                <button
+                    onClick={handleForceCleanOld}
+                    className="bg-yellow-500 text-white px-2 py-1 rounded text-xs hover:bg-yellow-600"
+                >
+                    ⚡ Force Clean Old
                 </button>
 
                 <button
