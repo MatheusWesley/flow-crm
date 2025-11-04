@@ -129,7 +129,7 @@ const UnifiedPresaleModal: React.FC<UnifiedPresaleModalProps> = ({
 				customer?.email
 					?.toLowerCase()
 					?.includes(customerSearchTerm.toLowerCase()) ||
-				customer?.cpf?.includes(customerSearchTerm),
+				customer?.cpf?.includes(customerSearchTerm) || false,
 		);
 	}, [customers, customerSearchTerm]);
 
@@ -158,7 +158,7 @@ const UnifiedPresaleModal: React.FC<UnifiedPresaleModalProps> = ({
 			(customer) =>
 				customer?.name?.toLowerCase()?.includes(searchTerm.toLowerCase()) ||
 				customer?.email?.toLowerCase()?.includes(searchTerm.toLowerCase()) ||
-				customer?.cpf?.includes(searchTerm),
+				customer?.cpf?.includes(searchTerm) || false,
 		);
 
 		if (matchingCustomer) {
@@ -448,7 +448,7 @@ const UnifiedPresaleModal: React.FC<UnifiedPresaleModalProps> = ({
 													{customer.name}
 												</div>
 												<div className="text-xs text-gray-500">
-													{customer.email} • {customer.cpf}
+													{customer.email} • {customer.cpf || 'CPF não informado'}
 												</div>
 											</button>
 										))

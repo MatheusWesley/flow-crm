@@ -116,7 +116,7 @@ const PresalesPage: React.FC = () => {
 					name: apiPresale.customer.name,
 					email: apiPresale.customer.email,
 					phone: apiPresale.customer.phone || '',
-					cpf: apiPresale.customer.cpf,
+					cpf: apiPresale.customer.cpf || '',
 					address: apiPresale.customer.address || '',
 					createdAt: apiPresale.customer.createdAt ? new Date(apiPresale.customer.createdAt) : new Date(),
 					updatedAt: apiPresale.customer.updatedAt ? new Date(apiPresale.customer.updatedAt) : new Date(),
@@ -444,7 +444,7 @@ const PresalesPage: React.FC = () => {
 			doc.setFontSize(10);
 			doc.text(`Nome: ${preSale.customer.name}`, 20, 50);
 			doc.text(`Email: ${preSale.customer.email}`, 20, 55);
-			doc.text(`CPF: ${preSale.customer.cpf}`, 20, 60);
+			doc.text(`CPF: ${preSale.customer.cpf || 'Não informado'}`, 20, 60);
 			doc.text(`Telefone: ${preSale.customer.phone}`, 20, 65);
 
 			// Pre-sale info
@@ -977,7 +977,7 @@ const PresalesPage: React.FC = () => {
 								<div>
 									<dt className="text-blue-700">CPF:</dt>
 									<dd className="font-mono font-medium text-blue-900">
-										{selectedPreSale.customer.cpf}
+										{selectedPreSale.customer.cpf || 'Não informado'}
 									</dd>
 								</div>
 							</dl>

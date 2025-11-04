@@ -46,7 +46,7 @@ export interface Customer {
     name: string;
     email: string;
     phone: string;
-    cpf: string;
+    cpf?: string | null;
     address?: string;
     createdAt: string;
     updatedAt: string;
@@ -111,7 +111,7 @@ export interface CreateCustomerRequest {
     name: string;
     email: string;
     phone: string;
-    cpf: string;
+    cpf?: string;
     address?: string;
 }
 

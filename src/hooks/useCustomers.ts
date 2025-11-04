@@ -79,10 +79,10 @@ export const useCustomers = (
 
                 const response = await customerService.getCustomers(params);
 
-                // Ensure all customers have cpf as string
+                // Ensure all customers have cpf as string or null
                 const sanitizedCustomers = response.data.map(customer => ({
                     ...customer,
-                    cpf: customer.cpf || ''
+                    cpf: customer.cpf || null
                 }));
 
                 setState((prev) => ({
@@ -112,10 +112,10 @@ export const useCustomers = (
 
                 const newCustomer = await customerService.createCustomer(customerData);
 
-                // Ensure cpf is a string (fallback to empty string if null/undefined)
+                // Ensure cpf is a string or null (fallback to null if undefined)
                 const sanitizedCustomer = {
                     ...newCustomer,
-                    cpf: newCustomer.cpf || ''
+                    cpf: newCustomer.cpf || null
                 };
 
                 // Add the new customer to the current list
@@ -147,10 +147,10 @@ export const useCustomers = (
 
                 const updatedCustomer = await customerService.updateCustomer(id, customerData);
 
-                // Ensure cpf is a string (fallback to empty string if null/undefined)
+                // Ensure cpf is a string or null (fallback to null if undefined)
                 const sanitizedUpdatedCustomer = {
                     ...updatedCustomer,
-                    cpf: updatedCustomer.cpf || ''
+                    cpf: updatedCustomer.cpf || null
                 };
 
                 // Update the customer in the current list

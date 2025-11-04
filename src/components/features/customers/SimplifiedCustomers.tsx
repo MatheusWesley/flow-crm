@@ -75,7 +75,7 @@ const SimplifiedCustomers: React.FC = () => {
 		setEditingCustomer(customer);
 		setFormData({
 			name: customer.name,
-			cpf: customer.cpf,
+			cpf: customer.cpf || '',
 			email: customer.email,
 			phone: customer.phone,
 			address: customer.address || '',
@@ -148,9 +148,7 @@ const SimplifiedCustomers: React.FC = () => {
 			newErrors.email = 'Email inválido';
 		}
 
-		if (!formData.cpf.trim()) {
-			newErrors.cpf = 'CPF é obrigatório';
-		} else if (!validateCPF(formData.cpf)) {
+		if (formData.cpf.trim() && !validateCPF(formData.cpf)) {
 			newErrors.cpf = 'CPF inválido';
 		}
 
@@ -176,7 +174,7 @@ const SimplifiedCustomers: React.FC = () => {
 				name: formData.name.trim(),
 				email: formData.email.trim(),
 				phone: formData.phone.trim(),
-				cpf: formData.cpf.replace(/\D/g, ''), // Remove formatting for API
+				cpf: formData.cpf.trim() ? formData.cpf.replace(/\D/g, '') : undefined, // Remove formatting for API, or set as undefined if empty
 				address: formData.address.trim() || undefined,
 			};
 
@@ -430,13 +428,12 @@ const SimplifiedCustomers: React.FC = () => {
 							/>
 
 							<Input
-								label="CPF/CNPJ*"
+								label="CPF/CNPJ"
 								value={formData.cpf}
 								onChange={handleInputChange('cpf')}
-								placeholder="000.000.000-00"
+								placeholder="000.000.000-00 (opcional)"
 								error={errors.cpf}
 								maxLength={14}
-								required
 							/>
 						</div>
 
