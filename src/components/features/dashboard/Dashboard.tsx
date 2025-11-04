@@ -99,6 +99,7 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
 		if (!apiCustomers) return [];
 		return apiCustomers.map(customer => ({
 			...customer,
+			cpf: customer.cpf || '', // Ensure cpf is always a string
 			createdAt: new Date(customer.createdAt),
 			updatedAt: new Date(customer.updatedAt),
 		}));

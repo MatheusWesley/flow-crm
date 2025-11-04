@@ -217,6 +217,7 @@ const PresalesPage: React.FC = () => {
 		if (!apiCustomers) return [];
 		return apiCustomers.map(customer => ({
 			...customer,
+			cpf: customer.cpf || '', // Ensure cpf is always a string
 			createdAt: typeof customer.createdAt === 'string' ? new Date(customer.createdAt) : customer.createdAt,
 			updatedAt: typeof customer.updatedAt === 'string' ? new Date(customer.updatedAt) : customer.updatedAt,
 		}));
